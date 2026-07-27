@@ -1,0 +1,12 @@
+# Tijdelijke bestanden van Word
+~$*
+~WRL*.tmp
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Geheimen — nooit online zetten
+.env
