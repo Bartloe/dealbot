@@ -21,6 +21,8 @@ Bijgewerkt: 27-07-2026
 
 - [ ] **E-mailbericht sturen zodra er een aanbieding is die bij iemands profiel past.** Let op: hiervoor is een extra gratis maildienst nodig, Supabase mag zelf alleen inlog-mails versturen
 - [ ] Bevestigingsmail bij het aanmelden van een nieuw account
+- [ ] In het profiel kunnen aanvinken bij welke winkels je daadwerkelijk komt, zodat je geen
+      aanbiedingen ziet van een winkel dertig kilometer verderop
 - [ ] Meer winkels: Bol, Amazon, Dirk, Plus, Lidl, Aldi, Hoogvliet, Vomar, DekaMarkt, Picnic
 - [ ] Zoeken op productgroep, met een achtergrondlijst van producten en EAN-codes
 - [ ] De standaardprijzen-pagina bouwen
