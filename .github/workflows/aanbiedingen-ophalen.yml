@@ -1,0 +1,42 @@
+# =============================================================================
+#  Dealbot — dagelijks de aanbiedingen ophalen
+#
+#  Versie : 1.0
+#  Reden  : Het ophaalscript elke ochtend vanzelf laten draaien, zonder dat er
+#           een betaalde server aan te pas komt.
+#  Datum  : 27-07-2026 21:04
+#
+#  Draait elke ochtend om 07:00 Nederlandse tijd (05:00 UTC) en is daarnaast
+#  handmatig te starten via het tabblad Actions op GitHub.
+# =============================================================================
+
+name: Aanbiedingen ophalen
+
+on:
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+
+jobs:
+  ophalen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Code ophalen
+        uses: actions/checkout@v4
+
+      - name: Python klaarzetten
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Benodigdheden installeren
+        run: pip install -r requirements.txt
+
+      - name: Aanbiedingen ophalen
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python scripts/scan.py
