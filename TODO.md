@@ -8,6 +8,11 @@ Bijgewerkt: 30-07-2026
 - [x] Inloggen met e-mailadres + pincode van 4 cijfers; mensen mogen zichzelf aanmelden
 - [x] Ophaalscript Albert Heijn — 1024 weekaanbiedingen, 99% met kiloprijs
 - [ ] Ophaalscript Jumbo
+- [ ] Derde keten met een toegankelijke gegevensingang — voorkeur Vomar; kan dat niet,
+      dan een alternatief voorleggen ter keuze
+- [ ] Zoekvelden herindelen: Merk, Productgroep (keuzelijst) en Vrije tekst als drie
+      onafhankelijke ingangen. Albert Heijn levert de productgroep al mee; die staat nu
+      in het veld "variant". Pas oppakken nádat de tweede en derde keten binnen zijn
 - [ ] Uitzoeken of Nettorama betrouwbaar uit te lezen is (folder, geen prijzenlijst)
 - [x] Automatisch elke ochtend laten draaien via GitHub — 07:00, duurt een halve minuut
 - [x] Oude aanbiedingen pas opruimen nadat de nieuwe binnen zijn
@@ -24,7 +29,8 @@ Bijgewerkt: 30-07-2026
 - [ ] In het profiel kunnen aanvinken bij welke winkels je daadwerkelijk komt, zodat je geen
       aanbiedingen ziet van een winkel dertig kilometer verderop
 - [ ] Meer winkels: Bol, Amazon, Dirk, Plus, Lidl, Aldi, Hoogvliet, Vomar, DekaMarkt, Picnic
-- [ ] Zoeken op productgroep, met een achtergrondlijst van producten en EAN-codes
+- [ ] Productgroepen van de verschillende ketens aan elkaar knopen (elke keten hanteert
+      een eigen indeling), eventueel met een achtergrondlijst van producten en EAN-codes
 - [ ] De standaardprijzen-pagina bouwen
 - [ ] Keuzelijsten in het profielscherm in plaats van vrije tekst
 - [ ] Geschikt maken voor een mobiele app
