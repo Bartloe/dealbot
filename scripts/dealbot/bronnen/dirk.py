@@ -2,13 +2,12 @@
 ===============================================================================
  Dealbot — aanbiedingen ophalen bij Dirk van den Broek
 
- Versie      : 1.0
- Reden       : Derde databron voor fase 1. Vomar bleek onbruikbaar: die zet zijn
-               aanbiedingen alleen in een digitale folder, waar geen betrouwbare
-               koppeling tussen product, prijs en inhoud uit te halen is. Dirk
-               levert de folder wél als geordende gegevens, per afdeling, met
-               per product de normale prijs en de actieprijs.
- Datum       : 31-07-2026 00:12
+ Versie      : 1.1
+ Reden       : De afdeling van Dirk (department) gaat nu naar het veld
+               "productgroep" in plaats van "variant" — zelfde gegeven, eerlijke
+               naam. Dirk deelt grof in ("Dranken, sap, koffie & thee"); juist
+               die brede groepen maakten vrije tekst onbetrouwbaar.
+ Datum       : 31-07-2026 01:12
 
  Onderdelen:
    haal_op()        - geeft alle actuele weekaanbiedingen terug
@@ -216,7 +215,7 @@ def _naar_aanbieding(product: dict[str, Any], actie: dict[str, Any]) -> Aanbiedi
         bron_id=str(product["productId"]),
         product_naam=info.get("headerText") or actie.get("headerText") or "",
         merk=info.get("brand"),
-        variant=info.get("department"),
+        productgroep=info.get("department"),
         actie_tekst=_actie_tekst(actie),
         actieprijs=_bedrag(product.get("offerPrice")),
         normale_prijs=_bedrag(product.get("normalPrice")),

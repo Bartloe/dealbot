@@ -1,20 +1,22 @@
 -- =============================================================================
 --  Dealbot — database-inrichting (Supabase / PostgreSQL)
 --
---  Versie      : 1.1
---  Reden       : Dirk toegevoegd als derde winkel waaruit wordt opgehaald.
---                Vomar staat er alvast bij maar staat uit: die publiceert zijn
---                aanbiedingen alleen als folder, en die is niet uit te lezen.
---  Datum       : 31-07-2026 00:12
+--  Versie      : 1.2
+--  Reden       : Het veld "variant" heet voortaan "productgroep" — dat is wat
+--                de winkels werkelijk meeleveren — en de zoektekst waar vrije
+--                tekst op zoekt bevat die groep niet meer.
+--  Datum       : 31-07-2026 01:12
 --
 --  Onderdelen:
 --    profielen    - weergavenaam per gebruiker, gekoppeld aan het inlogaccount
 --    winkels      - de supermarkten waaruit aanbiedingen worden opgehaald
---    zoekvragen   - wat een gebruiker in de gaten wil houden (merk/variant/tekst)
+--    zoekvragen   - wat een gebruiker in de gaten wil houden
+--                   (merk / productgroep / vrije tekst)
 --    aanbiedingen - de actuele aanbiedingen, inclusief berekende kilo-/literprijs
 --    scan_logs    - per ophaalronde het resultaat, om storingen te kunnen zien
 --
 --  Dit script is opnieuw uit te voeren zonder schade (alles is "if not exists").
+--  Draait de database al met de oude veldnamen, gebruik dan 03_zoekvelden.sql.
 -- =============================================================================
 
 create extension if not exists pg_trgm;
@@ -77,22 +79,24 @@ on conflict (id) do update
 
 
 -- -----------------------------------------------------------------------------
--- Zoekvragen — per gebruiker. Ingevulde velden moeten allemaal kloppen (EN-logica);
+-- Zoekvragen — per gebruiker. Drie ingangen die elk hun eigen stuk van de
+-- aanbieding afzoeken: het merk, de productgroep van de winkel, en vrije tekst
+-- in merk en productnaam. Ingevulde velden moeten allemaal kloppen (EN-logica);
 -- lege velden tellen niet mee. Hoofdletters worden genegeerd bij het vergelijken.
 -- -----------------------------------------------------------------------------
 create table if not exists public.zoekvragen (
     id             bigint generated always as identity primary key,
     gebruiker_id   uuid not null references auth.users (id) on delete cascade,
     merk           text,
-    variant        text,
+    productgroep   text,
     vrije_tekst    text,
     aangemaakt_op  timestamptz not null default now(),
 
     -- Minimaal één van de drie dimensies moet ingevuld zijn, anders matcht alles.
     constraint zoekvraag_niet_leeg check (
-        coalesce(nullif(btrim(merk),        ''), '') <> '' or
-        coalesce(nullif(btrim(variant),     ''), '') <> '' or
-        coalesce(nullif(btrim(vrije_tekst), ''), '') <> ''
+        coalesce(nullif(btrim(merk),         ''), '') <> '' or
+        coalesce(nullif(btrim(productgroep), ''), '') <> '' or
+        coalesce(nullif(btrim(vrije_tekst),  ''), '') <> ''
     )
 );
 
@@ -113,7 +117,12 @@ create table if not exists public.aanbiedingen (
 
     product_naam      text not null,
     merk              text,
-    variant           text,
+
+    -- De indeling van de winkel zelf, zoals "Toiletpapier - vochtig" (Albert
+    -- Heijn) of "Zuivel & kaas" (Dirk). Elke keten deelt anders in; het aan
+    -- elkaar knopen van die indelingen is werk voor later.
+    productgroep      text,
+
     actie_tekst       text,             -- bijv. "2e halve prijs", "25% korting"
 
     prijs             numeric(10, 2),   -- actieprijs; leeg bij "1+1 gratis"-achtige acties
@@ -134,13 +143,12 @@ create table if not exists public.aanbiedingen (
     afbeelding_url    text,
     opgehaald_op      timestamptz not null default now(),
 
-    -- Alles waarop een zoekvraag mag matchen, in kleine letters.
+    -- Waar de vrije tekst op zoekt: merk en productnaam, in kleine letters.
+    -- De productgroep zit hier bewust niet in — die heeft een eigen zoekveld.
+    -- Anders vindt "koffie" ook een krat bier, omdat dat bij Dirk in de groep
+    -- "Dranken, sap, koffie & thee" zit.
     zoektekst text generated always as (
-        lower(
-            coalesce(merk, '')         || ' ' ||
-            coalesce(product_naam, '') || ' ' ||
-            coalesce(variant, '')
-        )
+        lower(coalesce(merk, '') || ' ' || coalesce(product_naam, ''))
     ) stored,
 
     constraint aanbieding_uniek_per_winkel unique (winkel_id, bron_id)
@@ -151,6 +159,9 @@ create index if not exists idx_aanbiedingen_zoektekst
 
 create index if not exists idx_aanbiedingen_merk
     on public.aanbiedingen (lower(merk));
+
+create index if not exists idx_aanbiedingen_productgroep
+    on public.aanbiedingen (winkel_id, productgroep);
 
 create index if not exists idx_aanbiedingen_sleutel
     on public.aanbiedingen (product_sleutel);

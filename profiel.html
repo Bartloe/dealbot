@@ -31,8 +31,9 @@
         <section class="blok">
             <h2>Zoekvraag toevoegen</h2>
             <p class="uitleg">
-                Vul in wat voor jou belangrijk is. Vul je meerdere velden in, dan moeten
-                ze allemaal kloppen. Hoofdletters maken niet uit: <em>oro</em> vindt ook
+                Drie manieren om te zoeken, die je los of samen kunt gebruiken. Vul je
+                er meer dan één in, dan moeten ze allemaal kloppen — zo maak je een
+                zoekvraag scherper. Hoofdletters maken niet uit: <em>oro</em> vindt ook
                 <em>Oro</em>.
             </p>
 
@@ -40,15 +41,26 @@
                 <label>
                     Merk
                     <input type="text" id="merk" placeholder="bijvoorbeeld Lavazza">
+                    <small>Zoekt in het merk en in de productnaam.</small>
                 </label>
+
                 <label>
-                    Variant
-                    <input type="text" id="variant" placeholder="bijvoorbeeld espresso">
+                    Productgroep
+                    <select id="productgroep">
+                        <option value="">Groepen ophalen…</option>
+                    </select>
+                    <small>
+                        De indeling van de winkel zelf. Elke supermarkt deelt anders in,
+                        dus staat de winkel erbij; je kiest dus een groep bij één winkel.
+                    </small>
                 </label>
+
                 <label>
                     Vrije tekst
                     <input type="text" id="vrije_tekst" placeholder="bijvoorbeeld koffiebonen">
+                    <small>Zoekt alleen in het merk en de productnaam, niet in de groep.</small>
                 </label>
+
                 <button type="submit" id="opslaan">Zoekvraag opslaan</button>
             </form>
         </section>

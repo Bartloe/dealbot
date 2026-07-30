@@ -1,5 +1,30 @@
 # Wijzigingen — Dealbot
 
+## 31-07-2026 (nacht) — drie zoekvelden die elk hun eigen ding doen
+
+- **Het krat Amstel bij "koffie" is weg.** Vrije tekst zocht ook in de
+  productgroep van de winkel, en bij Dirk heet die groep "Dranken, sap, koffie
+  & thee". Daardoor kwam er bier, thee en frisdrank mee. Vrije tekst kijkt nu
+  alleen nog naar het merk en de productnaam. Gemeten in de lijst van deze week:
+  "koffie" gaf 136 treffers, waarvan 100 vals; er blijven er 36 over.
+- **"Variant" heet voortaan "Productgroep".** In dat veld stond altijd al de
+  indeling van de winkel zelf, niet een variant als "espresso". De naam wekte
+  de verkeerde verwachting: wie "merk Lavazza + variant oro" invulde, kreeg
+  niets.
+- **De productgroep is een keuzelijst geworden**, gevuld met de groepen die deze
+  week écht in de aanbiedingen zitten, met het aantal erbij. Je kunt dus geen
+  groep meer kiezen die niets oplevert.
+- Die lijst staat per winkel gegroepeerd, omdat elke keten anders indeelt:
+  Albert Heijn tot op "Toiletpapier - vochtig", Jumbo en Dirk niet verder dan
+  "Koffie en thee". Kies je een groep, dan zoek je dus binnen één winkel. Het
+  aan elkaar knopen van die indelingen blijft werk voor fase 2.
+- Het profielscherm zegt nu onder elk veld waar dat veld op zoekt, en zet "én"
+  tussen de delen van een zoekvraag: binnen één zoekvraag moeten ze allemaal
+  kloppen.
+- Bestaande zoekvragen zijn meeverhuisd: stond er bij "variant" een woord dat
+  geen echte productgroep is, dan is het naar vrije tekst gegaan in plaats van
+  te verdwijnen.
+
 ## 31-07-2026 — van één naar drie winkels
 
 - **Jumbo erbij**: 1242 weekaanbiedingen, waarvan 99,7% met een kilo- of

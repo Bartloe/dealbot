@@ -2,11 +2,12 @@
  * =============================================================================
  *  Dealbot — verkeer met de database vanuit de website
  *
- *  Versie      : 1.0
- *  Reden       : De website moet kunnen inloggen, de persoonlijke aanbiedingen
- *                ophalen en zoekvragen beheren. Al het databaseverkeer staat
- *                hier bij elkaar, los van de schermen zelf.
- *  Datum       : 30-07-2026 23:07
+ *  Versie      : 1.1
+ *  Reden       : Het zoekveld "variant" heet voortaan "productgroep" en wordt
+ *                gekozen uit een lijst. Daarvoor is een nieuwe vraag aan de
+ *                database nodig: welke groepen zitten er deze week in de
+ *                aanbiedingen?
+ *  Datum       : 31-07-2026 01:12
  *
  *  Onderdelen:
  *    meldAan()             - maakt een nieuw account met e-mailadres + pincode
@@ -14,6 +15,7 @@
  *    logUit()              - beëindigt de sessie
  *    haalGebruiker()       - geeft de ingelogde gebruiker, of niets
  *    haalAanbiedingen()    - de aanbiedingen die bij het profiel passen
+ *    haalProductgroepen()  - de groepen die deze week te kiezen zijn
  *    haalZoekvragen()      - de zoekvragen van de ingelogde gebruiker
  *    voegZoekvraagToe()    - slaat een nieuwe zoekvraag op
  *    verwijderZoekvraag()  - wist een zoekvraag
@@ -161,12 +163,22 @@ export async function haalAanbiedingen() {
     return data || [];
 }
 
+/**
+ * De productgroepen die op dit moment in de aanbiedingen zitten, met de winkel
+ * en het aantal erbij. Hiermee vult het profielscherm zijn keuzelijst, zodat er
+ * nooit een groep te kiezen is die niets oplevert.
+ */
+export async function haalProductgroepen() {
+    const data = await probeer('productgroepen ophalen', () => db.rpc('productgroepen'));
+    return data || [];
+}
+
 // -- zoekvragen --------------------------------------------------------------
 
 export async function haalZoekvragen() {
     const data = await probeer('zoekvragen ophalen', () => db
         .from('zoekvragen')
-        .select('id, merk, variant, vrije_tekst, aangemaakt_op')
+        .select('id, merk, productgroep, vrije_tekst, aangemaakt_op')
         .order('aangemaakt_op', { ascending: true }));
     return data || [];
 }
@@ -175,7 +187,7 @@ export async function haalZoekvragen() {
  * Slaat een nieuwe zoekvraag op. Minimaal één van de drie velden moet gevuld
  * zijn, anders zou de zoekvraag op álle aanbiedingen matchen.
  */
-export async function voegZoekvraagToe({ merk, variant, vrije_tekst }) {
+export async function voegZoekvraagToe({ merk, productgroep, vrije_tekst }) {
     const schoon = (waarde) => {
         const tekst = (waarde || '').trim();
         return tekst === '' ? null : tekst;
@@ -183,11 +195,11 @@ export async function voegZoekvraagToe({ merk, variant, vrije_tekst }) {
 
     const zoekvraag = {
         merk: schoon(merk),
-        variant: schoon(variant),
+        productgroep: schoon(productgroep),
         vrije_tekst: schoon(vrije_tekst),
     };
 
-    if (!zoekvraag.merk && !zoekvraag.variant && !zoekvraag.vrije_tekst) {
+    if (!zoekvraag.merk && !zoekvraag.productgroep && !zoekvraag.vrije_tekst) {
         throw new DealbotFout('Vul minstens één van de drie velden in.');
     }
 

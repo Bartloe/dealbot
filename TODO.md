@@ -1,6 +1,6 @@
 # Dealbot — takenlijst
 
-Bijgewerkt: 31-07-2026
+Bijgewerkt: 31-07-2026 01:12
 
 ## Fase 1 — de minimale basis (nu)
 
@@ -10,15 +10,16 @@ Bijgewerkt: 31-07-2026
 - [x] Ophaalscript Jumbo — 1242 aanbiedingen, 99,7% met kiloprijs
 - [x] Derde keten: Dirk van den Broek — 417 aanbiedingen, 94% met kiloprijs.
       Vomar viel af: die publiceert zijn aanbiedingen alleen als digitale folder
-- [ ] Zoekvelden herindelen: Merk, Productgroep (keuzelijst) en Vrije tekst als drie
-      onafhankelijke ingangen. Alle drie de ketens leveren de productgroep mee; die
-      staat nu in het veld "variant". Nu aan de beurt
+- [x] Zoekvelden herindeeld: Merk, Productgroep (keuzelijst per winkel) en Vrije tekst
+      zoeken elk in hun eigen deel van de aanbieding. Vrije tekst kijkt niet meer in de
+      productgroep, waardoor "koffie" geen krat bier meer oplevert
 - [ ] Uitzoeken of Nettorama betrouwbaar uit te lezen is (folder, geen prijzenlijst)
 - [x] Automatisch elke ochtend laten draaien via GitHub — 07:00, duurt een halve minuut
 - [x] Oude aanbiedingen pas opruimen nadat de nieuwe binnen zijn
 - [x] Prijs per kilo/liter berekenen; lukt dat niet, dan onderaan met de melding "kiloprijs onbekend"
 - [x] Startpagina: persoonlijke aanbiedingen, gegroepeerd per product, goedkoop naar duur
-- [x] Profielpagina: zoekvragen bekijken, toevoegen en verwijderen (merk, variant, vrije tekst)
+- [x] Profielpagina: zoekvragen bekijken, toevoegen en verwijderen
+      (merk, productgroep, vrije tekst)
 - [x] Melding als er deze week geen aanbiedingen zijn, met link naar de standaardprijzen-pagina
 - [ ] Testknop op de site om het ophalen handmatig te starten (via Supabase, zodat er geen sleutel op de openbare pagina staat) — gaat er na de testfase weer uit
 
@@ -32,10 +33,12 @@ Bijgewerkt: 31-07-2026
       Picnic. Plus, Coop, Hoogvliet en Lidl blokkeren automatisch ophalen
 - [ ] Vomar gebruiken voor de standaardprijzen-pagina: hun productlijst geeft het hele
       assortiment met normale prijs, merk, inhoud én streepjescode (EAN)
-- [ ] Productgroepen van de verschillende ketens aan elkaar knopen (elke keten hanteert
-      een eigen indeling), eventueel met een achtergrondlijst van producten en EAN-codes
+- [ ] Productgroepen van de verschillende ketens aan elkaar knopen, zodat één keuze
+      "koffie" alle winkels tegelijk afzoekt. Nu kies je een groep bij één winkel, want
+      elke keten deelt anders in: Albert Heijn 207 fijne groepen, Jumbo 18 en Dirk 11
+      grove. Eventueel met een achtergrondlijst van producten en EAN-codes
 - [ ] De standaardprijzen-pagina bouwen
-- [ ] Keuzelijsten in het profielscherm in plaats van vrije tekst
+- [ ] Ook merk als keuzelijst in het profielscherm (de productgroep is er al één)
 - [ ] Geschikt maken voor een mobiele app
 
 ## Nog uit te zoeken

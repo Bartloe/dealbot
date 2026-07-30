@@ -2,12 +2,12 @@
  * =============================================================================
  *  Dealbot — aanbiedingen leesbaar maken
  *
- *  Versie      : 1.0
- *  Reden       : De database levert kale getallen; de schermen moeten er
- *                bedragen, kiloprijzen en datums van maken die een mens leest.
- *                Deze regels staan los van de schermen zelf, zodat ze op elke
- *                pagina hetzelfde uitpakken.
- *  Datum       : 30-07-2026 23:07
+ *  Versie      : 1.1
+ *  Reden       : Een zoekvraag toont voortaan "Productgroep" in plaats van
+ *                "Variant", en zet er "én" tussen: binnen één zoekvraag moeten
+ *                alle ingevulde velden kloppen, en dat was op het scherm niet
+ *                te zien.
+ *  Datum       : 31-07-2026 01:12
  *
  *  Onderdelen:
  *    euro()               - bedrag als € 1,29
@@ -131,11 +131,17 @@ function isVergelijkbaar(regels) {
     ));
 }
 
-/** Een zoekvraag als één regel, bijvoorbeeld: Merk: Oro · Variant: espresso */
+/**
+ * Een zoekvraag als één regel, bijvoorbeeld:
+ * Merk: Lavazza · Productgroep: Koffiebonen · Tekst: oro
+ *
+ * Staan er meerdere delen, dan komt er "en" tussen: binnen één zoekvraag
+ * moeten ze namelijk allemaal kloppen, en dat moet je aan de regel kunnen zien.
+ */
 export function zoekvraagTekst(zoekvraag) {
     const delen = [];
     if (zoekvraag.merk) delen.push(`Merk: ${zoekvraag.merk}`);
-    if (zoekvraag.variant) delen.push(`Variant: ${zoekvraag.variant}`);
+    if (zoekvraag.productgroep) delen.push(`Productgroep: ${zoekvraag.productgroep}`);
     if (zoekvraag.vrije_tekst) delen.push(`Tekst: ${zoekvraag.vrije_tekst}`);
-    return delen.join(' · ');
+    return delen.join(' én ');
 }

@@ -2,11 +2,10 @@
  * =============================================================================
  *  Dealbot — de startpagina met mijn aanbiedingen
  *
- *  Versie      : 1.0
- *  Reden       : Wie de website opent, wil meteen de aanbiedingen zien die bij
- *                zijn eigen zoekvragen passen: per product bij elkaar en van
- *                goedkoop naar duur.
- *  Datum       : 30-07-2026 23:07
+ *  Versie      : 1.1
+ *  Reden       : Het zoekveld "variant" heet voortaan "productgroep"; de tekst
+ *                voor wie nog geen zoekvragen heeft, noemt nu de goede naam.
+ *  Datum       : 31-07-2026 01:12
  *
  *  Onderdelen:
  *    bouwPagina()      - regelt de toegang en haalt de gegevens op
@@ -134,7 +133,7 @@ function toonGeenResultaat(heeftZoekvragen) {
     if (!heeftZoekvragen) {
         kaart.append(maak('h2', null, 'Je hebt nog geen zoekvragen'));
         kaart.append(maak('p', null,
-            'Vertel eerst waar je op wilt letten — een merk, een variant of gewoon '
+            'Vertel eerst waar je op wilt letten — een merk, een productgroep of gewoon '
             + 'een stukje tekst. Daarna verschijnen hier de aanbiedingen die daarbij passen.'));
 
         const knop = maak('a', 'knop', 'Zoekvragen instellen');

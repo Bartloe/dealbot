@@ -2,11 +2,11 @@
 ===============================================================================
  Dealbot — aanbiedingen ophalen bij Albert Heijn
 
- Versie      : 1.0
- Reden       : Eerste databron voor fase 1. Albert Heijn geeft zijn eigen app
-               toegang tot de bonuslijst; daar sluiten we op aan omdat de
-               gegevens dan compleet en gestructureerd binnenkomen.
- Datum       : 27-07-2026 21:04
+ Versie      : 1.1
+ Reden       : De productgroep van Albert Heijn (subCategory) gaat nu naar het
+               veld "productgroep" in plaats van "variant" — zelfde gegeven,
+               eerlijke naam.
+ Datum       : 31-07-2026 01:12
 
  Onderdelen:
    haal_op()          - geeft alle actuele weekaanbiedingen terug
@@ -147,7 +147,7 @@ def _naar_aanbieding(product: dict[str, Any]) -> Aanbieding:
         bron_id=str(product["webshopId"]),
         product_naam=product.get("title") or "",
         merk=product.get("brand"),
-        variant=product.get("subCategory"),
+        productgroep=product.get("subCategory"),
         actie_tekst=product.get("bonusMechanism"),
         actieprijs=product.get("currentPrice"),
         normale_prijs=product.get("priceBeforeBonus"),

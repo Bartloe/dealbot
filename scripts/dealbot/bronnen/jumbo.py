@@ -2,12 +2,12 @@
 ===============================================================================
  Dealbot — aanbiedingen ophalen bij Jumbo
 
- Versie      : 1.0
- Reden       : Tweede databron voor fase 1. Jumbo publiceert de folder via de
-               gegevensingang van zijn eigen website. Die geeft per aanbieding
-               meteen alle producten die eronder vallen, inclusief prijs en
-               inhoud, zodat we dezelfde gegevens krijgen als bij Albert Heijn.
- Datum       : 31-07-2026 00:12
+ Versie      : 1.1
+ Reden       : De productgroep van Jumbo (category) gaat nu naar het veld
+               "productgroep" in plaats van "variant" — zelfde gegeven, eerlijke
+               naam. Jumbo deelt grof in ("Koffie en thee"), Albert Heijn fijn;
+               daarom staat de winkelnaam bij de keuzelijst op het scherm.
+ Datum       : 31-07-2026 01:12
 
  Onderdelen:
    haal_op()        - geeft alle actuele weekaanbiedingen terug
@@ -224,7 +224,7 @@ def _naar_aanbieding(product: dict[str, Any], actie: dict[str, Any]) -> Aanbiedi
         bron_id=str(product["sku"]),
         product_naam=product.get("title") or "",
         merk=product.get("brand"),
-        variant=product.get("category"),
+        productgroep=product.get("category"),
         actie_tekst=_actie_tekst(actie),
         actieprijs=_euro(prijzen.get("promoPrice")),
         normale_prijs=_euro(prijzen.get("price")),

@@ -135,7 +135,8 @@ label {
     font-size: 0.95rem;
 }
 
-input {
+input,
+select {
     display: block;
     width: 100%;
     margin-top: 5px;
@@ -147,10 +148,23 @@ input {
     background: var(--wit);
 }
 
-input:focus {
+input:focus,
+select:focus {
     outline: 2px solid var(--groen);
     outline-offset: 1px;
     border-color: var(--groen);
+}
+
+select:disabled { color: var(--grijs); background: #f5f5f5; }
+
+/* Het zinnetje onder een invoerveld dat uitlegt waar dat veld op zoekt. */
+label small {
+    display: block;
+    margin-top: 5px;
+    font-weight: 400;
+    font-size: 0.82rem;
+    line-height: 1.35;
+    color: var(--grijs);
 }
 
 button[type="submit"] {
@@ -349,7 +363,9 @@ button:disabled { opacity: 0.6; cursor: default; }
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 0 14px;
-        align-items: end;
+        /* Boven uitlijnen: de uitleg onder de velden is niet overal even lang,
+           dus de invoervelden zelf moeten op één lijn staan, niet de onderkant. */
+        align-items: start;
     }
     .zoekvraagformulier button[type="submit"] { grid-column: 1 / -1; justify-self: start; }
 }

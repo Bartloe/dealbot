@@ -2,11 +2,12 @@
 ===============================================================================
  Dealbot — gemeenschappelijke vorm van een aanbieding
 
- Versie      : 1.0
- Reden       : Elke winkel levert zijn gegevens anders aan. Door alles eerst naar
-               dezelfde vorm te vertalen, hoeft de rest van het programma niets
-               te weten over de bron.
- Datum       : 27-07-2026 21:04
+ Versie      : 1.1
+ Reden       : Het veld "variant" heet voortaan "productgroep". Alle drie de
+               winkels leveren daarin hun eigen indeling mee — dat is iets
+               anders dan een variant als "espresso", en de naam wekte de
+               verkeerde verwachting op het profielscherm.
+ Datum       : 31-07-2026 01:12
 
  Onderdelen:
    Aanbieding      - één aanbieding zoals die in de database terechtkomt
@@ -28,7 +29,7 @@ class Aanbieding:
     bron_id: str
     product_naam: str
     merk: str | None = None
-    variant: str | None = None
+    productgroep: str | None = None
     actie_tekst: str | None = None
     prijs: float | None = None
     normale_prijs: float | None = None
@@ -50,7 +51,7 @@ class Aanbieding:
             "bron_id": self.bron_id,
             "product_naam": self.product_naam,
             "merk": self.merk,
-            "variant": self.variant,
+            "productgroep": self.productgroep,
             "actie_tekst": self.actie_tekst,
             "prijs": self.prijs,
             "normale_prijs": self.normale_prijs,
@@ -72,7 +73,7 @@ def maak_aanbieding(
     bron_id: str,
     product_naam: str,
     merk: str | None = None,
-    variant: str | None = None,
+    productgroep: str | None = None,
     actie_tekst: str | None = None,
     actieprijs: float | None = None,
     normale_prijs: float | None = None,
@@ -96,7 +97,7 @@ def maak_aanbieding(
         bron_id=str(bron_id),
         product_naam=product_naam.strip(),
         merk=(merk or None),
-        variant=(variant or None),
+        productgroep=(productgroep or None),
         actie_tekst=(actie_tekst or None),
         prijs=prijs,
         normale_prijs=normale_prijs,
