@@ -1,0 +1,355 @@
+/*
+ * =============================================================================
+ *  Dealbot — vormgeving van de website
+ *
+ *  Versie      : 1.0
+ *  Reden       : Eén stijl voor alle pagina's: rustig, groot genoeg om op een
+ *                telefoon in de winkel te lezen, en met de prijs als blikvanger.
+ *  Datum       : 30-07-2026 23:07
+ *
+ *  Onderdelen:
+ *    basis         - kleuren, lettertype en de indeling van de pagina
+ *    bovenbalk     - naam en navigatie
+ *    inlogscherm   - het scherm vóór het inloggen
+ *    productkaart  - een product met zijn aanbiedingen
+ *    profiel       - zoekvragen en het formulier om er één toe te voegen
+ * =============================================================================
+ */
+
+:root {
+    --groen: #2f7d4f;
+    --groen-donker: #245f3d;
+    --rood: #b3261e;
+    --tekst: #1f2328;
+    --grijs: #5b6470;
+    --lijn: #e2e6ea;
+    --achtergrond: #f5f6f8;
+    --wit: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--tekst);
+    background: var(--achtergrond);
+}
+
+main {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px 16px 60px;
+}
+
+h1 { font-size: 1.6rem; margin: 12px 0 4px; }
+h2 { font-size: 1.15rem; margin: 0 0 8px; }
+
+.samenvatting { color: var(--grijs); margin: 0 0 16px; }
+.uitleg { color: var(--grijs); margin: 0 0 16px; }
+.bezig { color: var(--grijs); }
+
+/* -- bovenbalk ------------------------------------------------------------ */
+
+.balk {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--groen);
+    color: var(--wit);
+}
+
+.merk {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--wit);
+    text-decoration: none;
+}
+
+.balk nav {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.balk nav a {
+    color: var(--wit);
+    text-decoration: none;
+    padding-bottom: 2px;
+}
+
+.balk nav a.huidig { border-bottom: 2px solid var(--wit); }
+
+.balk nav button {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    color: var(--wit);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+
+.balk nav button:hover { background: rgba(255, 255, 255, 0.15); }
+
+/* -- meldingen ------------------------------------------------------------ */
+
+.melding {
+    margin: 0 0 16px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border-left: 4px solid var(--rood);
+    background: #fdecea;
+    color: var(--rood);
+}
+
+.melding.goed {
+    border-left-color: var(--groen);
+    background: #e8f4ec;
+    color: var(--groen-donker);
+}
+
+/* -- inlogscherm ---------------------------------------------------------- */
+
+.inlogkaart {
+    max-width: 380px;
+    margin: 60px auto;
+    padding: 28px 24px;
+    background: var(--wit);
+    border-radius: 12px;
+    box-shadow: 0 2px 14px rgba(0, 0, 0, 0.08);
+}
+
+.inlogkaart h1 { margin: 0; text-align: center; color: var(--groen); }
+.ondertitel { margin: 4px 0 22px; text-align: center; color: var(--grijs); }
+
+label {
+    display: block;
+    margin-bottom: 14px;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+input {
+    display: block;
+    width: 100%;
+    margin-top: 5px;
+    padding: 11px 12px;
+    font-size: 1rem;
+    font-weight: 400;
+    border: 1px solid var(--lijn);
+    border-radius: 8px;
+    background: var(--wit);
+}
+
+input:focus {
+    outline: 2px solid var(--groen);
+    outline-offset: 1px;
+    border-color: var(--groen);
+}
+
+button[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--wit);
+    background: var(--groen);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+button[type="submit"]:hover:not(:disabled) { background: var(--groen-donker); }
+button:disabled { opacity: 0.6; cursor: default; }
+
+.schakelaar {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    padding: 6px;
+    background: none;
+    border: none;
+    color: var(--groen-donker);
+    font-size: 0.95rem;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+/* -- productkaart --------------------------------------------------------- */
+
+.product {
+    margin-bottom: 14px;
+    padding: 14px 16px;
+    background: var(--wit);
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+}
+
+.producttop {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.producttop img {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.producttekst h2 { margin: 0; }
+.aantal { margin: 2px 0 0; font-size: 0.85rem; color: var(--grijs); }
+
+.aanbiedingen {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.regel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    align-items: baseline;
+    padding: 8px 0;
+    border-top: 1px solid var(--lijn);
+}
+
+.winkel {
+    min-width: 110px;
+    font-weight: 600;
+}
+
+.prijzen { display: inline-flex; gap: 8px; align-items: baseline; }
+.prijs { font-size: 1.15rem; color: var(--groen-donker); }
+.oude-prijs { color: var(--grijs); }
+
+.actie {
+    padding: 2px 8px;
+    font-size: 0.85rem;
+    color: var(--groen-donker);
+    background: #e8f4ec;
+    border-radius: 20px;
+}
+
+.kiloprijs { color: var(--grijs); font-size: 0.9rem; }
+
+.kanttekening {
+    margin: 10px 0 0;
+    font-size: 0.85rem;
+    font-style: italic;
+    color: var(--grijs);
+}
+
+.kiloprijs.onbekend { font-style: italic; }
+.geldig { color: var(--grijs); font-size: 0.85rem; }
+
+.label {
+    padding: 2px 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--wit);
+    background: var(--groen);
+    border-radius: 20px;
+}
+
+/* -- lege lijst en knoppen ------------------------------------------------ */
+
+.leeg {
+    padding: 30px 24px;
+    text-align: center;
+    background: var(--wit);
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+}
+
+.leeg p { color: var(--grijs); max-width: 460px; margin: 8px auto 20px; }
+
+.knoppen {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+
+.knop {
+    display: inline-block;
+    padding: 11px 18px;
+    font-weight: 600;
+    color: var(--wit);
+    background: var(--groen);
+    border-radius: 8px;
+    text-decoration: none;
+}
+
+.knop:hover { background: var(--groen-donker); }
+
+.knop.tweede {
+    color: var(--groen-donker);
+    background: var(--wit);
+    border: 1px solid var(--groen);
+}
+
+.knop.tweede:hover { background: #e8f4ec; }
+
+/* -- profiel -------------------------------------------------------------- */
+
+.blok {
+    margin-bottom: 20px;
+    padding: 18px 20px;
+    background: var(--wit);
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+}
+
+.zoekvraaglijst {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.zoekvraag {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-top: 1px solid var(--lijn);
+}
+
+.zoekvraag:first-child { border-top: none; }
+.omschrijving { font-weight: 600; }
+.leeg-regel { color: var(--grijs); padding: 6px 0; }
+
+.verwijder {
+    padding: 7px 14px;
+    font-size: 0.9rem;
+    color: var(--rood);
+    background: var(--wit);
+    border: 1px solid var(--rood);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.verwijder:hover:not(:disabled) { background: #fdecea; }
+
+.zoekvraagformulier button[type="submit"] { width: auto; padding: 12px 22px; }
+
+@media (min-width: 620px) {
+    .zoekvraagformulier {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0 14px;
+        align-items: end;
+    }
+    .zoekvraagformulier button[type="submit"] { grid-column: 1 / -1; justify-self: start; }
+}

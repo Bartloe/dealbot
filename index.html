@@ -3,20 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dealbot - Aanbiedingen</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; background-color: #f4f4f9; }
-        .container { background: white; padding: 30px; border-radius: 10px; display: inline-block; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        h1 { color: #333; }
-        p { color: #666; }
-        .badge { background: #28a745; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; }
-    </style>
+    <title>Dealbot — mijn aanbiedingen</title>
+    <link rel="stylesheet" href="assets/stijl.css">
 </head>
 <body>
-    <div class="container">
-        <h1>🤖 Dealbot is live!</h1>
-        <p>Welkom op de website om jouw koopjes te jagen.</p>
-        <p>Status van de scraper: <span class="badge">In afwachting van backend</span></p>
-    </div>
+    <header class="balk" data-na-inloggen hidden>
+        <a class="merk" href="index.html">Dealbot</a>
+        <nav>
+            <a class="huidig" href="index.html">Aanbiedingen</a>
+            <a href="profiel.html">Mijn profiel</a>
+            <button type="button" id="uitloggen">Uitloggen</button>
+        </nav>
+    </header>
+
+    <div id="inlogscherm" hidden></div>
+
+    <main data-na-inloggen hidden>
+        <h1>Mijn aanbiedingen</h1>
+        <p class="samenvatting" id="samenvatting" hidden></p>
+        <p class="melding" id="melding" role="alert" hidden></p>
+        <div id="lijst"></div>
+    </main>
+
+    <script type="module" src="assets/start.js"></script>
 </body>
 </html>

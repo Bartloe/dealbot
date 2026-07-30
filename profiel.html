@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dealbot — mijn profiel</title>
+    <link rel="stylesheet" href="assets/stijl.css">
+</head>
+<body>
+    <header class="balk" data-na-inloggen hidden>
+        <a class="merk" href="index.html">Dealbot</a>
+        <nav>
+            <a href="index.html">Aanbiedingen</a>
+            <a class="huidig" href="profiel.html">Mijn profiel</a>
+            <button type="button" id="uitloggen">Uitloggen</button>
+        </nav>
+    </header>
+
+    <div id="inlogscherm" hidden></div>
+
+    <main data-na-inloggen hidden>
+        <h1>Mijn profiel</h1>
+        <p class="samenvatting">Ingelogd als <span id="adres"></span></p>
+        <p class="melding" id="melding" role="alert" hidden></p>
+
+        <section class="blok">
+            <h2>Waar let Dealbot voor jou op?</h2>
+            <ul class="zoekvraaglijst" id="zoekvragen"></ul>
+        </section>
+
+        <section class="blok">
+            <h2>Zoekvraag toevoegen</h2>
+            <p class="uitleg">
+                Vul in wat voor jou belangrijk is. Vul je meerdere velden in, dan moeten
+                ze allemaal kloppen. Hoofdletters maken niet uit: <em>oro</em> vindt ook
+                <em>Oro</em>.
+            </p>
+
+            <form id="zoekvraagformulier" class="zoekvraagformulier" novalidate>
+                <label>
+                    Merk
+                    <input type="text" id="merk" placeholder="bijvoorbeeld Lavazza">
+                </label>
+                <label>
+                    Variant
+                    <input type="text" id="variant" placeholder="bijvoorbeeld espresso">
+                </label>
+                <label>
+                    Vrije tekst
+                    <input type="text" id="vrije_tekst" placeholder="bijvoorbeeld koffiebonen">
+                </label>
+                <button type="submit" id="opslaan">Zoekvraag opslaan</button>
+            </form>
+        </section>
+    </main>
+
+    <script type="module" src="assets/profiel.js"></script>
+</body>
+</html>
