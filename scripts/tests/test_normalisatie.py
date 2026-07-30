@@ -2,11 +2,11 @@
 ===============================================================================
  Dealbot — controle op de prijsnormalisatie
 
- Versie      : 1.0
- Reden       : Bewijzen dat de kiloprijs klopt, ook bij rare verpakkingen en
-               aanbiedingsvormen. Dit is het verificatiemoment voor de stap
-               "automatische prijsnormalisatie".
- Datum       : 27-07-2026 21:04
+ Versie      : 1.1
+ Reden       : Controles toegevoegd voor de aanbiedingsvormen en verpakkingen
+               die Jumbo gebruikt: een bedrag korting in euro's, en inhoud die
+               als "570 ml" of "6 stuks" wordt aangeleverd.
+ Datum       : 31-07-2026 00:12
 
  Uitvoeren met: python scripts/tests/test_normalisatie.py
 ===============================================================================
@@ -45,6 +45,9 @@ controleer("5 stuks", lees_inhoud("5 stuks").norm_eenheid, "stuk")
 controleer("aantal bij 5 stuks", lees_inhoud("5 stuks").norm_waarde, 5.0)
 controleer("2-pack", lees_inhoud("2-pack").norm_waarde, 2.0)
 controleer("per stuk", lees_inhoud("per stuk").norm_eenheid, "stuk")
+controleer("570 ml (zoals Jumbo aanlevert)",
+           round(lees_inhoud("570 ml").norm_waarde, 5), 0.57)
+controleer("6 stuks (zoals Jumbo aanlevert)", lees_inhoud("6 stuks").norm_eenheid, "stuk")
 
 # Grensgevallen: hier hoort niets uit te komen in plaats van een gok.
 controleer("lege tekst", lees_inhoud(""), None)
@@ -62,6 +65,10 @@ controleer("2 + 1 gratis", effectieve_prijs("2 + 1 gratis", None, 3.00), 2.0)
 controleer("2e halve prijs", effectieve_prijs("2e halve prijs", None, 2.00), 1.5)
 controleer("2e gratis", effectieve_prijs("2e gratis", None, 2.00), 1.0)
 controleer("25% korting", effectieve_prijs("25% korting", None, 4.00), 3.0)
+controleer("1,00 korting", effectieve_prijs("1,00 korting", None, 3.49), 2.49)
+controleer("5,00 korting", effectieve_prijs("5,00 korting", None, 21.99), 16.99)
+controleer("korting groter dan de prijs",
+           effectieve_prijs("5,00 korting", None, 3.00), 0.0)
 controleer("geen actietekst", effectieve_prijs(None, None, 2.50), 2.5)
 controleer("niets bekend", effectieve_prijs(None, None, None), None)
 controleer("onbekende vorm", effectieve_prijs("gratis kruiden erbij", None, 2.00), 2.0)

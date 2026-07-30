@@ -2,10 +2,10 @@
 ===============================================================================
  Dealbot — het dagelijkse ophalen van aanbiedingen
 
- Versie      : 1.0
- Reden       : Eén startpunt dat alle actieve winkels langsgaat, de aanbiedingen
-               wegschrijft en per winkel vastlegt of het gelukt is.
- Datum       : 27-07-2026 21:04
+ Versie      : 1.1
+ Reden       : Jumbo toegevoegd als tweede winkel. Elke winkel wordt apart
+               afgehandeld, zodat een storing bij de één de ander niet raakt.
+ Datum       : 31-07-2026 00:12
 
  Onderdelen:
    main()          - gaat alle winkels langs en vat het resultaat samen
@@ -27,12 +27,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from dealbot.bronnen import albert_heijn  # noqa: E402
+from dealbot.bronnen import albert_heijn, jumbo  # noqa: E402
 from dealbot.database import Database, DatabaseFout  # noqa: E402
 
 # Elke winkel met de module die zijn aanbiedingen ophaalt.
 WINKELS = [
     (albert_heijn.WINKEL_ID, albert_heijn.WINKEL_NAAM, albert_heijn.haal_op),
+    (jumbo.WINKEL_ID, jumbo.WINKEL_NAAM, jumbo.haal_op),
 ]
 
 log = logging.getLogger("dealbot")

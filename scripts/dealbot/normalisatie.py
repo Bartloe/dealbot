@@ -2,10 +2,11 @@
 ===============================================================================
  Dealbot — prijsnormalisatie
 
- Versie      : 1.0
- Reden       : Aanbiedingen van verschillende winkels vergelijkbaar maken door de
-               inhoud te herkennen en de prijs om te rekenen naar kilo of liter.
- Datum       : 27-07-2026 21:04
+ Versie      : 1.1
+ Reden       : Jumbo gebruikt de aanbiedingsvorm "1,00 korting" — een bedrag in
+               euro's van de prijs af. Die werd nog niet omgerekend, waardoor
+               zulke aanbiedingen de normale prijs hielden.
+ Datum       : 31-07-2026 00:12
 
  Onderdelen:
    lees_inhoud()        - herkent "400 g", "2 x 125 g", "1,5 l", "5 stuks"
@@ -170,6 +171,13 @@ def effectieve_prijs(
         return round(basis * 0.75, 4)
     if re.search(r"2e\s+gratis", tekst):
         return round(basis * 0.5, 4)
+
+    # "1,00 korting", "5,00 korting" — een bedrag in euro's van de prijs af
+    match = re.search(r"€?\s*(\d+[.,]\d{2})\s*korting", tekst)
+    if match:
+        bedrag = _getal(match.group(1))
+        if bedrag is not None:
+            return round(max(basis - bedrag, 0.0), 4)
 
     # "25% korting", "15% volume voordeel"
     match = re.search(r"(\d+(?:[.,]\d+)?)\s*%", tekst)
