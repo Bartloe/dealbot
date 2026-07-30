@@ -4,14 +4,14 @@ Bijgewerkt: 27-07-2026
 
 ## Fase 1 — de minimale basis (nu)
 
-- [ ] Database inrichten in Supabase (gebruikers, zoekvragen, aanbiedingen, producten)
+- [x] Database inrichten in Supabase (gebruikers, zoekvragen, aanbiedingen, logboek)
 - [ ] Inloggen met e-mailadres + pincode van 4 cijfers; mensen mogen zichzelf aanmelden
-- [ ] Ophaalscript Albert Heijn
+- [x] Ophaalscript Albert Heijn — 1024 weekaanbiedingen, 99% met kiloprijs
 - [ ] Ophaalscript Jumbo
 - [ ] Uitzoeken of Nettorama betrouwbaar uit te lezen is (folder, geen prijzenlijst)
-- [ ] Automatisch elke ochtend laten draaien via GitHub
-- [ ] Oude aanbiedingen pas opruimen nadat de nieuwe binnen zijn
-- [ ] Prijs per kilo/liter berekenen; lukt dat niet, dan onderaan met de melding "kiloprijs onbekend"
+- [x] Automatisch elke ochtend laten draaien via GitHub — 07:00, duurt een halve minuut
+- [x] Oude aanbiedingen pas opruimen nadat de nieuwe binnen zijn
+- [x] Prijs per kilo/liter berekenen; lukt dat niet, dan onderaan met de melding "kiloprijs onbekend"
 - [ ] Startpagina: persoonlijke aanbiedingen, gegroepeerd per product, goedkoop naar duur
 - [ ] Profielpagina: zoekvragen bekijken, toevoegen en verwijderen (merk, variant, vrije tekst)
 - [ ] Melding als er deze week geen aanbiedingen zijn, met link naar de standaardprijzen-pagina
