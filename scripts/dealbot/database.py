@@ -158,9 +158,14 @@ class Database:
         ochtends, dan blijft de lijst van gisteren staan in plaats van dat de
         website een dag leeg is.
         """
+        # Het moment gaat als parameter mee en niet in het adres zelf: een
+        # tijdstip bevat een plusteken, en dat betekent in een webadres "spatie".
         self._rest(
-            "DELETE",
-            f"aanbiedingen?winkel_id=eq.{winkel_id}&opgehaald_op=lt.{moment}",
+            "DELETE", "aanbiedingen",
+            params={
+                "winkel_id": f"eq.{winkel_id}",
+                "opgehaald_op": f"lt.{moment}",
+            },
             headers={"Prefer": "return=minimal"},
         )
         log.info("  Aanbiedingen van vóór deze ronde opgeruimd.")

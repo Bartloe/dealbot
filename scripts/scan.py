@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import sys
 from pathlib import Path
 
@@ -35,6 +36,29 @@ WINKELS = [
 ]
 
 log = logging.getLogger("dealbot")
+
+
+def _laad_env() -> None:
+    """
+    Leest een .env-bestand uit de projectmap, als dat er staat.
+
+    Zo werkt het script op de laptop zonder gedoe met omgevingsvariabelen. Op
+    GitHub staat dat bestand er niet; daar komen de gegevens uit de beveiligde
+    instellingen van de repo.
+    """
+    bestand = Path(__file__).resolve().parents[1] / ".env"
+    if not bestand.exists():
+        return
+
+    try:
+        for regel in bestand.read_text(encoding="utf-8").splitlines():
+            regel = regel.strip()
+            if not regel or regel.startswith("#") or "=" not in regel:
+                continue
+            naam, waarde = regel.split("=", 1)
+            os.environ.setdefault(naam.strip(), waarde.strip().strip("\"'"))
+    except OSError as fout:
+        log.warning("Kon .env niet lezen: %s", fout)
 
 
 def _stel_logging_in(uitgebreid: bool) -> None:
@@ -121,6 +145,7 @@ def main() -> int:
     keuzes = argumenten.parse_args()
 
     _stel_logging_in(keuzes.uitgebreid)
+    _laad_env()
 
     if keuzes.proef:
         totaal = proefdraai()
