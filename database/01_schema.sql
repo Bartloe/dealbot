@@ -1,11 +1,11 @@
 -- =============================================================================
 --  Dealbot — database-inrichting (Supabase / PostgreSQL)
 --
---  Versie      : 1.0
---  Reden       : Eerste inrichting van de database voor fase 1: gebruikers met
---                een eigen profiel, hun zoekvragen, en de dagelijks opgehaalde
---                aanbiedingen van Albert Heijn, Jumbo en Nettorama.
---  Datum       : 27-07-2026 21:04
+--  Versie      : 1.1
+--  Reden       : Dirk toegevoegd als derde winkel waaruit wordt opgehaald.
+--                Vomar staat er alvast bij maar staat uit: die publiceert zijn
+--                aanbiedingen alleen als folder, en die is niet uit te lezen.
+--  Datum       : 31-07-2026 00:12
 --
 --  Onderdelen:
 --    profielen    - weergavenaam per gebruiker, gekoppeld aan het inlogaccount
@@ -68,7 +68,9 @@ create table if not exists public.winkels (
 insert into public.winkels (id, code, naam, actief) values
     (1, 'ah',        'Albert Heijn', true),
     (2, 'jumbo',     'Jumbo',        true),
-    (3, 'nettorama', 'Nettorama',    false)
+    (3, 'nettorama', 'Nettorama',    false),
+    (4, 'dirk',      'Dirk',         true),
+    (5, 'vomar',     'Vomar',        false)
 on conflict (id) do update
     set code = excluded.code,
         naam = excluded.naam;

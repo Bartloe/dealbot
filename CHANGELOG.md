@@ -1,5 +1,22 @@
 # Wijzigingen — Dealbot
 
+## 31-07-2026 — van één naar drie winkels
+
+- **Jumbo erbij**: 1242 weekaanbiedingen, waarvan 99,7% met een kilo- of
+  literprijs. Zit een product in meer dan één actie, dan blijft de goedkoopste
+  staan.
+- **Dirk van den Broek erbij**: 417 aanbiedingen, 94% met een kilo- of
+  literprijs.
+- Vomar valt af als bron van aanbiedingen. Hun productlijst is prima, maar de
+  aanbiedingen staan alleen in een digitale folder: plaatjes met losse
+  tekstflarden. Daar is geen betrouwbare koppeling product–prijs–inhoud uit te
+  halen. Vomar blijft wél interessant voor de standaardprijzen-pagina later.
+- Nieuwe aanbiedingsvorm herkend: een bedrag korting in euro's ("1,00 korting").
+  Die werd eerst niet omgerekend, waardoor zo'n aanbieding de normale prijs hield.
+- Producten met een onmogelijke prijs (een paar cent voor een kilo kaas) blijven
+  buiten de lijst; dat is een fout bij de winkel en zou de lijst aanvoeren.
+- Samen staan er nu ruim 2600 aanbiedingen klaar, opgehaald in een halve minuut.
+
 ## 30-07-2026 (avond) — de website staat
 
 - Inloggen werkt met e-mailadres en een pincode van vier cijfers. Wie nog geen

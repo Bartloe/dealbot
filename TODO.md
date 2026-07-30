@@ -1,18 +1,18 @@
 # Dealbot — takenlijst
 
-Bijgewerkt: 30-07-2026
+Bijgewerkt: 31-07-2026
 
 ## Fase 1 — de minimale basis (nu)
 
 - [x] Database inrichten in Supabase (gebruikers, zoekvragen, aanbiedingen, logboek)
 - [x] Inloggen met e-mailadres + pincode van 4 cijfers; mensen mogen zichzelf aanmelden
 - [x] Ophaalscript Albert Heijn — 1024 weekaanbiedingen, 99% met kiloprijs
-- [ ] Ophaalscript Jumbo
-- [ ] Derde keten met een toegankelijke gegevensingang — voorkeur Vomar; kan dat niet,
-      dan een alternatief voorleggen ter keuze
+- [x] Ophaalscript Jumbo — 1242 aanbiedingen, 99,7% met kiloprijs
+- [x] Derde keten: Dirk van den Broek — 417 aanbiedingen, 94% met kiloprijs.
+      Vomar viel af: die publiceert zijn aanbiedingen alleen als digitale folder
 - [ ] Zoekvelden herindelen: Merk, Productgroep (keuzelijst) en Vrije tekst als drie
-      onafhankelijke ingangen. Albert Heijn levert de productgroep al mee; die staat nu
-      in het veld "variant". Pas oppakken nádat de tweede en derde keten binnen zijn
+      onafhankelijke ingangen. Alle drie de ketens leveren de productgroep mee; die
+      staat nu in het veld "variant". Nu aan de beurt
 - [ ] Uitzoeken of Nettorama betrouwbaar uit te lezen is (folder, geen prijzenlijst)
 - [x] Automatisch elke ochtend laten draaien via GitHub — 07:00, duurt een halve minuut
 - [x] Oude aanbiedingen pas opruimen nadat de nieuwe binnen zijn
@@ -28,7 +28,10 @@ Bijgewerkt: 30-07-2026
 - [ ] Bevestigingsmail bij het aanmelden van een nieuw account
 - [ ] In het profiel kunnen aanvinken bij welke winkels je daadwerkelijk komt, zodat je geen
       aanbiedingen ziet van een winkel dertig kilometer verderop
-- [ ] Meer winkels: Bol, Amazon, Dirk, Plus, Lidl, Aldi, Hoogvliet, Vomar, DekaMarkt, Picnic
+- [ ] Meer winkels: DekaMarkt (werkt precies als Dirk, dus weinig werk), Bol, Amazon,
+      Picnic. Plus, Coop, Hoogvliet en Lidl blokkeren automatisch ophalen
+- [ ] Vomar gebruiken voor de standaardprijzen-pagina: hun productlijst geeft het hele
+      assortiment met normale prijs, merk, inhoud én streepjescode (EAN)
 - [ ] Productgroepen van de verschillende ketens aan elkaar knopen (elke keten hanteert
       een eigen indeling), eventueel met een achtergrondlijst van producten en EAN-codes
 - [ ] De standaardprijzen-pagina bouwen
@@ -38,4 +41,5 @@ Bijgewerkt: 30-07-2026
 ## Nog uit te zoeken
 
 - [ ] Nettorama: alleen digitale folder beschikbaar? Zo ja, hoe betrouwbaar is dat uit te lezen?
+      (Bij Vomar bleek zo'n folder níet betrouwbaar uit te lezen — dat is een voorproefje)
 - [ ] Verschillen de aanbiedingen per filiaal in de regio Utrecht / Noord-Holland?

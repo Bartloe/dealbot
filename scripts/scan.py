@@ -2,9 +2,10 @@
 ===============================================================================
  Dealbot — het dagelijkse ophalen van aanbiedingen
 
- Versie      : 1.1
- Reden       : Jumbo toegevoegd als tweede winkel. Elke winkel wordt apart
-               afgehandeld, zodat een storing bij de één de ander niet raakt.
+ Versie      : 1.2
+ Reden       : Jumbo en Dirk toegevoegd als tweede en derde winkel. Elke winkel
+               wordt apart afgehandeld, zodat een storing bij de één de ander
+               niet raakt.
  Datum       : 31-07-2026 00:12
 
  Onderdelen:
@@ -27,13 +28,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from dealbot.bronnen import albert_heijn, jumbo  # noqa: E402
+from dealbot.bronnen import albert_heijn, dirk, jumbo  # noqa: E402
 from dealbot.database import Database, DatabaseFout  # noqa: E402
 
 # Elke winkel met de module die zijn aanbiedingen ophaalt.
 WINKELS = [
     (albert_heijn.WINKEL_ID, albert_heijn.WINKEL_NAAM, albert_heijn.haal_op),
     (jumbo.WINKEL_ID, jumbo.WINKEL_NAAM, jumbo.haal_op),
+    (dirk.WINKEL_ID, dirk.WINKEL_NAAM, dirk.haal_op),
 ]
 
 log = logging.getLogger("dealbot")
