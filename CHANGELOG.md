@@ -1,5 +1,16 @@
 # Wijzigingen — Dealbot
 
+## 31-07-2026 (ochtend) — knop om de 07.00-run met de hand te starten
+
+- Op de startpagina staat tijdelijk een blokje **07.00-run**. Daarmee is de
+  dagelijkse ophaalronde meteen te starten, zodat een testresultaat niet tot de
+  volgende ochtend hoeft te wachten.
+- De knop opent GitHub, waar de run met één klik begint. Dat is met opzet zo:
+  de sleutel die zo'n run mag starten hoort niet in een openbare website. Ernaast
+  staat een knop om de pagina te verversen zodra de run klaar is.
+- Bedoeld om er weer uit te halen: de sectie in `index.html`, `assets/handrun.js`
+  en het blokje `.handrun` in `assets/stijl.css`.
+
 ## 31-07-2026 (nacht) — drie zoekvelden die elk hun eigen ding doen
 
 - **Het krat Amstel bij "koffie" is weg.** Vrije tekst zocht ook in de

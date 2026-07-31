@@ -2,16 +2,17 @@
  * =============================================================================
  *  Dealbot — vormgeving van de website
  *
- *  Versie      : 1.0
- *  Reden       : Eén stijl voor alle pagina's: rustig, groot genoeg om op een
- *                telefoon in de winkel te lezen, en met de prijs als blikvanger.
- *  Datum       : 30-07-2026 23:07
+ *  Versie      : 1.1
+ *  Reden       : Er staat tijdens het testen een blokje op de startpagina om de
+ *                ochtendrun met de hand te starten; dat heeft eigen opmaak nodig.
+ *  Datum       : 31-07-2026 09:34
  *
  *  Onderdelen:
  *    basis         - kleuren, lettertype en de indeling van de pagina
  *    bovenbalk     - naam en navigatie
  *    inlogscherm   - het scherm vóór het inloggen
  *    productkaart  - een product met zijn aanbiedingen
+ *    handrun       - het tijdelijke blokje om de 07.00-run te starten
  *    profiel       - zoekvragen en het formulier om er één toe te voegen
  * =============================================================================
  */
@@ -313,6 +314,27 @@ button:disabled { opacity: 0.6; cursor: default; }
 }
 
 .knop.tweede:hover { background: #e8f4ec; }
+
+/* -- handmatige 07.00-run (TIJDELIJK, tijdens het testen) ----------------- */
+
+.handrun {
+    margin: 0 0 20px;
+    padding: 14px 16px;
+    background: var(--wit);
+    border: 1px dashed var(--groen);
+    border-radius: 10px;
+}
+
+.handrun h2 { color: var(--groen-donker); }
+.handrun p { margin: 0 0 12px; font-size: 0.9rem; color: var(--grijs); }
+.handrun .knoppen { justify-content: flex-start; }
+
+/* De verversknop is een echte knop en erft het lettertype niet vanzelf. */
+.handrun button.knop {
+    font-family: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+}
 
 /* -- profiel -------------------------------------------------------------- */
 
