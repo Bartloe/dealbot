@@ -1,5 +1,19 @@
 # Wijzigingen — Dealbot
 
+## 31-07-2026 (ochtend) — ochtendrun mislukte, hersteld
+
+- De ronde van vanochtend schreef niets weg: de database herkende het
+  hernoemde veld `productgroep` nog niet, omdat zijn interne overzicht van de
+  tabellen na de naamswijziging van vannacht nog niet was ververst. Alle drie de
+  winkels liepen erop stuk.
+- De lijst van gisteren bleef gewoon staan — het opruimen gebeurt pas nadat het
+  wegschrijven gelukt is, dus de website is geen moment leeg geweest.
+- Handmatig opnieuw gedraaid: 3257 aanbiedingen binnen (Albert Heijn 1595,
+  Jumbo 1242, Dirk 420). Er is dus niets blijvend mis; het was eenmalig.
+- De hulpstukken van de ochtendrun (`checkout` en `setup-python`) zijn
+  bijgewerkt naar versie 7. GitHub waarschuwde dat de oude motor eronder
+  verdwijnt.
+
 ## 31-07-2026 (ochtend) — knop om de 07.00-run met de hand te starten
 
 - Op de startpagina staat tijdelijk een blokje **07.00-run**. Daarmee is de
