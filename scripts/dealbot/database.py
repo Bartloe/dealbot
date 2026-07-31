@@ -2,17 +2,19 @@
 ===============================================================================
  Dealbot — verkeer met de database (Supabase)
 
- Versie      : 1.0
- Reden       : De opgehaalde aanbiedingen wegschrijven, oude aanbiedingen pas
-               opruimen nadat de nieuwe binnen zijn, en per ophaalronde
-               vastleggen of het gelukt is.
- Datum       : 27-07-2026 21:04
+ Versie      : 1.1
+ Reden       : Dealbot onthoudt voortaan welke productgroepen hij ooit bij een
+               winkel heeft gezien. Zonder dat kon je alleen een zoekvraag
+               zetten op een groep die deze week toevallig in de bonus was,
+               terwijl je juist wilt wachten tot dat gebeurt.
+ Datum       : 31-07-2026 11:31
 
  Onderdelen:
-   Database.start_ronde()     - zet een regel in het logboek en geeft het moment
-   Database.schrijf()         - schrijft de aanbiedingen weg in blokken
-   Database.ruim_oude_op()    - wist wat niet in deze ronde is ververst
-   Database.sluit_ronde()     - schrijft het resultaat in het logboek
+   Database.start_ronde()      - zet een regel in het logboek en geeft het moment
+   Database.schrijf()          - schrijft de aanbiedingen weg in blokken
+   Database.ruim_oude_op()     - wist wat niet in deze ronde is ververst
+   Database.onthoud_groepen()  - vult de blijvende lijst met productgroepen aan
+   Database.sluit_ronde()      - schrijft het resultaat in het logboek
 ===============================================================================
 """
 
@@ -169,6 +171,41 @@ class Database:
             headers={"Prefer": "return=minimal"},
         )
         log.info("  Aanbiedingen van vóór deze ronde opgeruimd.")
+
+    # -- productgroepen ------------------------------------------------------
+
+    def onthoud_groepen(self, winkel_id: int, aanbiedingen: list[Aanbieding]) -> int:
+        """
+        Vult de blijvende lijst met productgroepen aan.
+
+        De aanbiedingen worden elke ochtend vervangen, deze lijst niet: hij
+        groeit alleen maar. Daardoor blijft een groep te kiezen als zoekvraag,
+        ook in een week dat er niets van in de bonus ligt — precies waar een
+        zoekvraag voor bedoeld is.
+
+        Lukt dit niet, dan is dat vervelend maar niet fataal: de aanbiedingen
+        zelf staan er dan al in. De ronde gaat dus gewoon door.
+        """
+        groepen = sorted({
+            aanbieding.productgroep.strip()
+            for aanbieding in aanbiedingen
+            if aanbieding.productgroep and aanbieding.productgroep.strip()
+        })
+        if not groepen:
+            log.info("  Geen productgroepen om te onthouden.")
+            return 0
+
+        try:
+            self._rest(
+                "POST", "rpc/onthoud_productgroepen",
+                json={"p_winkel_id": winkel_id, "p_groepen": groepen},
+            )
+        except DatabaseFout as fout:
+            log.warning("Kon de groepenlijst niet bijwerken: %s", fout)
+            return 0
+
+        log.info("  %s productgroepen doorgegeven aan de vaste lijst.", len(groepen))
+        return len(groepen)
 
     def aantal_aanbiedingen(self, winkel_id: int) -> int:
         """Hoeveel aanbiedingen er nu voor deze winkel in de database staan."""

@@ -1,5 +1,21 @@
 # Wijzigingen — Dealbot
 
+## 31-07-2026 (middag) — kiezen uit alle groepen, niet alleen die van deze week
+
+- **De keuzelijst bij Productgroep bevat voortaan alles wat Dealbot ooit is
+  tegengekomen.** Hij werd gevuld met alleen de groepen die op dat moment in de
+  bonus lagen, en dat is precies verkeerd om: een zoekvraag zet je juist om te
+  wachten tot iets in de aanbieding komt. "Koffiebonen" was daardoor niet te
+  kiezen.
+- Achter elke groep staat nu wat erin zit: *"Koffiebonen — nu niets in de
+  bonus"* of *"Perla filterkoffie — nu 7 aanbiedingen"*. Groepen met
+  aanbiedingen staan bovenaan bij hun winkel, lege groepen eronder.
+- Dealbot houdt die lijst zelf bij: elke ochtendrun voegt toe wat hij tegenkomt.
+  De lijst raakt dus nooit iets kwijt, ook niet als een winkel een groep een
+  week overslaat.
+- Mislukt het bijhouden, dan gaat de ophaalronde gewoon door — de aanbiedingen
+  zelf staan dan al veilig in de database.
+
 ## 31-07-2026 (ochtend) — ochtendrun mislukte, hersteld
 
 - De ronde van vanochtend schreef niets weg: de database herkende het

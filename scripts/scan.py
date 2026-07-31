@@ -2,15 +2,16 @@
 ===============================================================================
  Dealbot — het dagelijkse ophalen van aanbiedingen
 
- Versie      : 1.2
- Reden       : Jumbo en Dirk toegevoegd als tweede en derde winkel. Elke winkel
-               wordt apart afgehandeld, zodat een storing bij de één de ander
-               niet raakt.
- Datum       : 31-07-2026 00:12
+ Versie      : 1.3
+ Reden       : Elke ronde geeft nu ook door welke productgroepen zijn gezien, zodat
+               de keuzelijst op het profielscherm blijft groeien en je een
+               zoekvraag kunt zetten op een groep die deze week niet in de bonus is.
+ Datum       : 31-07-2026 11:31
 
  Onderdelen:
    main()          - gaat alle winkels langs en vat het resultaat samen
-   verwerk_winkel() - haalt op, schrijft weg en ruimt daarna het oude op
+   verwerk_winkel() - haalt op, schrijft weg, ruimt het oude op en onthoudt de
+                      gevonden productgroepen
 
  Uitvoeren:
    python scripts/scan.py            alle winkels
@@ -97,6 +98,9 @@ def verwerk_winkel(database: Database, winkel_id: int, naam: str, haal_op) -> in
     try:
         aantal = database.schrijf(aanbiedingen, moment)
         database.ruim_oude_op(winkel_id, moment)
+        # Pas hierna: de groepenlijst is een naslagwerk, geen voorwaarde. Mislukt
+        # hij, dan zijn de aanbiedingen zelf al veilig binnen.
+        database.onthoud_groepen(winkel_id, aanbiedingen)
     except DatabaseFout as fout:
         log.error("%s: wegschrijven mislukt: %s", naam, fout)
         database.sluit_ronde(log_id, "mislukt", 0, f"Wegschrijven mislukt: {fout}")

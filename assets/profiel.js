@@ -2,12 +2,12 @@
  * =============================================================================
  *  Dealbot — de profielpagina met mijn zoekvragen
  *
- *  Versie      : 1.1
- *  Reden       : "Variant" is vervangen door "Productgroep" met een keuzelijst.
- *                Die lijst komt uit de aanbiedingen van deze week, per winkel
- *                gegroepeerd, zodat niemand een groep kan kiezen die niets
- *                oplevert of die bij die winkel niet bestaat.
- *  Datum       : 31-07-2026 01:12
+ *  Versie      : 1.2
+ *  Reden       : De keuzelijst toonde alleen groepen die deze week in de bonus
+ *                waren. Daardoor kon je niet wachten op iets dat er nu niet is —
+ *                "Koffiebonen" ontbrak gewoon. De lijst bevat nu alles wat
+ *                Dealbot ooit heeft gezien, met erbij wat er nu in zit.
+ *  Datum       : 31-07-2026 11:31
  *
  *  Onderdelen:
  *    bouwPagina()        - regelt de toegang en haalt de gegevens op
@@ -78,12 +78,28 @@ function maakZoekvraag(zoekvraag, naVerwijderen) {
 }
 
 /**
- * Vult de keuzelijst met de productgroepen van deze week.
+ * Zegt achter een groep wat erin zit op dit moment.
+ *
+ * Nul is nadrukkelijk geen reden om de groep te verbergen: juist dan is een
+ * zoekvraag nuttig, want die blijft klaarstaan tot de winkel er weer iets van
+ * in de bonus doet.
+ */
+function aantalTekst(aantal) {
+    if (aantal === 0) return 'nu niets in de bonus';
+    if (aantal === 1) return 'nu 1 aanbieding';
+    return `nu ${aantal} aanbiedingen`;
+}
+
+/**
+ * Vult de keuzelijst met alle productgroepen die Dealbot ooit heeft gezien.
  *
  * Per winkel een eigen kopje, want elke keten deelt zijn assortiment anders in:
  * Albert Heijn tot op "Toiletpapier - vochtig", Dirk niet verder dan
- * "Dranken, sap, koffie & thee". Het aantal aanbiedingen staat erbij, zodat
- * zichtbaar is hoe breed een groep is voordat je hem kiest.
+ * "Dranken, sap, koffie & thee".
+ *
+ * Groepen met aanbiedingen staan bovenaan binnen hun winkel; wat nu leeg is,
+ * zakt naar onderen maar blijft kiesbaar. Zo is de lijst prettig om in te
+ * zoeken zonder dat je iets kunt mislopen.
  *
  * Lukt het ophalen niet, dan blijft het veld leeg en bruikbaar: de gebruiker
  * kan dan nog steeds op merk of vrije tekst zoeken.
@@ -106,10 +122,16 @@ function vulProductgroepen(groepen) {
     const kopjes = [...perWinkel.entries()].map(([winkel, regels]) => {
         const kopje = document.createElement('optgroup');
         kopje.label = winkel;
-        for (const regel of regels) {
+
+        const gesorteerd = [...regels].sort((a, b) => {
+            if ((a.aantal > 0) !== (b.aantal > 0)) return a.aantal > 0 ? -1 : 1;
+            return a.productgroep.localeCompare(b.productgroep, 'nl');
+        });
+
+        for (const regel of gesorteerd) {
             const keuze = document.createElement('option');
             keuze.value = regel.productgroep;
-            keuze.textContent = `${regel.productgroep} (${regel.aantal})`;
+            keuze.textContent = `${regel.productgroep} — ${aantalTekst(regel.aantal)}`;
             kopje.append(keuze);
         }
         return kopje;
