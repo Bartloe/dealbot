@@ -1,5 +1,25 @@
 # Wijzigingen — Dealbot
 
+## 01-08-2026 — Albert Heijn: we zagen maar een deel van de bonus
+
+- **De koffiebonen zijn boven water.** Dealbot haalde de aanbiedingen van Albert
+  Heijn op via hun zoekingang, en die laat niet verder kijken dan 3000
+  producten. Alles daarna viel buiten beeld — en koffiebonen stonden nu eenmaal
+  verderop in de rij. Dat was geen instelling die te hoog stond: het is een
+  harde grens van Albert Heijn zelf.
+- Voortaan lopen we **de bonusfolder van de week** af, hoofdstuk voor hoofdstuk
+  en aanbieding voor aanbieding. Die folder ís de bonus, dus daar kan per
+  definitie niets buiten vallen.
+- Resultaat: **2089 aanbiedingen in plaats van 1598**, met 15 soorten
+  koffiebonen erbij en twee nieuwe productgroepen (*Douwe Egberts koffiebonen*
+  en *L'OR koffiebonen*). Het aantal groepen groeide van 283 naar 479.
+- Acties van Gall & Gall en Etos staan in dezelfde folder maar blijven eruit —
+  die koop je niet in de supermarkt.
+- Weigert Albert Heijn tussendoor even (dat gebeurde gisterochtend), dan wacht
+  Dealbot nu en probeert het opnieuw. Mislukt meer dan een vijfde van de folder,
+  dan schrijft hij bewust níets weg: dan blijft de volledige lijst van gisteren
+  staan in plaats van dat er een halve lijst voor in de plaats komt.
+
 ## 01-08-2026 — te zien wanneer er voor het laatst is opgehaald
 
 - Onder de kop van de startpagina staat nu **"Laatste run gedraaid op: 01-08
