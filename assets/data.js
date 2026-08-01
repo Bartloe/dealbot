@@ -2,11 +2,11 @@
  * =============================================================================
  *  Dealbot — verkeer met de database vanuit de website
  *
- *  Versie      : 1.2
- *  Reden       : De startpagina laat voortaan zien wanneer de aanbiedingen voor
- *                het laatst zijn opgehaald, zodat zichtbaar is hoe vers de lijst
- *                is en of de ochtendrun het heeft gedaan.
- *  Datum       : 01-08-2026 13:18
+ *  Versie      : 1.3
+ *  Reden       : Bij de productgroepen kun je er voortaan meerdere tegelijk
+ *                aanvinken, ook van verschillende winkels. Daarom slaat de
+ *                datalaag nu een reeks zoekvragen in één keer op.
+ *  Datum       : 01-08-2026 14:32
  *
  *  Onderdelen:
  *    meldAan()             - maakt een nieuw account met e-mailadres + pincode
@@ -17,7 +17,7 @@
  *    haalProductgroepen()  - de groepen waaruit een zoekvraag kan kiezen
  *    haalLaatsteRun()      - wanneer er voor het laatst is opgehaald
  *    haalZoekvragen()      - de zoekvragen van de ingelogde gebruiker
- *    voegZoekvraagToe()    - slaat een nieuwe zoekvraag op
+ *    voegZoekvragenToe()   - slaat een of meer nieuwe zoekvragen op
  *    verwijderZoekvraag()  - wist een zoekvraag
  * =============================================================================
  */
@@ -220,23 +220,29 @@ export async function haalZoekvragen() {
 }
 
 /**
- * Slaat een nieuwe zoekvraag op. Minimaal één van de drie velden moet gevuld
- * zijn, anders zou de zoekvraag op álle aanbiedingen matchen.
+ * Slaat een of meer zoekvragen in één keer op.
+ *
+ * Meer dan één tegelijk is nodig omdat je bij de productgroepen meerdere
+ * groepen kunt aanvinken — ook van verschillende winkels. Elke aangevinkte
+ * groep wordt een eigen zoekvraag; ze staan naast elkaar en tellen bij elkaar op.
+ *
+ * Elke zoekvraag moet minstens één gevuld veld hebben, anders zou hij op álle
+ * aanbiedingen matchen.
  */
-export async function voegZoekvraagToe({ merk, productgroep, vrije_tekst }) {
+export async function voegZoekvragenToe(zoekvragen) {
     const schoon = (waarde) => {
         const tekst = (waarde || '').trim();
         return tekst === '' ? null : tekst;
     };
 
-    const zoekvraag = {
-        merk: schoon(merk),
-        productgroep: schoon(productgroep),
-        vrije_tekst: schoon(vrije_tekst),
-    };
+    const rijen = (zoekvragen || []).map((zoekvraag) => ({
+        merk: schoon(zoekvraag.merk),
+        productgroep: schoon(zoekvraag.productgroep),
+        vrije_tekst: schoon(zoekvraag.vrije_tekst),
+    }));
 
-    if (!zoekvraag.merk && !zoekvraag.productgroep && !zoekvraag.vrije_tekst) {
-        throw new DealbotFout('Vul minstens één van de drie velden in.');
+    if (rijen.length === 0 || rijen.some((r) => !r.merk && !r.productgroep && !r.vrije_tekst)) {
+        throw new DealbotFout('Vul minstens één veld in of kies een productgroep.');
     }
 
     const gebruiker = await haalGebruiker();
@@ -244,12 +250,11 @@ export async function voegZoekvraagToe({ merk, productgroep, vrije_tekst }) {
         throw new DealbotFout('Je bent niet meer ingelogd. Log opnieuw in.');
     }
 
-    const data = await probeer('zoekvraag opslaan', () => db
+    const data = await probeer('zoekvragen opslaan', () => db
         .from('zoekvragen')
-        .insert({ ...zoekvraag, gebruiker_id: gebruiker.id })
-        .select()
-        .single());
-    return data;
+        .insert(rijen.map((rij) => ({ ...rij, gebruiker_id: gebruiker.id })))
+        .select());
+    return data || [];
 }
 
 export async function verwijderZoekvraag(id) {

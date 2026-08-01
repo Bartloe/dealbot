@@ -2,25 +2,26 @@
  * =============================================================================
  *  Dealbot — de profielpagina met mijn zoekvragen
  *
- *  Versie      : 1.2
- *  Reden       : De keuzelijst toonde alleen groepen die deze week in de bonus
- *                waren. Daardoor kon je niet wachten op iets dat er nu niet is —
- *                "Koffiebonen" ontbrak gewoon. De lijst bevat nu alles wat
- *                Dealbot ooit heeft gezien, met erbij wat er nu in zit.
- *  Datum       : 31-07-2026 11:31
+ *  Versie      : 2.0
+ *  Reden       : De keuzelijst met 479 groepen van Albert Heijn was niet meer om
+ *                door te scrollen, en wie "koffie" zocht vond niets: die groepen
+ *                heten "Douwe Egberts koffiebonen" en staan dus onder de D. Je
+ *                zoekt nu op een woord, dwars door alle winkels heen, en kunt in
+ *                één keer meerdere groepen aanvinken.
+ *  Datum       : 01-08-2026 14:32
  *
  *  Onderdelen:
- *    bouwPagina()        - regelt de toegang en haalt de gegevens op
- *    vulProductgroepen() - zet de beschikbare groepen in de keuzelijst
- *    toonZoekvragen()    - zet de zoekvragen op het scherm
- *    koppelFormulier()   - slaat een nieuwe zoekvraag op
+ *    bouwPagina()       - regelt de toegang en haalt de gegevens op
+ *    toonZoekvragen()   - zet de zoekvragen op het scherm
+ *    koppelFormulier()  - slaat een zoekvraag op merk of vrije tekst op
+ *    koppelGroepkiezer()- zoeken, aanvinken en opslaan van productgroepen
  * =============================================================================
  */
 
 import {
     haalZoekvragen,
     haalProductgroepen,
-    voegZoekvraagToe,
+    voegZoekvragenToe,
     verwijderZoekvraag,
     DealbotFout,
 } from './data.js';
@@ -31,7 +32,22 @@ const lijst = document.getElementById('zoekvragen');
 const formulier = document.getElementById('zoekvraagformulier');
 const melding = document.getElementById('melding');
 const adres = document.getElementById('adres');
-const groepenlijst = document.getElementById('productgroep');
+
+const zoekveld = document.getElementById('groepzoek');
+const resultaten = document.getElementById('groepresultaten');
+const gekozenlijst = document.getElementById('gekozen');
+const zoekhulp = document.getElementById('zoekhulp');
+const groepenknop = document.getElementById('groepenopslaan');
+
+// Hoeveel treffers we hoogstens tonen. Meer is niet te overzien; typ dan verder.
+const MAX_TREFFERS = 40;
+
+// Alle bekende groepen, en wat de gebruiker heeft aangevinkt. De sleutel bevat
+// de winkel, want dezelfde groepsnaam kan bij twee winkels voorkomen.
+let allegroepen = [];
+const gekozen = new Map();
+
+const sleutelVan = (groep) => `${groep.winkel_id}|${groep.productgroep}`;
 
 function toonMelding(tekst, soort = 'fout') {
     melding.textContent = tekst;
@@ -91,66 +107,122 @@ function aantalTekst(aantal) {
 }
 
 /**
- * Vult de keuzelijst met alle productgroepen die Dealbot ooit heeft gezien.
+ * De groepen die bij een zoekwoord passen.
  *
- * Per winkel een eigen kopje, want elke keten deelt zijn assortiment anders in:
- * Albert Heijn tot op "Toiletpapier - vochtig", Dirk niet verder dan
- * "Dranken, sap, koffie & thee".
- *
- * Groepen met aanbiedingen staan bovenaan binnen hun winkel; wat nu leeg is,
- * zakt naar onderen maar blijft kiesbaar. Zo is de lijst prettig om in te
- * zoeken zonder dat je iets kunt mislopen.
- *
- * Lukt het ophalen niet, dan blijft het veld leeg en bruikbaar: de gebruiker
- * kan dan nog steeds op merk of vrije tekst zoeken.
+ * Zoekt in de naam van de groep, waar het woord ook staat: "koffie" moet ook
+ * "Douwe Egberts koffiebonen" vinden — juist dat ging mis toen je nog door een
+ * alfabetische lijst moest scrollen. Groepen die met het woord beginnen komen
+ * bovenaan, daarna wat er nu in de bonus zit.
  */
-function vulProductgroepen(groepen) {
-    const leeg = document.createElement('option');
-    leeg.value = '';
-    leeg.textContent = groepen.length === 0
-        ? 'Geen groepen beschikbaar'
-        : 'Alle groepen (niet op groep zoeken)';
-
-    const perWinkel = new Map();
-    for (const groep of groepen) {
-        if (!perWinkel.has(groep.winkel)) {
-            perWinkel.set(groep.winkel, []);
-        }
-        perWinkel.get(groep.winkel).push(groep);
+function zoekGroepen(woord) {
+    const term = woord.trim().toLowerCase();
+    if (term === '') {
+        return [];
     }
 
-    const kopjes = [...perWinkel.entries()].map(([winkel, regels]) => {
-        const kopje = document.createElement('optgroup');
-        kopje.label = winkel;
-
-        const gesorteerd = [...regels].sort((a, b) => {
+    return allegroepen
+        .filter((groep) => groep.productgroep.toLowerCase().includes(term))
+        .sort((a, b) => {
+            const beginA = a.productgroep.toLowerCase().startsWith(term);
+            const beginB = b.productgroep.toLowerCase().startsWith(term);
+            if (beginA !== beginB) return beginA ? -1 : 1;
             if ((a.aantal > 0) !== (b.aantal > 0)) return a.aantal > 0 ? -1 : 1;
             return a.productgroep.localeCompare(b.productgroep, 'nl');
         });
-
-        for (const regel of gesorteerd) {
-            const keuze = document.createElement('option');
-            keuze.value = regel.productgroep;
-            keuze.textContent = `${regel.productgroep} — ${aantalTekst(regel.aantal)}`;
-            kopje.append(keuze);
-        }
-        return kopje;
-    });
-
-    groepenlijst.replaceChildren(leeg, ...kopjes);
-    groepenlijst.disabled = groepen.length === 0;
 }
 
-/** Haalt de keuzelijst op; een storing hier mag de pagina niet blokkeren. */
+/** Eén treffer om aan te vinken, met de winkel erachter. */
+function maakTreffer(groep) {
+    const regel = maak('li', 'treffer');
+    const label = document.createElement('label');
+
+    const vinkje = document.createElement('input');
+    vinkje.type = 'checkbox';
+    vinkje.checked = gekozen.has(sleutelVan(groep));
+    vinkje.addEventListener('change', () => {
+        if (vinkje.checked) {
+            gekozen.set(sleutelVan(groep), groep);
+        } else {
+            gekozen.delete(sleutelVan(groep));
+        }
+        toonGekozen();
+    });
+
+    const naam = maak('span', 'treffernaam', groep.productgroep);
+    const erbij = maak('span', 'trefferwinkel', `(${groep.winkel})`);
+    const telling = maak('span', groep.aantal > 0 ? 'trefferaantal' : 'trefferaantal leeg',
+        aantalTekst(groep.aantal));
+
+    label.append(vinkje, naam, erbij, telling);
+    regel.append(label);
+    return regel;
+}
+
+/** Zet de treffers van het zoekwoord op het scherm. */
+function toonTreffers(woord) {
+    const gevonden = zoekGroepen(woord);
+
+    if (woord.trim() === '') {
+        resultaten.replaceChildren();
+        zoekhulp.textContent = allegroepen.length > 0
+            ? `Typ een woord om te zoeken in ${allegroepen.length} productgroepen.`
+            : 'De productgroepen konden niet worden opgehaald.';
+        return;
+    }
+
+    if (gevonden.length === 0) {
+        resultaten.replaceChildren();
+        zoekhulp.textContent = `Geen productgroep gevonden met "${woord.trim()}". `
+            + 'Probeer een korter woord, of gebruik hierboven het veld Vrije tekst.';
+        return;
+    }
+
+    const tonen = gevonden.slice(0, MAX_TREFFERS);
+    zoekhulp.textContent = gevonden.length > tonen.length
+        ? `${gevonden.length} groepen gevonden; de eerste ${tonen.length} staan hieronder. Typ verder om te verfijnen.`
+        : `${gevonden.length} ${gevonden.length === 1 ? 'groep' : 'groepen'} gevonden.`;
+
+    resultaten.replaceChildren(...tonen.map(maakTreffer));
+}
+
+/** De aangevinkte groepen boven het zoekveld, zodat je ze niet kwijtraakt. */
+function toonGekozen() {
+    const regels = [...gekozen.values()].map((groep) => {
+        const regel = maak('li', 'gekozen-groep');
+        regel.append(maak('span', null, `${groep.productgroep} (${groep.winkel})`));
+
+        const weg = maak('button', 'weg', '×');
+        weg.type = 'button';
+        weg.title = 'Deze keuze weghalen';
+        weg.addEventListener('click', () => {
+            gekozen.delete(sleutelVan(groep));
+            toonGekozen();
+            toonTreffers(zoekveld.value);
+        });
+
+        regel.append(weg);
+        return regel;
+    });
+
+    gekozenlijst.replaceChildren(...regels);
+    gekozenlijst.hidden = regels.length === 0;
+
+    groepenknop.disabled = regels.length === 0;
+    groepenknop.textContent = regels.length === 0
+        ? 'Kies eerst een groep'
+        : `${regels.length} ${regels.length === 1 ? 'zoekvraag' : 'zoekvragen'} opslaan`;
+}
+
+/** Haalt de groepen op; een storing hier mag de pagina niet blokkeren. */
 async function laadProductgroepen() {
     try {
-        const groepen = await haalProductgroepen();
-        console.info(`Dealbot — profiel: ${groepen.length} productgroepen geladen.`);
-        vulProductgroepen(groepen);
+        allegroepen = await haalProductgroepen();
+        console.info(`Dealbot — profiel: ${allegroepen.length} productgroepen geladen.`);
     } catch (fout) {
-        vulProductgroepen([]);
+        allegroepen = [];
         console.error('Dealbot — productgroepen laden mislukt:', fout);
     }
+    toonTreffers(zoekveld.value);
 }
 
 function toonZoekvragen(zoekvragen, herlaad) {
@@ -189,12 +261,11 @@ function koppelFormulier() {
 
         const velden = {
             merk: document.getElementById('merk').value,
-            productgroep: groepenlijst.value,
             vrije_tekst: document.getElementById('vrije_tekst').value,
         };
 
         try {
-            await voegZoekvraagToe(velden);
+            await voegZoekvragenToe([velden]);
             formulier.reset();
             toonMelding('De zoekvraag is opgeslagen.', 'goed');
             await ververs();
@@ -211,6 +282,55 @@ function koppelFormulier() {
     });
 }
 
+/**
+ * Het zoeken en aanvinken van productgroepen.
+ *
+ * Elke aangevinkte groep wordt een eigen zoekvraag. Ze staan los van elkaar, dus
+ * je kunt in één handeling dezelfde soort bij drie winkels in de gaten houden.
+ */
+function koppelGroepkiezer() {
+    zoekveld.addEventListener('input', () => toonTreffers(zoekveld.value));
+
+    // Enter in een zoekveld mag de pagina niet herladen.
+    zoekveld.addEventListener('keydown', (gebeurtenis) => {
+        if (gebeurtenis.key === 'Enter') {
+            gebeurtenis.preventDefault();
+        }
+    });
+
+    groepenknop.addEventListener('click', async () => {
+        if (gekozen.size === 0) {
+            return;
+        }
+        toonMelding('');
+        groepenknop.disabled = true;
+
+        const nieuwe = [...gekozen.values()].map((groep) => ({
+            productgroep: groep.productgroep,
+        }));
+
+        try {
+            const opgeslagen = await voegZoekvragenToe(nieuwe);
+            gekozen.clear();
+            zoekveld.value = '';
+            toonGekozen();
+            toonTreffers('');
+            toonMelding(opgeslagen.length === 1
+                ? 'De zoekvraag is opgeslagen.'
+                : `${opgeslagen.length} zoekvragen zijn opgeslagen.`, 'goed');
+            await ververs();
+        } catch (fout) {
+            toonGekozen();
+            toonMelding(fout instanceof DealbotFout
+                ? fout.message
+                : 'De zoekvragen konden niet worden opgeslagen.');
+            if (!(fout instanceof DealbotFout)) {
+                console.error('Dealbot — opslaan van groepen mislukt:', fout);
+            }
+        }
+    });
+}
+
 async function bouwPagina() {
     const gebruiker = await beveiligPagina();
     if (!gebruiker) {
@@ -220,6 +340,8 @@ async function bouwPagina() {
 
     adres.textContent = gebruiker.email || '';
     koppelFormulier();
+    koppelGroepkiezer();
+    toonGekozen();
     await Promise.all([ververs(), laadProductgroepen()]);
 }
 

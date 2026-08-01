@@ -31,10 +31,9 @@
         <section class="blok">
             <h2>Zoekvraag toevoegen</h2>
             <p class="uitleg">
-                Drie manieren om te zoeken, die je los of samen kunt gebruiken. Vul je
-                er meer dan één in, dan moeten ze allemaal kloppen — zo maak je een
-                zoekvraag scherper. Hoofdletters maken niet uit: <em>oro</em> vindt ook
-                <em>Oro</em>.
+                Twee manieren om te zoeken, die je los of samen kunt gebruiken. Vul je ze
+                allebei in, dan moeten ze allebei kloppen — zo maak je een zoekvraag
+                scherper. Hoofdletters maken niet uit: <em>oro</em> vindt ook <em>Oro</em>.
             </p>
 
             <form id="zoekvraagformulier" class="zoekvraagformulier" novalidate>
@@ -45,19 +44,6 @@
                 </label>
 
                 <label>
-                    Productgroep
-                    <select id="productgroep">
-                        <option value="">Groepen ophalen…</option>
-                    </select>
-                    <small>
-                        De indeling van de winkel zelf. Elke supermarkt deelt anders in,
-                        dus staat de winkel erbij; je kiest dus een groep bij één winkel.
-                        Zit er nu niets in, dan kun je hem toch kiezen: zodra er iets van
-                        in de bonus komt, staat het vanzelf bij je aanbiedingen.
-                    </small>
-                </label>
-
-                <label>
                     Vrije tekst
                     <input type="text" id="vrije_tekst" placeholder="bijvoorbeeld koffiebonen">
                     <small>Zoekt alleen in het merk en de productnaam, niet in de groep.</small>
@@ -65,6 +51,29 @@
 
                 <button type="submit" id="opslaan">Zoekvraag opslaan</button>
             </form>
+        </section>
+
+        <section class="blok">
+            <h2>Of kies productgroepen</h2>
+            <p class="uitleg">
+                Typ waar je op let — bijvoorbeeld <em>koffie</em> — en vink aan wat je wilt
+                volgen. Je zoekt dwars door alle winkels heen; achter elke groep staat bij
+                welke winkel hij hoort. Zit er nu niets in, dan kun je hem toch kiezen:
+                zodra er iets van in de bonus komt, staat het vanzelf bij je aanbiedingen.
+            </p>
+
+            <div class="groepkiezer">
+                <input type="search" id="groepzoek" autocomplete="off"
+                       placeholder="Zoek een productgroep, bijvoorbeeld koffie">
+
+                <ul class="gekozen" id="gekozen" hidden></ul>
+                <p class="zoekhulp" id="zoekhulp"></p>
+                <ul class="groepresultaten" id="groepresultaten"></ul>
+
+                <button type="button" class="knop" id="groepenopslaan" disabled>
+                    Kies eerst een groep
+                </button>
+            </div>
         </section>
     </main>
 

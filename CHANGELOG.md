@@ -1,5 +1,22 @@
 # Wijzigingen — Dealbot
 
+## 01-08-2026 — productgroepen zoeken in plaats van scrollen
+
+- **De keuzelijst is een zoekveld geworden.** Met 479 groepen bij Albert Heijn
+  alleen al was scrollen geen doen, en zoeken op "koffie" leverde niets op: die
+  groepen heten *Douwe Egberts koffiebonen* en staan dus onder de D. Nu typ je
+  een woord en vind je alles waar dat woord ín zit, waar het ook staat.
+- **Je zoekt dwars door alle winkels heen.** Achter elke treffer staat bij welke
+  winkel hij hoort. "koffie" geeft nu 11 treffers verdeeld over Albert Heijn,
+  Jumbo en Dirk.
+- **Meerdere tegelijk aanvinken kan.** Elke aangevinkte groep wordt een eigen
+  zoekvraag; met één klik zet je er dus drie klaar bij drie winkels. Je keuzes
+  blijven boven het zoekveld staan terwijl je verder zoekt.
+- Achter elke treffer staat wat erin zit: *nu 10 aanbiedingen* of *nu niets in
+  de bonus*. Groepen die met je zoekwoord beginnen staan bovenaan, daarna wat er
+  nu daadwerkelijk in de bonus ligt.
+- Merk en vrije tekst blijven een apart formulier, want die twee typ je zelf.
+
 ## 01-08-2026 — Albert Heijn: we zagen maar een deel van de bonus
 
 - **De koffiebonen zijn boven water.** Dealbot haalde de aanbiedingen van Albert

@@ -2,15 +2,16 @@
  * =============================================================================
  *  Dealbot — vormgeving van de website
  *
- *  Versie      : 1.2
- *  Reden       : Onder de kop van de startpagina staat nu wanneer er voor het
- *                laatst is opgehaald; die regel is bijzaak en hoort dus klein
- *                en grijs, maar rood zodra er een storing achter zit.
- *  Datum       : 01-08-2026 13:18
+ *  Versie      : 1.3
+ *  Reden       : De keuzelijst met productgroepen is een zoekveld met
+ *                aanvinkbare treffers geworden; dat heeft eigen opmaak nodig,
+ *                ook op een telefoon.
+ *  Datum       : 01-08-2026 14:32
  *
  *  Onderdelen:
  *    basis         - kleuren, lettertype en de indeling van de pagina
  *    laatste-run   - de regel met het moment van de laatste ophaalronde
+ *    groepkiezer   - productgroepen zoeken en aanvinken
  *    bovenbalk     - naam en navigatie
  *    inlogscherm   - het scherm vóór het inloggen
  *    productkaart  - een product met zijn aanbiedingen
@@ -142,8 +143,7 @@ label {
     font-size: 0.95rem;
 }
 
-input,
-select {
+input {
     display: block;
     width: 100%;
     margin-top: 5px;
@@ -155,14 +155,11 @@ select {
     background: var(--wit);
 }
 
-input:focus,
-select:focus {
+input:focus {
     outline: 2px solid var(--groen);
     outline-offset: 1px;
     border-color: var(--groen);
 }
-
-select:disabled { color: var(--grijs); background: #f5f5f5; }
 
 /* Het zinnetje onder een invoerveld dat uitlegt waar dat veld op zoekt. */
 label small {
@@ -389,7 +386,7 @@ button:disabled { opacity: 0.6; cursor: default; }
 @media (min-width: 620px) {
     .zoekvraagformulier {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: 0 14px;
         /* Boven uitlijnen: de uitleg onder de velden is niet overal even lang,
            dus de invoervelden zelf moeten op één lijn staan, niet de onderkant. */
@@ -397,3 +394,91 @@ button:disabled { opacity: 0.6; cursor: default; }
     }
     .zoekvraagformulier button[type="submit"] { grid-column: 1 / -1; justify-self: start; }
 }
+
+/* -- productgroepen zoeken en aanvinken ----------------------------------- */
+
+.groepkiezer input[type="search"] { margin-bottom: 12px; }
+
+.zoekhulp { margin: 0 0 8px; font-size: 0.85rem; color: var(--grijs); }
+
+/* De aangevinkte groepen, zodat ze in beeld blijven als je opnieuw zoekt. */
+.gekozen {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 0;
+}
+
+.gekozen-groep {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    padding: 5px 8px 5px 12px;
+    font-size: 0.9rem;
+    color: var(--groen-donker);
+    background: #e8f4ec;
+    border-radius: 20px;
+}
+
+.gekozen-groep .weg {
+    padding: 0 4px;
+    font-size: 1.1rem;
+    line-height: 1;
+    color: var(--groen-donker);
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.gekozen-groep .weg:hover { color: var(--rood); }
+
+/* De treffers. Een vaste hoogte met eigen schuifbalk: de lijst mag lang zijn
+   zonder dat de knop eronder van het scherm af raakt. */
+.groepresultaten {
+    list-style: none;
+    margin: 0 0 14px;
+    padding: 0;
+    max-height: 340px;
+    overflow-y: auto;
+}
+
+.groepresultaten:not(:empty) {
+    border: 1px solid var(--lijn);
+    border-radius: 8px;
+}
+
+.treffer { border-top: 1px solid var(--lijn); }
+.treffer:first-child { border-top: none; }
+
+.treffer label {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    align-items: baseline;
+    margin: 0;
+    padding: 10px 12px;
+    font-weight: 400;
+    cursor: pointer;
+}
+
+.treffer label:hover { background: #f2f7f4; }
+
+.treffer input[type="checkbox"] {
+    display: inline;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    /* Groot genoeg om met een duim te raken. */
+    min-width: 20px;
+    min-height: 20px;
+}
+
+.treffernaam { font-weight: 600; }
+.trefferwinkel { color: var(--grijs); }
+.trefferaantal { margin-left: auto; font-size: 0.85rem; color: var(--groen-donker); }
+.trefferaantal.leeg { color: var(--grijs); font-style: italic; }
+
+.groepkiezer .knop { border: none; font-family: inherit; font-size: 1rem; cursor: pointer; }
+.groepkiezer .knop:disabled { opacity: 0.6; cursor: default; }
