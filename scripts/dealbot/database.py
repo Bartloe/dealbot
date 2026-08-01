@@ -2,18 +2,19 @@
 ===============================================================================
  Dealbot — verkeer met de database (Supabase)
 
- Versie      : 1.2
- Reden       : De groepenlijst krijgt voortaan de volledige winkelindeling
-               binnen in plaats van alleen de groepen die in de aanbiedingen
-               voorkwamen. Een groep die nog nooit in de bonus zat, was daardoor
-               niet aan te vinken — en werd volgende week dus gemist.
- Datum       : 01-08-2026 18:50
+ Versie      : 1.3
+ Reden       : De groepenlijst groeide alleen maar aan. Toen Albert Heijn een
+               andere indeling kreeg (de lade "Koffiebonen" in plaats van 1791
+               merkschappen) bleven de oude namen dus staan. De lijst wordt nu
+               vervangen in plaats van aangevuld, met een rem erop voor het geval
+               een ronde half mislukt.
+ Datum       : 01-08-2026 21:35
 
  Onderdelen:
    Database.start_ronde()      - zet een regel in het logboek en geeft het moment
    Database.schrijf()          - schrijft de aanbiedingen weg in blokken
    Database.ruim_oude_op()     - wist wat niet in deze ronde is ververst
-   Database.onthoud_groepen()  - vult de blijvende lijst met productgroepen aan
+   Database.bewaar_groepen()   - zet de winkelindeling in de blijvende lijst
    Database.sluit_ronde()      - schrijft het resultaat in het logboek
 ===============================================================================
 """
@@ -174,35 +175,43 @@ class Database:
 
     # -- productgroepen ------------------------------------------------------
 
-    def onthoud_groepen(self, winkel_id: int, groepen: list[str]) -> int:
+    def bewaar_groepen(self, winkel_id: int, groepen: list[str]) -> int:
         """
-        Vult de blijvende lijst met productgroepen aan.
+        Zet de winkelindeling van deze winkel in de blijvende groepenlijst.
 
         Hier komt de volledige indeling van de winkel binnen — het hele
         assortiment dus, niet alleen wat er deze week in de bonus ligt. Daardoor
         is elke groep aan te vinken als zoekvraag, ook eentje die nog nooit in de
         aanbieding heeft gezeten. Precies waar een zoekvraag voor bedoeld is.
 
-        De aanbiedingen worden elke ochtend vervangen, deze lijst niet: hij
-        groeit alleen maar aan.
+        De lijst wordt niet alleen aangevuld maar ook opgeschoond: deelt een
+        winkel zijn assortiment anders in, dan horen de oude groepsnamen te
+        verdwijnen. De database weigert dat opschonen als de nieuwe lijst
+        verdacht kort is, zodat een half mislukte ronde de keuzelijst niet
+        leeghaalt.
 
         Lukt dit niet, dan is dat vervelend maar niet fataal: de aanbiedingen
         zelf staan er dan al in. De ronde gaat dus gewoon door.
         """
         if not groepen:
-            log.info("  Geen productgroepen om te onthouden.")
+            log.info("  Geen productgroepen om te bewaren.")
             return 0
 
         try:
-            self._rest(
-                "POST", "rpc/onthoud_productgroepen",
+            antwoord = self._rest(
+                "POST", "rpc/vervang_productgroepen",
                 json={"p_winkel_id": winkel_id, "p_groepen": groepen},
             )
-        except DatabaseFout as fout:
+            uitslag = (antwoord.json() or [{}])[0]
+        except (DatabaseFout, ValueError, IndexError) as fout:
             log.warning("Kon de groepenlijst niet bijwerken: %s", fout)
             return 0
 
-        log.info("  %s productgroepen doorgegeven aan de vaste lijst.", len(groepen))
+        log.info(
+            "  Groepenlijst bijgewerkt: %s nieuw, %s vervallen, %s ongewijzigd.",
+            uitslag.get("toegevoegd", 0), uitslag.get("verwijderd", 0),
+            uitslag.get("behouden", 0),
+        )
         return len(groepen)
 
     def aantal_aanbiedingen(self, winkel_id: int) -> int:

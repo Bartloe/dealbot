@@ -1,6 +1,6 @@
 # Dealbot — takenlijst
 
-Bijgewerkt: 31-07-2026 01:12
+Bijgewerkt: 01-08-2026 22:05
 
 ## Fase 1 — de minimale basis (nu)
 
@@ -19,6 +19,9 @@ Bijgewerkt: 31-07-2026 01:12
 - [x] Meerpakken van Albert Heijn erbij: die staan niet in de bonusfolder maar wel
       in het assortiment. Een meerpak telt mee als het losse product zelf in de
       bonus is, en krijgt de kiloprijs van het losse pak maal het aantal
+- [x] Zoeken op koffiebonen zonder merk: bij Albert Heijn zat het merk in de
+      groepsnaam ("Lavazza koffiebonen", 1791 groepen). De groep is nu de lade uit
+      de winkelindeling ("Koffiebonen", 313 laden); het merk heeft zijn eigen veld
 - [ ] Uitzoeken of Nettorama betrouwbaar uit te lezen is (folder, geen prijzenlijst)
 - [x] Automatisch elke ochtend laten draaien via GitHub — 07:00, duurt een halve minuut
 - [x] Oude aanbiedingen pas opruimen nadat de nieuwe binnen zijn
@@ -39,12 +42,13 @@ Bijgewerkt: 31-07-2026 01:12
       Picnic. Plus, Coop, Hoogvliet en Lidl blokkeren automatisch ophalen
 - [ ] Vomar gebruiken voor de standaardprijzen-pagina: hun productlijst geeft het hele
       assortiment met normale prijs, merk, inhoud én streepjescode (EAN)
-- [ ] Productgroepen van de verschillende ketens aan elkaar knopen, zodat één keuze
-      "koffie" alle winkels tegelijk afzoekt. Nu kies je een groep bij één winkel, want
-      elke keten deelt anders in: Albert Heijn 1791 fijne groepen, Jumbo 2153 fijne en
-      Dirk 17 grove afdelingen. Albert Heijn en Jumbo liggen qua fijnheid nu dicht bij
-      elkaar, dus die twee zijn het kansrijkst om te koppelen. Eventueel met een
-      achtergrondlijst van producten en EAN-codes
+- [ ] Productgroepen van de verschillende ketens aan elkaar knopen. Voor Albert Heijn
+      (313 laden) en Jumbo (2153) lost het zichzelf grotendeels op: de namen lijken
+      sterk op elkaar en een zoekvraag bewaart alleen de naam, dus "Koffiebonen" pakt
+      allebei. Wat overblijft zijn namen die net anders geschreven zijn, en vooral
+      **Dirk met zijn 17 grove afdelingen** — daar is geen fijnere indeling te halen,
+      dus die vraagt iets eigens (bijvoorbeeld op woorden in de productnaam).
+      Eventueel met een achtergrondlijst van producten en EAN-codes
 - [ ] De standaardprijzen-pagina bouwen
 - [ ] Ook merk als keuzelijst in het profielscherm (de productgroep is er al één)
 - [ ] Geschikt maken voor een mobiele app

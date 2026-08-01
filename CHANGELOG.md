@@ -1,5 +1,31 @@
 # Wijzigingen — Dealbot
 
+## 01-08-2026 — zoeken op koffiebonen kan nu ook bij Albert Heijn
+
+- **Bij Albert Heijn zat het merk in de groepsnaam.** De groepen heetten
+  "Lavazza koffiebonen", "Perla koffiebonen", "Douwe Egberts koffiebonen" — 1791
+  stuks, allemaal merk plus product door elkaar. Wie alle koffiebonen wilde zien
+  moest er veertien apart aanvinken, en een nieuw merk miste hij alsnog.
+- Albert Heijn heeft die algemene indeling wél: **29 afdelingen met daaronder
+  313 laden**, waaronder gewoon *Koffiebonen*. Die naam stond alleen niet op de
+  producten zelf. Dealbot loopt de winkelindeling nu lade voor lade af en
+  onthoudt bij elk product waar het lag.
+- **Eén keuze "Koffiebonen" pakt nu alle merken**, ook merken die er volgend jaar
+  bij komen. Op dit moment zijn dat 45 aanbiedingen bij Albert Heijn.
+- Alleen op een merk zoeken kan nog steeds: kies de groep *Koffiebonen* en vul
+  daarbij het veld **Merk** in. Dat veld stond er al.
+- **Bijvangst: Jumbo noemt zijn laden bijna net zo.** Een zoekvraag bewaart alleen
+  de naam van de groep, dus "Koffiebonen" zoekt vanaf nu bij Albert Heijn én
+  Jumbo tegelijk.
+- Van de 34.706 producten bij Albert Heijn liggen er **7 in geen enkele lade**;
+  die houden hun oude schaplabel. Dirk blijft achter met zijn 17 grove
+  afdelingen — daar is bij die winkel niets fijners te halen.
+- De keuzelijst wordt voortaan **opgeschoond** in plaats van alleen aangevuld:
+  groepsnamen die een winkel niet meer gebruikt, verdwijnen. Komt er uit een
+  ronde een verdacht korte lijst, dan wordt er niets weggegooid.
+- De ochtendronde bij Albert Heijn duurt hierdoor ongeveer **vier minuten** in
+  plaats van anderhalve.
+
 ## 01-08-2026 — de keuzelijst dekt nu de hele winkel
 
 - **Je kon alleen kiezen uit groepen die ooit in de bonus hadden gelegen.** Dat

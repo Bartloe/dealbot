@@ -2,17 +2,18 @@
 ===============================================================================
  Dealbot — controle op het aanvullen van de Albert Heijn-folder
 
- Versie      : 1.0
- Reden       : De folder noemt geen meerpakken. De aanvulling die dat repareert
-               moet twee dingen goed doen: échte meerpakaanbiedingen meenemen en
-               blijvende staffelkortingen weren. Dat is met de hand niet meer na
-               te lopen, dus leggen we het hier vast.
- Datum       : 01-08-2026 17:20
+ Versie      : 1.1
+ Reden       : De productgroep komt voortaan uit de winkelindeling ("Koffiebonen")
+               in plaats van van het schaplabel met het merk erin ("Lavazza
+               koffiebonen"). Daar hoort een controle bij, inclusief de terugval
+               voor een product dat in geen enkele lade ligt.
+ Datum       : 01-08-2026 21:20
 
  Onderdelen:
    test_meerpak_inhoud()  - de inhoud van een meerpak komt van het losse pak
    test_aanvulling()      - wie wel en niet in de lijst hoort
    test_loopt_vandaag()   - de folder van volgende week telt nog niet mee
+   test_productgroep()    - de lade wint van het schaplabel, met terugval
 
  Uitvoeren:
    python scripts/tests/test_albert_heijn.py
@@ -62,15 +63,24 @@ def _meerpak(webshop_id, titel, los_id, aantal, **rest):
     )
 
 
+def _assortiment(producten, laden=None):
+    """Het assortiment zoals de rondgang het oplevert: producten plus hun lade."""
+    return albert_heijn._Assortiment(
+        producten={str(i): p for i, p in producten.items()},
+        laden=dict(laden or {}),
+    )
+
+
 def test_meerpak_inhoud():
     los = _product(100, "Koffiebonen", salesUnitSize="500 g")
-    bonus = {"100": los}
+    voorraad = {"100": los}
+    bonus = _assortiment(voorraad)
 
     drie_pack = _meerpak(101, "Koffiebonen 3-pack", 100, 3)
     assert albert_heijn._meerpak_inhoud(drie_pack, bonus) == "1500 g"
 
     # Een los pak dat zelf al uit meerdere stuks bestaat, telt goed door.
-    bonus["200"] = _product(200, "Toetjes", salesUnitSize="2 x 125 g")
+    bonus.producten["200"] = _product(200, "Toetjes", salesUnitSize="2 x 125 g")
     assert albert_heijn._meerpak_inhoud(_meerpak(201, "Toetjes 3-pack", 200, 3), bonus) == "750 g"
 
     # Onbekend los product of een gemengd pakket: geen verzonnen inhoud.
@@ -110,7 +120,7 @@ def test_aanvulling():
         "150": _product(150, "Volgende week", bonusStartDate=MORGEN, bonusEndDate=VOLGENDE_WEEK),
     }
 
-    extra = albert_heijn._aanvulling(bonus, {"100"}, MORGEN)
+    extra = albert_heijn._aanvulling(_assortiment(bonus), {"100"}, MORGEN)
     gevonden = {a.bron_id: a for a in extra}
 
     assert set(gevonden) == {"101", "110"}, f"onverwacht: {sorted(gevonden)}"
@@ -124,8 +134,31 @@ def test_aanvulling():
     print("  aanvulling: goed")
 
 
+def test_productgroep():
+    """De lade uit de winkelindeling is de productgroep, niet het schaplabel."""
+    koffie = _product(300, "Lavazza koffiebonen", subCategory="Lavazza koffiebonen",
+                      bonusMechanism="2e halve prijs")
+    kaas = _product(310, "Oude kaas", subCategory="Beemster kaas",
+                    bonusMechanism="2e halve prijs")
+
+    assortiment = _assortiment({"300": koffie, "310": kaas}, {"300": "Koffiebonen"})
+    gevonden = {a.bron_id: a for a in albert_heijn._aanvulling(assortiment, set(), MORGEN)}
+
+    assert gevonden["300"].productgroep == "Koffiebonen", gevonden["300"].productgroep
+    assert gevonden["300"].merk is None or "Lavazza" not in (gevonden["300"].productgroep or "")
+
+    # Ligt een product in geen enkele lade, dan blijft het schaplabel over.
+    assert gevonden["310"].productgroep == "Beemster kaas", gevonden["310"].productgroep
+
+    # De keuzelijst krijgt alleen de laden te zien, nooit de merkschappen.
+    assert assortiment.groepen() == ["Koffiebonen"], assortiment.groepen()
+
+    print("  productgroep: goed")
+
+
 if __name__ == "__main__":
     test_meerpak_inhoud()
     test_loopt_vandaag()
     test_aanvulling()
+    test_productgroep()
     print("Alle controles op de Albert Heijn-aanvulling geslaagd.")

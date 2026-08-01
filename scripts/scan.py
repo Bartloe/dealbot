@@ -2,17 +2,16 @@
 ===============================================================================
  Dealbot — het dagelijkse ophalen van aanbiedingen
 
- Versie      : 1.4
- Reden       : Een winkel levert nu een oogst op: de aanbiedingen én de volledige
-               productgroep-indeling van die winkel. Daarmee dekt de keuzelijst
-               op het profielscherm het hele assortiment, en niet meer alleen wat
-               er ooit in de bonus lag.
- Datum       : 01-08-2026 18:55
+ Versie      : 1.5
+ Reden       : De winkelindeling wordt voortaan vervangen in plaats van
+               aangevuld, zodat groepsnamen die een winkel niet meer gebruikt
+               ook uit de keuzelijst verdwijnen.
+ Datum       : 01-08-2026 21:35
 
  Onderdelen:
    main()          - gaat alle winkels langs en vat het resultaat samen
-   verwerk_winkel() - haalt op, schrijft weg, ruimt het oude op en onthoudt de
-                      gevonden productgroepen
+   verwerk_winkel() - haalt op, schrijft weg, ruimt het oude op en bewaart de
+                      winkelindeling
 
  Uitvoeren:
    python scripts/scan.py            alle winkels
@@ -101,7 +100,7 @@ def verwerk_winkel(database: Database, winkel_id: int, naam: str, haal_op) -> in
         database.ruim_oude_op(winkel_id, moment)
         # Pas hierna: de groepenlijst is een naslagwerk, geen voorwaarde. Mislukt
         # hij, dan zijn de aanbiedingen zelf al veilig binnen.
-        database.onthoud_groepen(winkel_id, oogst.alle_groepen())
+        database.bewaar_groepen(winkel_id, oogst.alle_groepen())
     except DatabaseFout as fout:
         log.error("%s: wegschrijven mislukt: %s", naam, fout)
         database.sluit_ronde(log_id, "mislukt", 0, f"Wegschrijven mislukt: {fout}")

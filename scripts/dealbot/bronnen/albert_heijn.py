@@ -2,14 +2,15 @@
 ===============================================================================
  Dealbot — aanbiedingen ophalen bij Albert Heijn
 
- Versie      : 3.1
- Reden       : De bonusfolder bleek tóch niet alles te noemen. Meerpakken staan
-               er niet in (de koffiebonen 3-packs van Douwe Egberts en L'OR
-               bijvoorbeeld) en ook een paar honderd gewone schapaanbiedingen
-               ontbraken. Naast de folder maakt Dealbot daarom één rondgang door
-               het hele assortiment. Die levert meteen de volledige
-               productgroep-indeling voor de keuzelijst op het profielscherm.
- Datum       : 01-08-2026 18:20
+ Versie      : 4.0
+ Reden       : De productgroep kwam van het schaplabel op het product zelf, en
+               dat label bevat de merknaam: "Lavazza koffiebonen". Daardoor waren
+               er 1791 groepen bij Albert Heijn en was er geen enkele manier om
+               op koffiebonen van álle merken te zoeken. Albert Heijn heeft die
+               algemene indeling wél — 29 afdelingen met daaronder 313 laden,
+               waaronder "Koffiebonen". Vanaf nu is die lade de productgroep. Het
+               merk staat al in zijn eigen veld, dus er gaat niets verloren.
+ Datum       : 01-08-2026 21:05
 
  Onderdelen:
    haal_op()            - de aanbiedingen van vandaag én de winkelindeling
@@ -19,8 +20,8 @@
    _producten()         - de producten die bij één aanbieding horen
    _is_weekaanbieding   - houdt doorlopende online kortingen buiten de lijst
    _loopt_vandaag       - houdt de folder van volgende week buiten de lijst
-   _assortiment()       - het hele assortiment, tak voor tak
-   _productgroepen()    - de groepen zoals ze op de producten staan
+   _Assortiment         - het assortiment plus de lade waar elk product in ligt
+   _assortiment()       - loopt de winkelindeling af, afdeling voor lade
    _aanvulling()        - wat de folder mist, meerpakken inbegrepen
    _meerpak_inhoud()    - de inhoud van een meerpak, ontleend aan het losse pak
 ===============================================================================
@@ -30,6 +31,7 @@ from __future__ import annotations
 
 import logging
 import time
+from dataclasses import dataclass, field
 from datetime import date
 from typing import Any, Iterator
 
@@ -295,12 +297,21 @@ def _actie_tekst(product: dict[str, Any]) -> str | None:
     return None
 
 
-def _naar_aanbieding(product: dict[str, Any], inhoud_tekst: str | None = None) -> Aanbieding:
+def _naar_aanbieding(
+    product: dict[str, Any],
+    inhoud_tekst: str | None = None,
+    productgroep: str | None = None,
+) -> Aanbieding:
     """
     Vertaalt één product van Albert Heijn naar onze eigen vorm.
 
     Bij een meerpak geeft de aanroeper de totale inhoud mee; die staat namelijk
     niet in de bron, want "3 stuks" zegt niets over kilo's.
+
+    De productgroep komt van buiten: dat is de lade uit de winkelindeling
+    ("Koffiebonen"), die het product zelf niet bij zich draagt. Is die onbekend,
+    dan valt hij terug op het schaplabel ("Lavazza koffiebonen") — beter iets dan
+    niets.
     """
     afbeeldingen = product.get("images") or []
     afbeelding = None
@@ -314,7 +325,7 @@ def _naar_aanbieding(product: dict[str, Any], inhoud_tekst: str | None = None) -
         bron_id=str(product["webshopId"]),
         product_naam=product.get("title") or "",
         merk=product.get("brand"),
-        productgroep=product.get("subCategory"),
+        productgroep=productgroep or product.get("subCategory"),
         actie_tekst=_actie_tekst(product),
         actieprijs=product.get("currentPrice"),
         normale_prijs=product.get("priceBeforeBonus"),
@@ -405,44 +416,76 @@ def _producten_in_tak(
         time.sleep(_PAUZE_SECONDEN)
 
 
-def _assortiment(
-    sessie: requests.Session, koppen: dict[str, str]
-) -> dict[str, dict[str, Any]]:
+@dataclass
+class _Assortiment:
     """
-    Het hele assortiment van de winkel, tak voor tak.
+    Het hele assortiment, met bij elk product de lade waar het in ligt.
 
-    Deze ene rondgang levert twee dingen op. Ten eerste de aanbiedingen die de
-    folder niet noemt — meerpakken staan alleen hier. Ten tweede de volledige
-    productgroep-indeling, en dan precies zoals die op de producten zelf staat.
-    Een tak die te groot is om in één keer te overzien, splitsen we op.
+    De lade is wat de klant in de winkel als groep herkent: "Koffiebonen",
+    "Filterkoffie", "Kipfilet". Het product zelf draagt die naam niet bij zich —
+    alleen de afdeling ("Koffie, thee") en een schaplabel met het merk erin
+    ("Lavazza koffiebonen"). Daarom onthouden we tijdens de rondgang uit welke
+    lade elk product kwam.
+
+    Ligt een product in twee laden, dan wint de eerste die we tegenkomen. De
+    volgorde van de winkelindeling ligt vast, dus dat is elke ochtend dezelfde.
+    """
+
+    producten: dict[str, dict[str, Any]] = field(default_factory=dict)
+    laden: dict[str, str] = field(default_factory=dict)
+
+    def bewaar(self, producten: list[dict[str, Any]], lade: str | None = None) -> None:
+        for product in producten:
+            bron_id = str(product.get("webshopId") or "")
+            if not bron_id:
+                continue
+            self.producten[bron_id] = product
+            if lade and bron_id not in self.laden:
+                self.laden[bron_id] = lade
+
+    def groep_van(self, product: dict[str, Any]) -> str | None:
+        """De lade van dit product, of niets als het er in geen enkele lag."""
+        return self.laden.get(str(product.get("webshopId") or ""))
+
+    def groepen(self) -> list[str]:
+        """De winkelindeling zoals hij op het profielscherm komt te staan."""
+        return sorted({lade.strip() for lade in self.laden.values() if lade.strip()})
+
+
+def _assortiment(sessie: requests.Session, koppen: dict[str, str]) -> _Assortiment:
+    """
+    Het hele assortiment van de winkel, afdeling voor afdeling en lade voor lade.
+
+    Deze rondgang levert drie dingen op. Ten eerste de aanbiedingen die de folder
+    niet noemt — meerpakken staan alleen hier. Ten tweede de winkelindeling voor
+    de keuzelijst op het profielscherm. Ten derde, en dat is waar het om begonnen
+    is, bij elk product de lade waar het in ligt.
+
+    We halen elke afdeling én elke lade daaronder op. Dat eerste lijkt dubbel
+    werk, maar een product dat in geen enkele lade is ingedeeld zouden we anders
+    helemaal niet zien — en dan misten we zijn aanbieding.
     """
     categorieen = _hoofdcategorieen(sessie, koppen)
     if not categorieen:
         log.warning("Geen productindeling gekregen van Albert Heijn.")
-        return {}
+        return _Assortiment()
 
-    assortiment: dict[str, dict[str, Any]] = {}
+    assortiment = _Assortiment()
     onvolledig: list[str] = []
-
-    def _bewaar(producten: list[dict[str, Any]]) -> None:
-        for product in producten:
-            if product.get("webshopId"):
-                assortiment[str(product["webshopId"])] = product
+    laden = 0
 
     for categorie in categorieen:
-        producten, volledig = _producten_in_tak(sessie, koppen, categorie.get("slugifiedName") or "")
-        _bewaar(producten)
-
-        if not volledig:
-            # Te groot of even niet bereikbaar: een niveau dieper proberen.
-            for tak in _subcategorieen(sessie, koppen, categorie.get("id")):
-                deel, tak_volledig = _producten_in_tak(sessie, koppen, tak.get("slugifiedName") or "")
-                _bewaar(deel)
-                if not tak_volledig:
-                    onvolledig.append(f"{categorie.get('name')} / {tak.get('name')}")
-                time.sleep(_PAUZE_SECONDEN)
-
+        producten, _ = _producten_in_tak(sessie, koppen, categorie.get("slugifiedName") or "")
+        assortiment.bewaar(producten)
         time.sleep(_PAUZE_SECONDEN)
+
+        for tak in _subcategorieen(sessie, koppen, categorie.get("id")):
+            deel, volledig = _producten_in_tak(sessie, koppen, tak.get("slugifiedName") or "")
+            assortiment.bewaar(deel, lade=(tak.get("name") or "").strip() or None)
+            laden += 1
+            if not volledig:
+                onvolledig.append(f"{categorie.get('name')} / {tak.get('name')}")
+            time.sleep(_PAUZE_SECONDEN)
 
     if onvolledig:
         log.warning(
@@ -450,21 +493,17 @@ def _assortiment(
             ", ".join(onvolledig),
         )
 
-    bonus = sum(1 for p in assortiment.values() if p.get("isBonus"))
-    log.info("  %s producten in het assortiment, %s met een bonuslabel.", len(assortiment), bonus)
+    zonder_lade = len(assortiment.producten) - len(assortiment.laden)
+    bonus = sum(1 for p in assortiment.producten.values() if p.get("isBonus"))
+    log.info(
+        "  %s producten in het assortiment, %s met een bonuslabel; "
+        "%s laden in %s afdelingen, %s producten zonder lade.",
+        len(assortiment.producten), bonus, laden, len(categorieen), zonder_lade,
+    )
     return assortiment
 
 
-def _productgroepen(assortiment: dict[str, dict[str, Any]]) -> list[str]:
-    """De productgroepen zoals ze op de producten zelf staan."""
-    return sorted({
-        (product.get("subCategory") or "").strip()
-        for product in assortiment.values()
-        if (product.get("subCategory") or "").strip()
-    })
-
-
-def _meerpak_inhoud(product: dict[str, Any], assortiment: dict[str, dict[str, Any]]) -> str | None:
+def _meerpak_inhoud(product: dict[str, Any], assortiment: _Assortiment) -> str | None:
     """
     De totale inhoud van een meerpak, afgeleid van het losse pak.
 
@@ -476,7 +515,7 @@ def _meerpak_inhoud(product: dict[str, Any], assortiment: dict[str, dict[str, An
     if len(onderdelen) != 1:
         return None
 
-    los = assortiment.get(str(onderdelen[0].get("productId")))
+    los = assortiment.producten.get(str(onderdelen[0].get("productId")))
     aantal = onderdelen[0].get("quantity")
     inhoud = lees_inhoud((los or {}).get("salesUnitSize"))
     if not los or not aantal or not inhoud:
@@ -486,7 +525,7 @@ def _meerpak_inhoud(product: dict[str, Any], assortiment: dict[str, dict[str, An
 
 
 def _aanvulling(
-    assortiment: dict[str, dict[str, Any]], uit_folder: set[str], einde_week: str
+    assortiment: _Assortiment, uit_folder: set[str], einde_week: str
 ) -> list[Aanbieding]:
     """
     Alles wat vandaag in de bonus is maar niet in de folder stond.
@@ -504,7 +543,7 @@ def _aanvulling(
     """
     lopend = {
         bron_id: product
-        for bron_id, product in assortiment.items()
+        for bron_id, product in assortiment.producten.items()
         if _is_weekaanbieding(product)
         and _loopt_vandaag(product)
         and (not einde_week or (product.get("bonusEndDate") or "") <= einde_week)
@@ -528,7 +567,7 @@ def _aanvulling(
             meerpakken += 1
 
         try:
-            extra.append(_naar_aanbieding(product, inhoud_tekst))
+            extra.append(_naar_aanbieding(product, inhoud_tekst, assortiment.groep_van(product)))
         except (KeyError, TypeError, ValueError) as fout:
             log.warning("Product %s van Albert Heijn overgeslagen: %s", bron_id, fout)
 
@@ -543,17 +582,27 @@ def haal_op() -> Oogst:
     """
     Haalt alle aanbiedingen op die vandaag bij Albert Heijn lopen.
 
-    Twee sporen: eerst de bonusfolder van deze week, daarna één rondgang door
-    het hele assortiment. Die rondgang vult aan wat de folder niet noemt
-    (meerpakken vooral) en levert meteen de volledige productgroep-indeling voor
-    de keuzelijst. Het tweede spoor is aanvullend — mislukt het, dan gaat de
-    ronde gewoon door met de folder alleen.
+    Twee sporen: eerst een rondgang door het hele assortiment, daarna de
+    bonusfolder van deze week. De rondgang levert de winkelindeling — welke lade
+    hoort bij welk product — en vult aan wat de folder niet noemt (meerpakken
+    vooral). Hij gaat als eerste, want de folder zegt zelf niet in welke lade een
+    product ligt; dat weten we pas na de rondgang.
+
+    De rondgang is aanvullend: mislukt hij, dan gaat de ronde gewoon door met de
+    folder alleen. De productgroep valt dan terug op het schaplabel van Albert
+    Heijn, dat het merk in de naam heeft.
 
     Stopt wél met een foutmelding als de folder zelf niet te krijgen is of als
     een te groot deel ervan mislukt. Dat is met opzet: een halve lijst
     wegschrijven is erger dan de lijst van gisteren laten staan.
     """
     sessie, koppen = _verbinding()
+
+    try:
+        assortiment = _assortiment(sessie, koppen)
+    except requests.RequestException as fout:
+        log.warning("Het assortiment doorlopen lukte niet (%s); alleen de folder gebruikt.", fout)
+        assortiment = _Assortiment()
 
     periode = _periode(sessie, koppen)
     datum = periode.get("bonusStartDate") or date.today().isoformat()
@@ -574,7 +623,7 @@ def haal_op() -> Oogst:
         if not product.get("title") or not product.get("webshopId"):
             continue
         try:
-            aanbieding = _naar_aanbieding(product)
+            aanbieding = _naar_aanbieding(product, productgroep=assortiment.groep_van(product))
         except (KeyError, TypeError, ValueError) as fout:
             log.warning(
                 "Product %s van Albert Heijn overgeslagen: %s",
@@ -584,12 +633,6 @@ def haal_op() -> Oogst:
         gevonden[aanbieding.bron_id] = aanbieding
 
     log.info("  %s aanbiedingen uit de bonusfolder.", len(gevonden))
-
-    try:
-        assortiment = _assortiment(sessie, koppen)
-    except requests.RequestException as fout:
-        log.warning("Het assortiment doorlopen lukte niet (%s); alleen de folder gebruikt.", fout)
-        assortiment = {}
 
     for aanbieding in _aanvulling(assortiment, set(gevonden), periode.get("bonusEndDate") or ""):
         gevonden[aanbieding.bron_id] = aanbieding
@@ -601,4 +644,4 @@ def haal_op() -> Oogst:
         WINKEL_NAAM, bekeken, len(gevonden), zonder_kiloprijs,
     )
 
-    return Oogst(list(gevonden.values()), _productgroepen(assortiment))
+    return Oogst(list(gevonden.values()), assortiment.groepen())
