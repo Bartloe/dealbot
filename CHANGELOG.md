@@ -11,7 +11,8 @@
   producten zelf. Dealbot loopt de winkelindeling nu lade voor lade af en
   onthoudt bij elk product waar het lag.
 - **Eén keuze "Koffiebonen" pakt nu alle merken**, ook merken die er volgend jaar
-  bij komen. Op dit moment zijn dat 45 aanbiedingen bij Albert Heijn.
+  bij komen. Op dit moment zijn dat 22 weekaanbiedingen bij Albert Heijn — de
+  goedkoopste is Douwe Egberts Aroma rood voordeelpak voor € 14,24 per kilo.
 - Alleen op een merk zoeken kan nog steeds: kies de groep *Koffiebonen* en vul
   daarbij het veld **Merk** in. Dat veld stond er al.
 - **Bijvangst: Jumbo noemt zijn laden bijna net zo.** Een zoekvraag bewaart alleen
