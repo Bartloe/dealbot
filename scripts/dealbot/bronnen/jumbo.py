@@ -2,19 +2,24 @@
 ===============================================================================
  Dealbot — aanbiedingen ophalen bij Jumbo
 
- Versie      : 1.1
- Reden       : De productgroep van Jumbo (category) gaat nu naar het veld
-               "productgroep" in plaats van "variant" — zelfde gegeven, eerlijke
-               naam. Jumbo deelt grof in ("Koffie en thee"), Albert Heijn fijn;
-               daarom staat de winkelnaam bij de keuzelijst op het scherm.
- Datum       : 31-07-2026 01:12
+ Versie      : 2.0
+ Reden       : Twee dingen tegelijk rechtgezet. De productgroep was bij Jumbo de
+               hele afdeling ("Koffie en thee", 18 stuks); dat is te grof om iets
+               aan te hebben. Elk product noemt zijn hele indelingspad, dus
+               nemen we voortaan de onderste laag ("Koffiebonen") — net zo fijn
+               als bij Albert Heijn. En de keuzelijst put nu uit de volledige
+               winkelindeling van 2480 groepen, niet meer alleen uit wat er
+               toevallig in de bonus lag.
+ Datum       : 01-08-2026 18:30
 
  Onderdelen:
-   haal_op()        - geeft alle actuele weekaanbiedingen terug
-   _vraag_folder()  - haalt het aanbiedingenblad op bij Jumbo
-   _aanbiedingen()  - pelt de losse aanbiedingen uit het antwoord
-   _actie_tekst()   - kiest het label dat de korting beschrijft
-   _inhoud_tekst()  - maakt van "570.0" + "ml" een leesbare inhoud
+   haal_op()          - de weekaanbiedingen én de volledige winkelindeling
+   _vraag_folder()    - haalt het aanbiedingenblad op bij Jumbo
+   _aanbiedingen()    - pelt de losse aanbiedingen uit het antwoord
+   _productgroep()    - de onderste laag van het indelingspad van een product
+   _productgroepen()  - de hele winkelindeling, los van de aanbiedingen
+   _actie_tekst()     - kiest het label dat de korting beschrijft
+   _inhoud_tekst()    - maakt van "570.0" + "ml" een leesbare inhoud
 ===============================================================================
 """
 
@@ -25,7 +30,7 @@ from typing import Any, Iterator
 
 import requests
 
-from ..model import Aanbieding, maak_aanbieding
+from ..model import Aanbieding, Oogst, maak_aanbieding
 
 log = logging.getLogger(__name__)
 
@@ -82,11 +87,21 @@ fragment Artikel on Product {
   title
   brand
   category: rootCategory
+  categories { name }
   netContent
   weightMeasure
   image
   link
   price { price promoPrice }
+}
+"""
+
+# De hele winkelindeling in één vraag: alle groepen die Jumbo kent, van afdeling
+# tot onderste laag. Hiermee is ook een groep aan te vinken die deze week niets
+# in de aanbieding heeft.
+_VRAAG_GROEPEN = """
+query Productgroepen {
+  categories { name }
 }
 """
 
@@ -151,6 +166,56 @@ def _aanbiedingen(blad: dict[str, Any]) -> Iterator[dict[str, Any]]:
             for actie in acties:
                 if actie.get("active") and not actie.get("hidden"):
                     yield actie
+
+
+def _productgroep(product: dict[str, Any]) -> str | None:
+    """
+    De productgroep van één product: de onderste laag van zijn indelingspad.
+
+    Jumbo geeft het hele pad mee, van "Koffie en thee" tot "Koffiebonen". De
+    bovenste laag is een halve winkel en zegt te weinig; de onderste is precies
+    wat je wilt kunnen aanvinken. Ontbreekt het pad, dan valt hij terug op de
+    afdeling.
+    """
+    pad = [
+        (laag.get("name") or "").strip()
+        for laag in product.get("categories") or []
+        if (laag.get("name") or "").strip()
+    ]
+    return pad[-1] if pad else (product.get("category") or None)
+
+
+def _productgroepen(sessie: requests.Session) -> list[str]:
+    """
+    De volledige winkelindeling van Jumbo, los van de aanbiedingen.
+
+    Lukt dit niet, dan is dat vervelend maar niet fataal: de keuzelijst valt dan
+    terug op de groepen die in de aanbiedingen zelf voorkomen.
+    """
+    try:
+        antwoord = sessie.post(
+            _URL, json={"query": _VRAAG_GROEPEN}, headers=_KOPPEN, timeout=60,
+        )
+        antwoord.raise_for_status()
+        inhoud = antwoord.json()
+    except (requests.RequestException, ValueError) as fout:
+        log.warning("Winkelindeling van Jumbo niet opgehaald: %s", fout)
+        return []
+
+    if inhoud.get("errors"):
+        log.warning(
+            "Jumbo gaf een foutmelding op de winkelindeling: %s",
+            inhoud["errors"][0].get("message", "onbekend"),
+        )
+        return []
+
+    groepen = sorted({
+        (groep.get("name") or "").strip()
+        for groep in (inhoud.get("data") or {}).get("categories") or []
+        if (groep.get("name") or "").strip()
+    })
+    log.info("  %s productgroepen in de winkelindeling van Jumbo.", len(groepen))
+    return groepen
 
 
 def _actie_tekst(actie: dict[str, Any]) -> str | None:
@@ -224,7 +289,7 @@ def _naar_aanbieding(product: dict[str, Any], actie: dict[str, Any]) -> Aanbiedi
         bron_id=str(product["sku"]),
         product_naam=product.get("title") or "",
         merk=product.get("brand"),
-        productgroep=product.get("category"),
+        productgroep=_productgroep(product),
         actie_tekst=_actie_tekst(actie),
         actieprijs=_euro(prijzen.get("promoPrice")),
         normale_prijs=_euro(prijzen.get("price")),
@@ -251,9 +316,9 @@ def _voordeligste(nieuw: Aanbieding, bestaand: Aanbieding | None) -> Aanbieding:
     return nieuw if nieuw.prijs < bestaand.prijs else bestaand
 
 
-def haal_op() -> list[Aanbieding]:
+def haal_op() -> Oogst:
     """
-    Haalt alle actuele weekaanbiedingen van Jumbo op.
+    Haalt alle actuele weekaanbiedingen van Jumbo op, plus de winkelindeling.
 
     Lukt het ophalen zelf niet, dan stopt het met een foutmelding: dan is er
     iets structureel mis. Losse producten die niet te vertalen zijn, worden
@@ -297,4 +362,4 @@ def haal_op() -> list[Aanbieding]:
         WINKEL_NAAM, acties, bekeken, len(gevonden), zonder_kiloprijs,
     )
 
-    return list(gevonden.values())
+    return Oogst(list(gevonden.values()), _productgroepen(sessie))

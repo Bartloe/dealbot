@@ -2,11 +2,12 @@
 ===============================================================================
  Dealbot — het dagelijkse ophalen van aanbiedingen
 
- Versie      : 1.3
- Reden       : Elke ronde geeft nu ook door welke productgroepen zijn gezien, zodat
-               de keuzelijst op het profielscherm blijft groeien en je een
-               zoekvraag kunt zetten op een groep die deze week niet in de bonus is.
- Datum       : 31-07-2026 11:31
+ Versie      : 1.4
+ Reden       : Een winkel levert nu een oogst op: de aanbiedingen én de volledige
+               productgroep-indeling van die winkel. Daarmee dekt de keuzelijst
+               op het profielscherm het hele assortiment, en niet meer alleen wat
+               er ooit in de bonus lag.
+ Datum       : 01-08-2026 18:55
 
  Onderdelen:
    main()          - gaat alle winkels langs en vat het resultaat samen
@@ -84,23 +85,23 @@ def verwerk_winkel(database: Database, winkel_id: int, naam: str, haal_op) -> in
     log_id, moment = database.start_ronde(winkel_id)
 
     try:
-        aanbiedingen = haal_op()
+        oogst = haal_op()
     except Exception as fout:  # noqa: BLE001 - elke bronfout netjes vastleggen
         log.error("%s: ophalen mislukt: %s", naam, fout)
         database.sluit_ronde(log_id, "mislukt", 0, f"Ophalen mislukt: {fout}")
         return 0
 
-    if not aanbiedingen:
+    if not oogst.aanbiedingen:
         log.warning("%s: geen aanbiedingen gevonden, oude lijst blijft staan.", naam)
         database.sluit_ronde(log_id, "mislukt", 0, "Geen aanbiedingen gevonden.")
         return 0
 
     try:
-        aantal = database.schrijf(aanbiedingen, moment)
+        aantal = database.schrijf(oogst.aanbiedingen, moment)
         database.ruim_oude_op(winkel_id, moment)
         # Pas hierna: de groepenlijst is een naslagwerk, geen voorwaarde. Mislukt
         # hij, dan zijn de aanbiedingen zelf al veilig binnen.
-        database.onthoud_groepen(winkel_id, aanbiedingen)
+        database.onthoud_groepen(winkel_id, oogst.alle_groepen())
     except DatabaseFout as fout:
         log.error("%s: wegschrijven mislukt: %s", naam, fout)
         database.sluit_ronde(log_id, "mislukt", 0, f"Wegschrijven mislukt: {fout}")
@@ -117,16 +118,18 @@ def proefdraai() -> int:
     for _, naam, haal_op in WINKELS:
         log.info("== %s (proef) ==", naam)
         try:
-            aanbiedingen = haal_op()
+            oogst = haal_op()
         except Exception as fout:  # noqa: BLE001
             log.error("%s: ophalen mislukt: %s", naam, fout)
             continue
 
+        aanbiedingen = oogst.aanbiedingen
         totaal += len(aanbiedingen)
         met_kiloprijs = sum(1 for a in aanbiedingen if a.prijs_per_eenheid is not None)
         log.info(
-            "%s: %s aanbiedingen, waarvan %s met kilo- of literprijs.",
-            naam, len(aanbiedingen), met_kiloprijs,
+            "%s: %s aanbiedingen, waarvan %s met kilo- of literprijs; "
+            "%s productgroepen in de winkelindeling.",
+            naam, len(aanbiedingen), met_kiloprijs, len(oogst.alle_groepen()),
         )
         for aanbieding in sorted(
             (a for a in aanbiedingen if a.prijs_per_eenheid),

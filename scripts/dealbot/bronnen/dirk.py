@@ -2,15 +2,16 @@
 ===============================================================================
  Dealbot — aanbiedingen ophalen bij Dirk van den Broek
 
- Versie      : 1.1
- Reden       : De afdeling van Dirk (department) gaat nu naar het veld
-               "productgroep" in plaats van "variant" — zelfde gegeven, eerlijke
-               naam. Dirk deelt grof in ("Dranken, sap, koffie & thee"); juist
-               die brede groepen maakten vrije tekst onbetrouwbaar.
- Datum       : 31-07-2026 01:12
+ Versie      : 1.2
+ Reden       : De keuzelijst op het profielscherm kende alleen de afdelingen
+               waar deze week iets in de aanbieding lag: elf van de zeventien.
+               Dirk noemt zijn hele indeling in één vraag, dus die halen we nu op
+               en geven we mee met de ophaalronde. Zo is ook "Bloemen & planten"
+               aan te vinken in een week dat daar niets van in de folder staat.
+ Datum       : 01-08-2026 18:40
 
  Onderdelen:
-   haal_op()        - geeft alle actuele weekaanbiedingen terug
+   haal_op()        - de weekaanbiedingen én de volledige afdelingenlijst
    _vraag()         - stelt één vraag aan de gegevensingang van Dirk
    _afdelingen()    - welke afdelingen er zijn (groente, zuivel, ...)
    _actie_tekst()   - alleen een label als het iets toevoegt, zoals "VR, ZA & ZO"
@@ -29,7 +30,7 @@ from urllib.parse import quote
 
 import requests
 
-from ..model import Aanbieding, maak_aanbieding
+from ..model import Aanbieding, Oogst, maak_aanbieding
 
 log = logging.getLogger(__name__)
 
@@ -132,20 +133,25 @@ def _vraag(sessie: requests.Session, query: str, variabelen: dict[str, Any]) -> 
     return inhoud.get("data") or {}
 
 
-def _afdelingen(sessie: requests.Session) -> list[int]:
-    """De afdelingen waarin Dirk zijn aanbiedingen indeelt."""
+def _afdelingen(sessie: requests.Session) -> list[dict[str, Any]]:
+    """
+    De afdelingen waarin Dirk zijn winkel indeelt, met nummer en naam.
+
+    Dit is de hele indeling, niet alleen de afdelingen waar deze week iets in de
+    aanbieding ligt. De namen voeden de keuzelijst op het profielscherm.
+    """
     try:
         data = _vraag(sessie, _VRAAG_AFDELINGEN, {})
-        nummers = [
-            afdeling["id"]
+        afdelingen = [
+            {"id": afdeling["id"], "naam": (afdeling.get("description") or "").strip()}
             for afdeling in (data.get("listDepartments") or {}).get("departments") or []
             if afdeling.get("id") is not None
         ]
     except DirkFout as fout:
         log.warning("Afdelingenlijst van Dirk niet opgehaald (%s); vaste lijst gebruikt.", fout)
-        return _AFDELINGEN_TERUGVAL
+        return [{"id": nummer, "naam": ""} for nummer in _AFDELINGEN_TERUGVAL]
 
-    return nummers or _AFDELINGEN_TERUGVAL
+    return afdelingen or [{"id": nummer, "naam": ""} for nummer in _AFDELINGEN_TERUGVAL]
 
 
 def _slug(tekst: str | None) -> str:
@@ -236,28 +242,29 @@ def _voordeligste(nieuw: Aanbieding, bestaand: Aanbieding | None) -> Aanbieding:
     return nieuw if nieuw.prijs < bestaand.prijs else bestaand
 
 
-def haal_op() -> list[Aanbieding]:
+def haal_op() -> Oogst:
     """
-    Haalt alle actuele weekaanbiedingen van Dirk op.
+    Haalt alle actuele weekaanbiedingen van Dirk op, plus zijn afdelingenlijst.
 
     De folder komt per afdeling binnen. Gaat één afdeling mis, dan gaat het
     script door met de rest: liever een lijst die een hoek mist dan helemaal
     geen lijst.
     """
     sessie = requests.Session()
+    afdelingen = _afdelingen(sessie)
 
     gevonden: dict[str, Aanbieding] = {}
     acties = 0
     bekeken = 0
 
-    for afdeling in _afdelingen(sessie):
+    for afdeling in afdelingen:
         try:
             data = _vraag(
                 sessie, _VRAAG_AANBIEDINGEN,
-                {"winkel": _WINKEL_NUMMER, "afdeling": afdeling},
+                {"winkel": _WINKEL_NUMMER, "afdeling": afdeling["id"]},
             )
         except DirkFout as fout:
-            log.warning("Afdeling %s van Dirk overgeslagen: %s", afdeling, fout)
+            log.warning("Afdeling %s van Dirk overgeslagen: %s", afdeling.get("naam"), fout)
             continue
 
         for actie in (data.get("listOffers") or {}).get("currentOffers") or []:
@@ -296,4 +303,7 @@ def haal_op() -> list[Aanbieding]:
         WINKEL_NAAM, acties, bekeken, len(gevonden), zonder_kiloprijs,
     )
 
-    return list(gevonden.values())
+    groepen = sorted({afdeling["naam"] for afdeling in afdelingen if afdeling["naam"]})
+    log.info("  %s afdelingen in de winkelindeling van Dirk.", len(groepen))
+
+    return Oogst(list(gevonden.values()), groepen)

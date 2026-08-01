@@ -2,12 +2,12 @@
 ===============================================================================
  Dealbot — verkeer met de database (Supabase)
 
- Versie      : 1.1
- Reden       : Dealbot onthoudt voortaan welke productgroepen hij ooit bij een
-               winkel heeft gezien. Zonder dat kon je alleen een zoekvraag
-               zetten op een groep die deze week toevallig in de bonus was,
-               terwijl je juist wilt wachten tot dat gebeurt.
- Datum       : 31-07-2026 11:31
+ Versie      : 1.2
+ Reden       : De groepenlijst krijgt voortaan de volledige winkelindeling
+               binnen in plaats van alleen de groepen die in de aanbiedingen
+               voorkwamen. Een groep die nog nooit in de bonus zat, was daardoor
+               niet aan te vinken — en werd volgende week dus gemist.
+ Datum       : 01-08-2026 18:50
 
  Onderdelen:
    Database.start_ronde()      - zet een regel in het logboek en geeft het moment
@@ -174,23 +174,21 @@ class Database:
 
     # -- productgroepen ------------------------------------------------------
 
-    def onthoud_groepen(self, winkel_id: int, aanbiedingen: list[Aanbieding]) -> int:
+    def onthoud_groepen(self, winkel_id: int, groepen: list[str]) -> int:
         """
         Vult de blijvende lijst met productgroepen aan.
 
+        Hier komt de volledige indeling van de winkel binnen — het hele
+        assortiment dus, niet alleen wat er deze week in de bonus ligt. Daardoor
+        is elke groep aan te vinken als zoekvraag, ook eentje die nog nooit in de
+        aanbieding heeft gezeten. Precies waar een zoekvraag voor bedoeld is.
+
         De aanbiedingen worden elke ochtend vervangen, deze lijst niet: hij
-        groeit alleen maar. Daardoor blijft een groep te kiezen als zoekvraag,
-        ook in een week dat er niets van in de bonus ligt — precies waar een
-        zoekvraag voor bedoeld is.
+        groeit alleen maar aan.
 
         Lukt dit niet, dan is dat vervelend maar niet fataal: de aanbiedingen
         zelf staan er dan al in. De ronde gaat dus gewoon door.
         """
-        groepen = sorted({
-            aanbieding.productgroep.strip()
-            for aanbieding in aanbiedingen
-            if aanbieding.productgroep and aanbieding.productgroep.strip()
-        })
         if not groepen:
             log.info("  Geen productgroepen om te onthouden.")
             return 0

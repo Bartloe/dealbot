@@ -2,16 +2,17 @@
 ===============================================================================
  Dealbot — gemeenschappelijke vorm van een aanbieding
 
- Versie      : 1.1
- Reden       : Het veld "variant" heet voortaan "productgroep". Alle drie de
-               winkels leveren daarin hun eigen indeling mee — dat is iets
-               anders dan een variant als "espresso", en de naam wekte de
-               verkeerde verwachting op het profielscherm.
- Datum       : 31-07-2026 01:12
+ Versie      : 1.2
+ Reden       : Een ophaalronde levert voortaan twee dingen op: de aanbiedingen
+               én de volledige productgroep-indeling van die winkel. Die tweede
+               is nodig om een groep te kunnen aanvinken die op dit moment niet
+               in de bonus ligt.
+ Datum       : 01-08-2026 18:05
 
  Onderdelen:
    Aanbieding      - één aanbieding zoals die in de database terechtkomt
    maak_aanbieding - vult de kiloprijs en de groepeersleutel automatisch aan
+   Oogst           - wat één ophaalronde bij één winkel oplevert
 ===============================================================================
 """
 
@@ -65,6 +66,34 @@ class Aanbieding:
             "product_url": self.product_url,
             "afbeelding_url": self.afbeelding_url,
         }
+
+
+@dataclass
+class Oogst:
+    """
+    Wat één ophaalronde bij één winkel oplevert.
+
+    Naast de aanbiedingen van deze week gaat de volledige productgroep-indeling
+    van de winkel mee: het hele assortiment dus, niet alleen wat er nu in de
+    bonus ligt. Daarmee blijft de keuzelijst op het profielscherm compleet, ook
+    voor groepen die deze week niets in de aanbieding hebben.
+
+    Lukt het niet die indeling op te halen, dan blijft de lijst leeg en vallen
+    we terug op de groepen die in de aanbiedingen zelf voorkomen.
+    """
+
+    aanbiedingen: list[Aanbieding] = field(default_factory=list)
+    productgroepen: list[str] = field(default_factory=list)
+
+    def alle_groepen(self) -> list[str]:
+        """De winkelindeling, aangevuld met wat er in de aanbiedingen langskwam."""
+        groepen = {groep.strip() for groep in self.productgroepen if groep and groep.strip()}
+        groepen |= {
+            aanbieding.productgroep.strip()
+            for aanbieding in self.aanbiedingen
+            if aanbieding.productgroep and aanbieding.productgroep.strip()
+        }
+        return sorted(groepen)
 
 
 def maak_aanbieding(

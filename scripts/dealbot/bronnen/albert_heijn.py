@@ -2,25 +2,27 @@
 ===============================================================================
  Dealbot — aanbiedingen ophalen bij Albert Heijn
 
- Versie      : 3.0
+ Versie      : 3.1
  Reden       : De bonusfolder bleek tóch niet alles te noemen. Meerpakken staan
                er niet in (de koffiebonen 3-packs van Douwe Egberts en L'OR
                bijvoorbeeld) en ook een paar honderd gewone schapaanbiedingen
-               ontbraken. Naast de folder lopen we daarom nu het hele assortiment
-               langs op bonuslabel en vullen we aan wat de folder mist.
- Datum       : 01-08-2026 16:42
+               ontbraken. Naast de folder maakt Dealbot daarom één rondgang door
+               het hele assortiment. Die levert meteen de volledige
+               productgroep-indeling voor de keuzelijst op het profielscherm.
+ Datum       : 01-08-2026 18:20
 
  Onderdelen:
-   haal_op()              - alle aanbiedingen die vandaag lopen
-   _anoniem_token()       - haalt de tijdelijke toegangssleutel op
-   _periode()             - de bonusweek waarin vandaag valt
-   _segmenten()           - alle aanbiedingen (segmenten) uit de folder
-   _producten()           - de producten die bij één aanbieding horen
-   _is_weekaanbieding     - houdt doorlopende online kortingen buiten de lijst
-   _loopt_vandaag         - houdt de folder van volgende week buiten de lijst
-   _bonus_uit_assortiment - alle bonusproducten, tak voor tak door het assortiment
-   _aanvulling()          - wat de folder mist, meerpakken inbegrepen
-   _meerpak_inhoud()      - de inhoud van een meerpak, ontleend aan het losse pak
+   haal_op()            - de aanbiedingen van vandaag én de winkelindeling
+   _anoniem_token()     - haalt de tijdelijke toegangssleutel op
+   _periode()           - de bonusweek waarin vandaag valt
+   _segmenten()         - alle aanbiedingen (segmenten) uit de folder
+   _producten()         - de producten die bij één aanbieding horen
+   _is_weekaanbieding   - houdt doorlopende online kortingen buiten de lijst
+   _loopt_vandaag       - houdt de folder van volgende week buiten de lijst
+   _assortiment()       - het hele assortiment, tak voor tak
+   _productgroepen()    - de groepen zoals ze op de producten staan
+   _aanvulling()        - wat de folder mist, meerpakken inbegrepen
+   _meerpak_inhoud()    - de inhoud van een meerpak, ontleend aan het losse pak
 ===============================================================================
 """
 
@@ -33,7 +35,7 @@ from typing import Any, Iterator
 
 import requests
 
-from ..model import Aanbieding, maak_aanbieding
+from ..model import Aanbieding, Oogst, maak_aanbieding
 from ..normalisatie import lees_inhoud
 
 log = logging.getLogger(__name__)
@@ -92,6 +94,17 @@ def _anoniem_token(sessie: requests.Session) -> str:
         raise AlbertHeijnFout(
             f"Kon geen toegangssleutel krijgen bij Albert Heijn: {fout}"
         ) from fout
+
+
+def _verbinding() -> tuple[requests.Session, dict[str, str]]:
+    """Een sessie met een verse toegangssleutel, klaar om vragen te stellen."""
+    sessie = requests.Session()
+    token = _anoniem_token(sessie)
+    return sessie, {
+        "Authorization": f"Bearer {token}",
+        "User-Agent": _USER_AGENT,
+        "X-Application": "AHWEBSHOP",
+    }
 
 
 def _haal_json(
@@ -357,11 +370,11 @@ def _subcategorieen(
     return (inhoud or {}).get("children") or []
 
 
-def _bonus_in_tak(
+def _producten_in_tak(
     sessie: requests.Session, koppen: dict[str, str], slug: str
 ) -> tuple[list[dict[str, Any]], bool]:
     """
-    Alle producten met een bonuslabel in één tak van het assortiment.
+    Alle producten in één tak van het assortiment.
 
     Geeft de producten terug plus of de tak helemaal te overzien was. Bij meer
     producten dan de zoekingang wil tonen is het antwoord "nee" en kijkt de
@@ -373,7 +386,7 @@ def _bonus_in_tak(
     while True:
         inhoud = _haal_json(
             sessie, koppen, f"{_BASIS_URL}/{_ZOEK_PAD}",
-            taxonomySlug=slug, filters="bonus=true", size=_ZOEK_GROOTTE, page=pagina,
+            taxonomySlug=slug, size=_ZOEK_GROOTTE, page=pagina,
         )
         if inhoud is None:
             return producten, False
@@ -392,36 +405,39 @@ def _bonus_in_tak(
         time.sleep(_PAUZE_SECONDEN)
 
 
-def _bonus_uit_assortiment(
+def _assortiment(
     sessie: requests.Session, koppen: dict[str, str]
 ) -> dict[str, dict[str, Any]]:
     """
-    Elk product in de winkel dat op dit moment een bonuslabel draagt.
+    Het hele assortiment van de winkel, tak voor tak.
 
-    De folder vertelt niet alles: meerpakken staan er niet in en een enkele
-    schapaanbieding evenmin. Daarom lopen we het assortiment tak voor tak langs.
+    Deze ene rondgang levert twee dingen op. Ten eerste de aanbiedingen die de
+    folder niet noemt — meerpakken staan alleen hier. Ten tweede de volledige
+    productgroep-indeling, en dan precies zoals die op de producten zelf staat.
+    Een tak die te groot is om in één keer te overzien, splitsen we op.
     """
     categorieen = _hoofdcategorieen(sessie, koppen)
     if not categorieen:
-        log.warning("Geen productindeling gekregen van Albert Heijn; aanvullen slaat over.")
+        log.warning("Geen productindeling gekregen van Albert Heijn.")
         return {}
 
-    bonus: dict[str, dict[str, Any]] = {}
+    assortiment: dict[str, dict[str, Any]] = {}
     onvolledig: list[str] = []
 
-    for categorie in categorieen:
-        producten, volledig = _bonus_in_tak(sessie, koppen, categorie.get("slugifiedName") or "")
+    def _bewaar(producten: list[dict[str, Any]]) -> None:
         for product in producten:
             if product.get("webshopId"):
-                bonus[str(product["webshopId"])] = product
+                assortiment[str(product["webshopId"])] = product
+
+    for categorie in categorieen:
+        producten, volledig = _producten_in_tak(sessie, koppen, categorie.get("slugifiedName") or "")
+        _bewaar(producten)
 
         if not volledig:
             # Te groot of even niet bereikbaar: een niveau dieper proberen.
             for tak in _subcategorieen(sessie, koppen, categorie.get("id")):
-                deel, tak_volledig = _bonus_in_tak(sessie, koppen, tak.get("slugifiedName") or "")
-                for product in deel:
-                    if product.get("webshopId"):
-                        bonus[str(product["webshopId"])] = product
+                deel, tak_volledig = _producten_in_tak(sessie, koppen, tak.get("slugifiedName") or "")
+                _bewaar(deel)
                 if not tak_volledig:
                     onvolledig.append(f"{categorie.get('name')} / {tak.get('name')}")
                 time.sleep(_PAUZE_SECONDEN)
@@ -434,11 +450,21 @@ def _bonus_uit_assortiment(
             ", ".join(onvolledig),
         )
 
-    log.info("  %s producten met een bonuslabel in het hele assortiment.", len(bonus))
-    return bonus
+    bonus = sum(1 for p in assortiment.values() if p.get("isBonus"))
+    log.info("  %s producten in het assortiment, %s met een bonuslabel.", len(assortiment), bonus)
+    return assortiment
 
 
-def _meerpak_inhoud(product: dict[str, Any], bonus: dict[str, dict[str, Any]]) -> str | None:
+def _productgroepen(assortiment: dict[str, dict[str, Any]]) -> list[str]:
+    """De productgroepen zoals ze op de producten zelf staan."""
+    return sorted({
+        (product.get("subCategory") or "").strip()
+        for product in assortiment.values()
+        if (product.get("subCategory") or "").strip()
+    })
+
+
+def _meerpak_inhoud(product: dict[str, Any], assortiment: dict[str, dict[str, Any]]) -> str | None:
     """
     De totale inhoud van een meerpak, afgeleid van het losse pak.
 
@@ -450,7 +476,7 @@ def _meerpak_inhoud(product: dict[str, Any], bonus: dict[str, dict[str, Any]]) -
     if len(onderdelen) != 1:
         return None
 
-    los = bonus.get(str(onderdelen[0].get("productId")))
+    los = assortiment.get(str(onderdelen[0].get("productId")))
     aantal = onderdelen[0].get("quantity")
     inhoud = lees_inhoud((los or {}).get("salesUnitSize"))
     if not los or not aantal or not inhoud:
@@ -460,7 +486,7 @@ def _meerpak_inhoud(product: dict[str, Any], bonus: dict[str, dict[str, Any]]) -
 
 
 def _aanvulling(
-    bonus: dict[str, dict[str, Any]], uit_folder: set[str], einde_week: str
+    assortiment: dict[str, dict[str, Any]], uit_folder: set[str], einde_week: str
 ) -> list[Aanbieding]:
     """
     Alles wat vandaag in de bonus is maar niet in de folder stond.
@@ -478,7 +504,7 @@ def _aanvulling(
     """
     lopend = {
         bron_id: product
-        for bron_id, product in bonus.items()
+        for bron_id, product in assortiment.items()
         if _is_weekaanbieding(product)
         and _loopt_vandaag(product)
         and (not einde_week or (product.get("bonusEndDate") or "") <= einde_week)
@@ -498,7 +524,7 @@ def _aanvulling(
             onderdelen = [str(d.get("productId")) for d in product.get("virtualBundleItems") or []]
             if not onderdelen or not all(deel in losse for deel in onderdelen):
                 continue
-            inhoud_tekst = _meerpak_inhoud(product, bonus)
+            inhoud_tekst = _meerpak_inhoud(product, assortiment)
             meerpakken += 1
 
         try:
@@ -513,26 +539,21 @@ def _aanvulling(
     return extra
 
 
-def haal_op() -> list[Aanbieding]:
+def haal_op() -> Oogst:
     """
     Haalt alle aanbiedingen op die vandaag bij Albert Heijn lopen.
 
-    Twee sporen: eerst de bonusfolder van deze week, daarna het hele assortiment
-    op bonuslabel om aan te vullen wat de folder niet noemt (meerpakken vooral).
-    Het tweede spoor is aanvullend — mislukt het, dan gaat de ronde gewoon door
-    met de folder.
+    Twee sporen: eerst de bonusfolder van deze week, daarna één rondgang door
+    het hele assortiment. Die rondgang vult aan wat de folder niet noemt
+    (meerpakken vooral) en levert meteen de volledige productgroep-indeling voor
+    de keuzelijst. Het tweede spoor is aanvullend — mislukt het, dan gaat de
+    ronde gewoon door met de folder alleen.
 
     Stopt wél met een foutmelding als de folder zelf niet te krijgen is of als
     een te groot deel ervan mislukt. Dat is met opzet: een halve lijst
     wegschrijven is erger dan de lijst van gisteren laten staan.
     """
-    sessie = requests.Session()
-    token = _anoniem_token(sessie)
-    koppen = {
-        "Authorization": f"Bearer {token}",
-        "User-Agent": _USER_AGENT,
-        "X-Application": "AHWEBSHOP",
-    }
+    sessie, koppen = _verbinding()
 
     periode = _periode(sessie, koppen)
     datum = periode.get("bonusStartDate") or date.today().isoformat()
@@ -565,12 +586,12 @@ def haal_op() -> list[Aanbieding]:
     log.info("  %s aanbiedingen uit de bonusfolder.", len(gevonden))
 
     try:
-        bonus = _bonus_uit_assortiment(sessie, koppen)
+        assortiment = _assortiment(sessie, koppen)
     except requests.RequestException as fout:
         log.warning("Het assortiment doorlopen lukte niet (%s); alleen de folder gebruikt.", fout)
-        bonus = {}
+        assortiment = {}
 
-    for aanbieding in _aanvulling(bonus, set(gevonden), periode.get("bonusEndDate") or ""):
+    for aanbieding in _aanvulling(assortiment, set(gevonden), periode.get("bonusEndDate") or ""):
         gevonden[aanbieding.bron_id] = aanbieding
 
     zonder_kiloprijs = sum(1 for a in gevonden.values() if a.prijs_per_eenheid is None)
@@ -580,4 +601,4 @@ def haal_op() -> list[Aanbieding]:
         WINKEL_NAAM, bekeken, len(gevonden), zonder_kiloprijs,
     )
 
-    return list(gevonden.values())
+    return Oogst(list(gevonden.values()), _productgroepen(assortiment))

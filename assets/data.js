@@ -2,11 +2,12 @@
  * =============================================================================
  *  Dealbot — verkeer met de database vanuit de website
  *
- *  Versie      : 1.3
- *  Reden       : Bij de productgroepen kun je er voortaan meerdere tegelijk
- *                aanvinken, ook van verschillende winkels. Daarom slaat de
- *                datalaag nu een reeks zoekvragen in één keer op.
- *  Datum       : 01-08-2026 14:32
+ *  Versie      : 1.4
+ *  Reden       : De keuzelijst dekt nu het hele assortiment van alle winkels:
+ *                bijna vierduizend productgroepen. De database geeft er hooguit
+ *                duizend per keer, dus worden ze in blokken opgehaald. Anders
+ *                zou driekwart van de groepen stil wegvallen.
+ *  Datum       : 01-08-2026 19:10
  *
  *  Onderdelen:
  *    meldAan()             - maakt een nieuw account met e-mailadres + pincode
@@ -31,6 +32,12 @@ const db = createClient(SUPABASE_URL, SUPABASE_SLEUTEL);
 export class DealbotFout extends Error {}
 
 export const PINCODE_LENGTE = 4;
+
+// De productgroepen komen in blokken binnen; zie haalProductgroepen(). Het
+// maximum is een noodrem, zodat een fout aan de andere kant nooit tot eindeloos
+// doorvragen leidt.
+const GROEPEN_BLOK = 1000;
+const GROEPEN_MAXIMUM = 20000;
 
 /**
  * Zet de pincode om in een wachtwoord voor de database.
@@ -169,8 +176,36 @@ export async function haalAanbiedingen() {
  * keuzelijst: ook een groep die deze week leeg is, blijft te kiezen.
  */
 export async function haalProductgroepen() {
-    const data = await probeer('productgroepen ophalen', () => db.rpc('productgroepen'));
-    return data || [];
+    const groepen = [];
+    const gezien = new Set();
+
+    // De database geeft hooguit duizend regels per keer terug, en de winkels
+    // hebben er samen bijna vierduizend. Dus halen we ze blok voor blok op tot
+    // er niets nieuws meer komt; anders zou de keuzelijst stilletjes
+    // onvolledig zijn. Levert een volgend blok alleen bekende groepen op, dan
+    // houdt de database geen rekening met het blok en stoppen we ermee: liever
+    // een lijst die eerder ophoudt dan dezelfde groepen eindeloos herhaald.
+    for (let begin = 0; begin < GROEPEN_MAXIMUM; begin += GROEPEN_BLOK) {
+        const blok = await probeer('productgroepen ophalen', () => db
+            .rpc('productgroepen')
+            .range(begin, begin + GROEPEN_BLOK - 1));
+
+        let nieuw = 0;
+        for (const groep of blok || []) {
+            const sleutel = `${groep.winkel_id}|${groep.productgroep}`;
+            if (!gezien.has(sleutel)) {
+                gezien.add(sleutel);
+                groepen.push(groep);
+                nieuw += 1;
+            }
+        }
+
+        if (!blok || blok.length < GROEPEN_BLOK || nieuw === 0) {
+            return groepen;
+        }
+    }
+
+    return groepen;
 }
 
 /**

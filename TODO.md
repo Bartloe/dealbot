@@ -13,6 +13,9 @@ Bijgewerkt: 31-07-2026 01:12
 - [x] Zoekvelden herindeeld: Merk, Productgroep (keuzelijst per winkel) en Vrije tekst
       zoeken elk in hun eigen deel van de aanbieding. Vrije tekst kijkt niet meer in de
       productgroep, waardoor "koffie" geen krat bier meer oplevert
+- [x] Keuzelijst dekt het hele assortiment: per winkel wordt de volledige
+      productgroep-indeling opgehaald, niet alleen wat er in de bonus lag.
+      3962 groepen in plaats van 511; Jumbo deelt nu net zo fijn in als Albert Heijn
 - [x] Meerpakken van Albert Heijn erbij: die staan niet in de bonusfolder maar wel
       in het assortiment. Een meerpak telt mee als het losse product zelf in de
       bonus is, en krijgt de kiloprijs van het losse pak maal het aantal
@@ -38,8 +41,10 @@ Bijgewerkt: 31-07-2026 01:12
       assortiment met normale prijs, merk, inhoud én streepjescode (EAN)
 - [ ] Productgroepen van de verschillende ketens aan elkaar knopen, zodat één keuze
       "koffie" alle winkels tegelijk afzoekt. Nu kies je een groep bij één winkel, want
-      elke keten deelt anders in: Albert Heijn 207 fijne groepen, Jumbo 18 en Dirk 11
-      grove. Eventueel met een achtergrondlijst van producten en EAN-codes
+      elke keten deelt anders in: Albert Heijn 1791 fijne groepen, Jumbo 2153 fijne en
+      Dirk 17 grove afdelingen. Albert Heijn en Jumbo liggen qua fijnheid nu dicht bij
+      elkaar, dus die twee zijn het kansrijkst om te koppelen. Eventueel met een
+      achtergrondlijst van producten en EAN-codes
 - [ ] De standaardprijzen-pagina bouwen
 - [ ] Ook merk als keuzelijst in het profielscherm (de productgroep is er al één)
 - [ ] Geschikt maken voor een mobiele app

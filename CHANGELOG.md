@@ -1,5 +1,27 @@
 # Wijzigingen — Dealbot
 
+## 01-08-2026 — de keuzelijst dekt nu de hele winkel
+
+- **Je kon alleen kiezen uit groepen die ooit in de bonus hadden gelegen.** Dat
+  is precies verkeerd om: een zoekvraag is er juist om te wáchten tot iets in de
+  aanbieding komt. Stond een groep nog nooit in de folder, dan was hij niet aan
+  te vinken en werd hij volgende week dus gemist.
+- Dealbot haalt nu **per winkel de volledige indeling van het hele assortiment**
+  op. De keuzelijst groeide van 511 naar **3962 productgroepen**: Albert Heijn
+  1791, Jumbo 2153 en Dirk 17.
+- **Jumbo deelt voortaan net zo fijn in als Albert Heijn.** We bewaarden de hele
+  afdeling ("Koffie en thee", 18 stuks) — te grof om iets aan te hebben. Elk
+  product noemt zijn hele indelingspad, dus nemen we de onderste laag:
+  *Koffiebonen*, *Zwarte thee*, *Verzorgende shampoo*. Zoeken op "koffiebonen"
+  vindt nu bij twee winkels iets in plaats van bij één.
+- Bij Dirk komen alle **17 afdelingen** in de lijst in plaats van de 11 waar
+  deze week toevallig iets van in de folder stond.
+- Aanvinken kan ongeacht of er nu iets in ligt; achter elke groep blijft staan
+  *nu 10 aanbiedingen* of *nu niets in de bonus*.
+- De database gaf hooguit duizend regels per keer terug. Met bijna vierduizend
+  groepen viel driekwart stil weg, dus de website haalt de lijst nu in blokken
+  op.
+
 ## 01-08-2026 — de meerpakken zijn boven water
 
 - **De folder blijkt tóch niet alles te noemen.** De koffiebonen 3-packs van
