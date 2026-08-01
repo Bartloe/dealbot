@@ -13,6 +13,9 @@ Bijgewerkt: 31-07-2026 01:12
 - [x] Zoekvelden herindeeld: Merk, Productgroep (keuzelijst per winkel) en Vrije tekst
       zoeken elk in hun eigen deel van de aanbieding. Vrije tekst kijkt niet meer in de
       productgroep, waardoor "koffie" geen krat bier meer oplevert
+- [x] Meerpakken van Albert Heijn erbij: die staan niet in de bonusfolder maar wel
+      in het assortiment. Een meerpak telt mee als het losse product zelf in de
+      bonus is, en krijgt de kiloprijs van het losse pak maal het aantal
 - [ ] Uitzoeken of Nettorama betrouwbaar uit te lezen is (folder, geen prijzenlijst)
 - [x] Automatisch elke ochtend laten draaien via GitHub — 07:00, duurt een halve minuut
 - [x] Oude aanbiedingen pas opruimen nadat de nieuwe binnen zijn
@@ -40,6 +43,16 @@ Bijgewerkt: 31-07-2026 01:12
 - [ ] De standaardprijzen-pagina bouwen
 - [ ] Ook merk als keuzelijst in het profielscherm (de productgroep is er al één)
 - [ ] Geschikt maken voor een mobiele app
+
+## Als optie openhouden
+
+- [ ] **Blijvende volumekortingen op meerpakken tóch aanbieden?** Albert Heijn
+      geeft op veel meerpakken het hele jaar door 2 tot 10% korting ("10% volume
+      voordeel"). Die weren we nu, want het zijn geen weekaanbiedingen: ze zouden
+      elke week in de lijst staan en de echte koopjes verdringen. Bij Albert
+      Heijn gaat het om ruim 2300 stuks. Denkbaar als aparte keuze in het
+      profiel ("laat ook doorlopende meerpakkortingen zien"), of alleen tonen
+      wanneer de kiloprijs onder de gewone bonusprijs duikt.
 
 ## Nog uit te zoeken
 

@@ -1,5 +1,32 @@
 # Wijzigingen — Dealbot
 
+## 01-08-2026 — de meerpakken zijn boven water
+
+- **De folder blijkt tóch niet alles te noemen.** De koffiebonen 3-packs van
+  Douwe Egberts en L'OR liggen deze week in de bonus, maar de bonusfolder noemt
+  alleen de losse pakken. Meerpakken staan bij Albert Heijn alleen in het
+  assortiment, niet in de folder.
+- We hebben eerst geteld hoe groot het gat was: van de **6538 aanbiedingen die
+  deze week bij Albert Heijn lopen, stonden er 4487 niet in de folder** — 4263
+  meerpakken en 224 gewone schapaanbiedingen (snoepgroente, aardbeien, mango).
+- Naast de folder loopt Dealbot nu **het hele assortiment langs op bonuslabel**
+  en vult aan wat de folder mist. Dat kost ongeveer een halve minuut extra.
+- **Meerpakken tellen alleen mee als het losse product zelf in de bonus is.**
+  Dan is het meerpak dezelfde weekaanbieding in een grotere verpakking: een
+  2-pack voor de halve prijs hoort bij "1 + 1 gratis" op het losse pak. Ligt het
+  losse product niet in de bonus, dan is het een staffelkorting die het hele
+  jaar geldt ("10% volume voordeel") — die blijft eruit. Zo vielen 2356
+  blijvende volumekortingen af.
+- **Een meerpak krijgt een echte kiloprijs.** Albert Heijn noemt een 3-pack
+  koffiebonen "3 stuks", en daar valt niets uit te rekenen. Dealbot kijkt naar
+  het losse pak (500 g) en maakt er 1500 g van. De 3-pack Excellent gold komt zo
+  op € 19,98 per kilo — duurder dan het losse pak met 2e halve prijs (€ 17,99),
+  en dat zie je nu in één oogopslag.
+- Blijvende webshopkortingen van de AH Voordeelshop (parfumsets die tot 31
+  december in de bonus staan) blijven eruit: die horen niet in een weeklijst.
+- Resultaat: **4202 aanbiedingen in plaats van 2089.** Mislukt het langslopen
+  van het assortiment, dan gaat de ronde gewoon door met de folder alleen.
+
 ## 01-08-2026 — productgroepen zoeken in plaats van scrollen
 
 - **De keuzelijst is een zoekveld geworden.** Met 479 groepen bij Albert Heijn

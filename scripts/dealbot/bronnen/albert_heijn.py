@@ -2,22 +2,25 @@
 ===============================================================================
  Dealbot — aanbiedingen ophalen bij Albert Heijn
 
- Versie      : 2.0
- Reden       : We zagen maar een deel van de bonus. De zoekingang van Albert
-               Heijn laat niet verder kijken dan 3000 producten, terwijl er ruim
-               17.000 in de bonus zitten; alles daarna viel buiten beeld. Zo
-               ontbraken bijvoorbeeld alle koffiebonen. Voortaan lopen we de
-               bonusfolder van de week af — die is per definitie compleet, want
-               dat is precies wat de winkel aanbiedt.
- Datum       : 01-08-2026 14:07
+ Versie      : 3.0
+ Reden       : De bonusfolder bleek tóch niet alles te noemen. Meerpakken staan
+               er niet in (de koffiebonen 3-packs van Douwe Egberts en L'OR
+               bijvoorbeeld) en ook een paar honderd gewone schapaanbiedingen
+               ontbraken. Naast de folder lopen we daarom nu het hele assortiment
+               langs op bonuslabel en vullen we aan wat de folder mist.
+ Datum       : 01-08-2026 16:42
 
  Onderdelen:
-   haal_op()          - geeft alle weekaanbiedingen van de lopende bonusperiode
-   _anoniem_token()   - haalt de tijdelijke toegangssleutel op
-   _periode()         - de bonusweek waarin vandaag valt
-   _segmenten()       - alle aanbiedingen (segmenten) uit de folder
-   _producten()       - de producten die bij één aanbieding horen
-   _is_weekaanbieding - houdt doorlopende online kortingen buiten de lijst
+   haal_op()              - alle aanbiedingen die vandaag lopen
+   _anoniem_token()       - haalt de tijdelijke toegangssleutel op
+   _periode()             - de bonusweek waarin vandaag valt
+   _segmenten()           - alle aanbiedingen (segmenten) uit de folder
+   _producten()           - de producten die bij één aanbieding horen
+   _is_weekaanbieding     - houdt doorlopende online kortingen buiten de lijst
+   _loopt_vandaag         - houdt de folder van volgende week buiten de lijst
+   _bonus_uit_assortiment - alle bonusproducten, tak voor tak door het assortiment
+   _aanvulling()          - wat de folder mist, meerpakken inbegrepen
+   _meerpak_inhoud()      - de inhoud van een meerpak, ontleend aan het losse pak
 ===============================================================================
 """
 
@@ -31,6 +34,7 @@ from typing import Any, Iterator
 import requests
 
 from ..model import Aanbieding, maak_aanbieding
+from ..normalisatie import lees_inhoud
 
 log = logging.getLogger(__name__)
 
@@ -41,8 +45,16 @@ _TOKEN_URL = "https://api.ah.nl/mobile-auth/v1/auth/token/anonymous"
 _BASIS_URL = "https://api.ah.nl/mobile-services"
 _METADATA_PAD = "bonuspage/v3/metadata"
 _SEGMENT_PAD = "bonuspage/v1/segment"
+_CATEGORIE_PAD = "v1/product-shelves/categories"
+_ZOEK_PAD = "product/search/v2"
 _PRODUCT_URL = "https://www.ah.nl/producten/product/wi{webshop_id}"
 _USER_AGENT = "Appie/8.22.3 Model/phone Android/6.0-API23"
+
+# De zoekingang levert 1000 producten per keer en laat niet dieper dan 3000
+# producten in één tak kijken. Elke hoofdtak blijft daar ruim onder; is dat een
+# keer niet zo, dan zakken we een niveau af naar de subtakken.
+_ZOEK_GROOTTE = 1000
+_ZOEK_GRENS = 2900
 
 _PAUZE_SECONDEN = 0.25     # rustig aan, we willen niet geblokkeerd worden
 _POGINGEN = 3              # een tijdelijke blokkade mag de ronde niet slopen
@@ -238,8 +250,45 @@ def _is_weekaanbieding(product: dict[str, Any]) -> bool:
     return True
 
 
-def _naar_aanbieding(product: dict[str, Any]) -> Aanbieding:
-    """Vertaalt één product van Albert Heijn naar onze eigen vorm."""
+def _loopt_vandaag(product: dict[str, Any]) -> bool:
+    """
+    Ligt deze aanbieding vandaag in de winkel?
+
+    Het assortiment noemt ook alvast de aanbiedingen van volgende week. Die
+    horen er nog niet bij: de lijst gaat over wat je nú kunt halen.
+    """
+    start = product.get("bonusStartDate") or ""
+    eind = product.get("bonusEndDate") or ""
+    return bool(start and eind and start <= date.today().isoformat() <= eind)
+
+
+def _actie_tekst(product: dict[str, Any]) -> str | None:
+    """
+    De actievorm zoals de klant hem ziet: "2e halve prijs", "25% korting".
+
+    Meerpakken hebben zo'n zin niet; daar zegt Albert Heijn alleen met een label
+    wat voor soort korting het is ("pakketkorting"). Die omschrijving gebruiken
+    we dan, zodat er op de website nooit een lege actie staat.
+    """
+    tekst = product.get("bonusMechanism")
+    if tekst:
+        return tekst
+
+    for label in product.get("discountLabels") or []:
+        omschrijving = label.get("defaultDescription")
+        if omschrijving:
+            return omschrijving
+
+    return None
+
+
+def _naar_aanbieding(product: dict[str, Any], inhoud_tekst: str | None = None) -> Aanbieding:
+    """
+    Vertaalt één product van Albert Heijn naar onze eigen vorm.
+
+    Bij een meerpak geeft de aanroeper de totale inhoud mee; die staat namelijk
+    niet in de bron, want "3 stuks" zegt niets over kilo's.
+    """
     afbeeldingen = product.get("images") or []
     afbeelding = None
     if afbeeldingen:
@@ -253,10 +302,10 @@ def _naar_aanbieding(product: dict[str, Any]) -> Aanbieding:
         product_naam=product.get("title") or "",
         merk=product.get("brand"),
         productgroep=product.get("subCategory"),
-        actie_tekst=product.get("bonusMechanism"),
+        actie_tekst=_actie_tekst(product),
         actieprijs=product.get("currentPrice"),
         normale_prijs=product.get("priceBeforeBonus"),
-        inhoud_tekst=product.get("salesUnitSize"),
+        inhoud_tekst=inhoud_tekst or product.get("salesUnitSize"),
         geldig_van=product.get("bonusStartDate"),
         geldig_tot=product.get("bonusEndDate"),
         product_url=_PRODUCT_URL.format(webshop_id=product["webshopId"]),
@@ -294,13 +343,188 @@ def _alle_producten(
         )
 
 
+def _hoofdcategorieen(sessie: requests.Session, koppen: dict[str, str]) -> list[dict[str, Any]]:
+    """De hoofdindeling van de winkel: "Koffie, thee", "Vlees", enzovoort."""
+    inhoud = _haal_json(sessie, koppen, f"{_BASIS_URL}/{_CATEGORIE_PAD}")
+    return inhoud if isinstance(inhoud, list) else []
+
+
+def _subcategorieen(
+    sessie: requests.Session, koppen: dict[str, str], categorie_id: Any
+) -> list[dict[str, Any]]:
+    """De takken onder één hoofdcategorie."""
+    inhoud = _haal_json(sessie, koppen, f"{_BASIS_URL}/{_CATEGORIE_PAD}/{categorie_id}/sub-categories")
+    return (inhoud or {}).get("children") or []
+
+
+def _bonus_in_tak(
+    sessie: requests.Session, koppen: dict[str, str], slug: str
+) -> tuple[list[dict[str, Any]], bool]:
+    """
+    Alle producten met een bonuslabel in één tak van het assortiment.
+
+    Geeft de producten terug plus of de tak helemaal te overzien was. Bij meer
+    producten dan de zoekingang wil tonen is het antwoord "nee" en kijkt de
+    aanroeper verder in de subtakken.
+    """
+    producten: list[dict[str, Any]] = []
+    pagina = 0
+
+    while True:
+        inhoud = _haal_json(
+            sessie, koppen, f"{_BASIS_URL}/{_ZOEK_PAD}",
+            taxonomySlug=slug, filters="bonus=true", size=_ZOEK_GROOTTE, page=pagina,
+        )
+        if inhoud is None:
+            return producten, False
+
+        gevonden = inhoud.get("products") or []
+        producten.extend(gevonden)
+
+        bladzijde = inhoud.get("page") or {}
+        if (bladzijde.get("totalElements") or 0) > _ZOEK_GRENS:
+            return producten, False
+
+        pagina += 1
+        if not gevonden or pagina >= (bladzijde.get("totalPages") or 0):
+            return producten, True
+
+        time.sleep(_PAUZE_SECONDEN)
+
+
+def _bonus_uit_assortiment(
+    sessie: requests.Session, koppen: dict[str, str]
+) -> dict[str, dict[str, Any]]:
+    """
+    Elk product in de winkel dat op dit moment een bonuslabel draagt.
+
+    De folder vertelt niet alles: meerpakken staan er niet in en een enkele
+    schapaanbieding evenmin. Daarom lopen we het assortiment tak voor tak langs.
+    """
+    categorieen = _hoofdcategorieen(sessie, koppen)
+    if not categorieen:
+        log.warning("Geen productindeling gekregen van Albert Heijn; aanvullen slaat over.")
+        return {}
+
+    bonus: dict[str, dict[str, Any]] = {}
+    onvolledig: list[str] = []
+
+    for categorie in categorieen:
+        producten, volledig = _bonus_in_tak(sessie, koppen, categorie.get("slugifiedName") or "")
+        for product in producten:
+            if product.get("webshopId"):
+                bonus[str(product["webshopId"])] = product
+
+        if not volledig:
+            # Te groot of even niet bereikbaar: een niveau dieper proberen.
+            for tak in _subcategorieen(sessie, koppen, categorie.get("id")):
+                deel, tak_volledig = _bonus_in_tak(sessie, koppen, tak.get("slugifiedName") or "")
+                for product in deel:
+                    if product.get("webshopId"):
+                        bonus[str(product["webshopId"])] = product
+                if not tak_volledig:
+                    onvolledig.append(f"{categorie.get('name')} / {tak.get('name')}")
+                time.sleep(_PAUZE_SECONDEN)
+
+        time.sleep(_PAUZE_SECONDEN)
+
+    if onvolledig:
+        log.warning(
+            "Niet volledig te overzien: %s. Daar kan een aanbieding gemist zijn.",
+            ", ".join(onvolledig),
+        )
+
+    log.info("  %s producten met een bonuslabel in het hele assortiment.", len(bonus))
+    return bonus
+
+
+def _meerpak_inhoud(product: dict[str, Any], bonus: dict[str, dict[str, Any]]) -> str | None:
+    """
+    De totale inhoud van een meerpak, afgeleid van het losse pak.
+
+    Een 3-pack koffiebonen heet bij Albert Heijn "3 stuks". Daar valt geen
+    kiloprijs uit te halen, en juist die maakt een meerpak vergelijkbaar. Het
+    losse pak is 500 g, dus het meerpak is 1500 g.
+    """
+    onderdelen = product.get("virtualBundleItems") or []
+    if len(onderdelen) != 1:
+        return None
+
+    los = bonus.get(str(onderdelen[0].get("productId")))
+    aantal = onderdelen[0].get("quantity")
+    inhoud = lees_inhoud((los or {}).get("salesUnitSize"))
+    if not los or not aantal or not inhoud:
+        return None
+
+    return f"{inhoud.waarde * aantal:g} {inhoud.eenheid}"
+
+
+def _aanvulling(
+    bonus: dict[str, dict[str, Any]], uit_folder: set[str], einde_week: str
+) -> list[Aanbieding]:
+    """
+    Alles wat vandaag in de bonus is maar niet in de folder stond.
+
+    Meerpakken krijgen een eigen toets: ze tellen alleen mee als het losse
+    product deze week zelf in de bonus is. Dan is het meerpak namelijk dezelfde
+    weekaanbieding in een grotere verpakking — een 2-pack voor de halve prijs
+    hoort bij "1 + 1 gratis" op het losse pak. Staat het losse product niet in
+    de bonus, dan is het een staffelkorting die het hele jaar geldt ("10% volume
+    voordeel"); die hoort niet in een lijst met weekaanbiedingen.
+
+    Aanbiedingen die ná deze bonusweek doorlopen vallen ook af. Dat zijn de
+    blijvende webshopkortingen van de AH Voordeelshop — parfumsets en
+    scheerapparaten die maanden in de bonus staan.
+    """
+    lopend = {
+        bron_id: product
+        for bron_id, product in bonus.items()
+        if _is_weekaanbieding(product)
+        and _loopt_vandaag(product)
+        and (not einde_week or (product.get("bonusEndDate") or "") <= einde_week)
+        and (product.get("promotionType") or "") in _EIGEN_ACTIES
+    }
+    losse = {i for i, p in lopend.items() if not p.get("isVirtualBundle")} | uit_folder
+
+    extra: list[Aanbieding] = []
+    meerpakken = 0
+
+    for bron_id, product in lopend.items():
+        if bron_id in uit_folder or not product.get("title"):
+            continue
+
+        inhoud_tekst = None
+        if product.get("isVirtualBundle"):
+            onderdelen = [str(d.get("productId")) for d in product.get("virtualBundleItems") or []]
+            if not onderdelen or not all(deel in losse for deel in onderdelen):
+                continue
+            inhoud_tekst = _meerpak_inhoud(product, bonus)
+            meerpakken += 1
+
+        try:
+            extra.append(_naar_aanbieding(product, inhoud_tekst))
+        except (KeyError, TypeError, ValueError) as fout:
+            log.warning("Product %s van Albert Heijn overgeslagen: %s", bron_id, fout)
+
+    log.info(
+        "  %s aanbiedingen stonden niet in de folder (%s meerpakken, %s losse producten).",
+        len(extra), meerpakken, len(extra) - meerpakken,
+    )
+    return extra
+
+
 def haal_op() -> list[Aanbieding]:
     """
-    Haalt alle weekaanbiedingen van Albert Heijn op uit de bonusfolder.
+    Haalt alle aanbiedingen op die vandaag bij Albert Heijn lopen.
 
-    Stopt met een foutmelding als de folder zelf niet te krijgen is of als een
-    te groot deel ervan mislukt. Dat is met opzet: een halve lijst wegschrijven
-    is erger dan de lijst van gisteren laten staan.
+    Twee sporen: eerst de bonusfolder van deze week, daarna het hele assortiment
+    op bonuslabel om aan te vullen wat de folder niet noemt (meerpakken vooral).
+    Het tweede spoor is aanvullend — mislukt het, dan gaat de ronde gewoon door
+    met de folder.
+
+    Stopt wél met een foutmelding als de folder zelf niet te krijgen is of als
+    een te groot deel ervan mislukt. Dat is met opzet: een halve lijst
+    wegschrijven is erger dan de lijst van gisteren laten staan.
     """
     sessie = requests.Session()
     token = _anoniem_token(sessie)
@@ -338,9 +562,20 @@ def haal_op() -> list[Aanbieding]:
             continue
         gevonden[aanbieding.bron_id] = aanbieding
 
+    log.info("  %s aanbiedingen uit de bonusfolder.", len(gevonden))
+
+    try:
+        bonus = _bonus_uit_assortiment(sessie, koppen)
+    except requests.RequestException as fout:
+        log.warning("Het assortiment doorlopen lukte niet (%s); alleen de folder gebruikt.", fout)
+        bonus = {}
+
+    for aanbieding in _aanvulling(bonus, set(gevonden), periode.get("bonusEndDate") or ""):
+        gevonden[aanbieding.bron_id] = aanbieding
+
     zonder_kiloprijs = sum(1 for a in gevonden.values() if a.prijs_per_eenheid is None)
     log.info(
-        "%s: %s producten bekeken, %s weekaanbiedingen overgehouden "
+        "%s: %s producten bekeken, %s aanbiedingen overgehouden "
         "(%s zonder kiloprijs).",
         WINKEL_NAAM, bekeken, len(gevonden), zonder_kiloprijs,
     )
