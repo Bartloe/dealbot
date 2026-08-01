@@ -2,13 +2,15 @@
  * =============================================================================
  *  Dealbot — vormgeving van de website
  *
- *  Versie      : 1.1
- *  Reden       : Er staat tijdens het testen een blokje op de startpagina om de
- *                ochtendrun met de hand te starten; dat heeft eigen opmaak nodig.
- *  Datum       : 31-07-2026 09:34
+ *  Versie      : 1.2
+ *  Reden       : Onder de kop van de startpagina staat nu wanneer er voor het
+ *                laatst is opgehaald; die regel is bijzaak en hoort dus klein
+ *                en grijs, maar rood zodra er een storing achter zit.
+ *  Datum       : 01-08-2026 13:18
  *
  *  Onderdelen:
  *    basis         - kleuren, lettertype en de indeling van de pagina
+ *    laatste-run   - de regel met het moment van de laatste ophaalronde
  *    bovenbalk     - naam en navigatie
  *    inlogscherm   - het scherm vóór het inloggen
  *    productkaart  - een product met zijn aanbiedingen
@@ -49,6 +51,10 @@ h1 { font-size: 1.6rem; margin: 12px 0 4px; }
 h2 { font-size: 1.15rem; margin: 0 0 8px; }
 
 .samenvatting { color: var(--grijs); margin: 0 0 16px; }
+
+/* Wanneer de aanbiedingen voor het laatst zijn opgehaald: nuttig, maar bijzaak. */
+.laatste-run { margin: -12px 0 16px; font-size: 0.85rem; color: var(--grijs); }
+.laatste-run.storing { color: var(--rood); }
 .uitleg { color: var(--grijs); margin: 0 0 16px; }
 .bezig { color: var(--grijs); }
 

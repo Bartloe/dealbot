@@ -2,24 +2,33 @@
  * =============================================================================
  *  Dealbot — de startpagina met mijn aanbiedingen
  *
- *  Versie      : 1.1
- *  Reden       : Het zoekveld "variant" heet voortaan "productgroep"; de tekst
- *                voor wie nog geen zoekvragen heeft, noemt nu de goede naam.
- *  Datum       : 31-07-2026 01:12
+ *  Versie      : 1.2
+ *  Reden       : Onder de kop staat nu wanneer de aanbiedingen voor het laatst
+ *                zijn opgehaald. Zonder dat is niet te zien of de lijst van
+ *                vanochtend is of van eergisteren.
+ *  Datum       : 01-08-2026 13:18
  *
  *  Onderdelen:
  *    bouwPagina()      - regelt de toegang en haalt de gegevens op
  *    toonAanbiedingen()- zet de gevonden aanbiedingen op het scherm
+ *    toonLaatsteRun()  - meldt wanneer er voor het laatst is opgehaald
  *    toonGeenResultaat() - melding als er niets te halen valt
  * =============================================================================
  */
 
-import { haalAanbiedingen, haalZoekvragen, DealbotFout } from './data.js';
+import { haalAanbiedingen, haalZoekvragen, haalLaatsteRun, DealbotFout } from './data.js';
 import { beveiligPagina, koppelUitloggen } from './inlog.js';
-import { euro, kiloprijsTekst, geldigheidTekst, groepeerPerProduct } from './opmaak.js';
+import {
+    euro,
+    kiloprijsTekst,
+    geldigheidTekst,
+    momentTekst,
+    groepeerPerProduct,
+} from './opmaak.js';
 
 const lijst = document.getElementById('lijst');
 const samenvatting = document.getElementById('samenvatting');
+const laatsterun = document.getElementById('laatsterun');
 const melding = document.getElementById('melding');
 
 function toonMelding(tekst, soort = 'fout') {
@@ -122,6 +131,29 @@ function toonAanbiedingen(aanbiedingen) {
 }
 
 /**
+ * Meldt wanneer de aanbiedingen voor het laatst zijn opgehaald.
+ *
+ * Staat er sinds die ronde een mislukking in het logboek, dan komt dat erbij:
+ * de lijst is dan ouder dan de gebruiker op grond van de klok zou aannemen, en
+ * dat hoort hij te weten voordat hij op pad gaat.
+ *
+ * Deze regel is bijzaak — lukt het opzoeken niet, dan blijft hij gewoon weg.
+ */
+function toonLaatsteRun(run) {
+    const moment = momentTekst(run.gelukt);
+    if (!moment) {
+        laatsterun.hidden = true;
+        return;
+    }
+
+    laatsterun.textContent = run.storing
+        ? `Laatste run gedraaid op: ${moment} — de poging van ${momentTekst(run.storing)} is mislukt.`
+        : `Laatste run gedraaid op: ${moment}`;
+    laatsterun.className = run.storing ? 'laatste-run storing' : 'laatste-run';
+    laatsterun.hidden = false;
+}
+
+/**
  * Wat de gebruiker ziet als er niets te tonen is.
  *
  * Twee heel verschillende situaties: nog geen zoekvragen ingevuld, of wel
@@ -165,6 +197,15 @@ async function bouwPagina() {
     koppelUitloggen();
 
     lijst.replaceChildren(maak('p', 'bezig', 'Aanbiedingen ophalen…'));
+
+    // Los van de aanbiedingen: deze regel is prettig om te weten, maar mag de
+    // lijst niet ophouden en al helemaal niet tegenhouden als hij niet lukt.
+    haalLaatsteRun()
+        .then(toonLaatsteRun)
+        .catch((fout) => {
+            laatsterun.hidden = true;
+            console.error('Dealbot — laatste ophaalronde onbekend:', fout);
+        });
 
     try {
         const [zoekvragen, aanbiedingen] = await Promise.all([

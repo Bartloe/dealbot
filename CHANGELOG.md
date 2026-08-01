@@ -1,5 +1,17 @@
 # Wijzigingen — Dealbot
 
+## 01-08-2026 — te zien wanneer er voor het laatst is opgehaald
+
+- Onder de kop van de startpagina staat nu **"Laatste run gedraaid op: 01-08
+  12:23"**. Zo is in één oogopslag te zien of de lijst van vanochtend is of van
+  eergisteren.
+- Is er ná die ronde nog een poging mislukt, dan staat dat er in het rood bij.
+  De lijst is dan ouder dan je op grond van de klok zou denken, en dat hoor je
+  te weten vóór je naar de winkel gaat.
+- De regel verschijnt in Nederlandse tijd, ook als je in het buitenland kijkt.
+  Lukt het opzoeken niet, dan blijft de regel gewoon weg — de aanbiedingen zelf
+  gaan voor.
+
 ## 31-07-2026 (middag) — kiezen uit alle groepen, niet alleen die van deze week
 
 - **De keuzelijst bij Productgroep bevat voortaan alles wat Dealbot ooit is

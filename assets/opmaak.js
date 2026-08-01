@@ -2,17 +2,17 @@
  * =============================================================================
  *  Dealbot — aanbiedingen leesbaar maken
  *
- *  Versie      : 1.1
- *  Reden       : Een zoekvraag toont voortaan "Productgroep" in plaats van
- *                "Variant", en zet er "én" tussen: binnen één zoekvraag moeten
- *                alle ingevulde velden kloppen, en dat was op het scherm niet
- *                te zien.
- *  Datum       : 31-07-2026 01:12
+ *  Versie      : 1.2
+ *  Reden       : Op de startpagina staat voortaan wanneer de aanbiedingen voor
+ *                het laatst zijn opgehaald. Daar hoort een korte notatie bij:
+ *                dag-maand en de klok, in Nederlandse tijd.
+ *  Datum       : 01-08-2026 13:18
  *
  *  Onderdelen:
  *    euro()               - bedrag als € 1,29
  *    kiloprijsTekst()     - "€ 2,58 per kilo" of "kiloprijs onbekend"
  *    geldigheidTekst()    - "geldig t/m 3 augustus"
+ *    momentTekst()        - een tijdstip als "01-08  07:12"
  *    productTitel()       - merk en productnaam netjes achter elkaar
  *    groepeerPerProduct() - aanbiedingen van hetzelfde product bij elkaar
  *    zoekvraagTekst()     - een zoekvraag in één leesbare regel
@@ -25,6 +25,16 @@ const BEDRAG = new Intl.NumberFormat('nl-NL', {
 });
 
 const DATUM = new Intl.DateTimeFormat('nl-NL', { day: 'numeric', month: 'long' });
+
+// Altijd Nederlandse tijd: de aanbiedingen zijn Nederlands, dus een gebruiker
+// op vakantie hoort niet ineens een ander tijdstip te zien.
+const MOMENT = new Intl.DateTimeFormat('nl-NL', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Europe/Amsterdam',
+});
 
 // De database rekent alles om naar kilo, liter of stuk.
 const EENHEDEN = { kg: 'per kilo', l: 'per liter', stuk: 'per stuk' };
@@ -48,6 +58,24 @@ export function kiloprijsTekst(aanbieding) {
     }
     const eenheid = EENHEDEN[aanbieding.eenheid_norm] || 'per eenheid';
     return `${euro(prijs)} ${eenheid}`;
+}
+
+/**
+ * Een tijdstip uit de database als "01-08  07:12".
+ *
+ * Geeft een lege tekst terug als er niets bruikbaars in zit; het scherm laat de
+ * regel dan gewoon weg in plaats van "Invalid Date" te tonen.
+ */
+export function momentTekst(moment) {
+    if (!moment) {
+        return '';
+    }
+    const datum = new Date(moment);
+    if (Number.isNaN(datum.getTime())) {
+        return '';
+    }
+    // Intl zet er "01-08, 07:12" van; de komma mag eruit.
+    return MOMENT.format(datum).replace(',', ' ');
 }
 
 export function geldigheidTekst(aanbieding) {

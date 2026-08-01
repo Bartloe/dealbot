@@ -2,12 +2,11 @@
  * =============================================================================
  *  Dealbot — verkeer met de database vanuit de website
  *
- *  Versie      : 1.1
- *  Reden       : Het zoekveld "variant" heet voortaan "productgroep" en wordt
- *                gekozen uit een lijst. Daarvoor is een nieuwe vraag aan de
- *                database nodig: welke groepen zitten er deze week in de
- *                aanbiedingen?
- *  Datum       : 31-07-2026 01:12
+ *  Versie      : 1.2
+ *  Reden       : De startpagina laat voortaan zien wanneer de aanbiedingen voor
+ *                het laatst zijn opgehaald, zodat zichtbaar is hoe vers de lijst
+ *                is en of de ochtendrun het heeft gedaan.
+ *  Datum       : 01-08-2026 13:18
  *
  *  Onderdelen:
  *    meldAan()             - maakt een nieuw account met e-mailadres + pincode
@@ -15,7 +14,8 @@
  *    logUit()              - beëindigt de sessie
  *    haalGebruiker()       - geeft de ingelogde gebruiker, of niets
  *    haalAanbiedingen()    - de aanbiedingen die bij het profiel passen
- *    haalProductgroepen()  - de groepen die deze week te kiezen zijn
+ *    haalProductgroepen()  - de groepen waaruit een zoekvraag kan kiezen
+ *    haalLaatsteRun()      - wanneer er voor het laatst is opgehaald
  *    haalZoekvragen()      - de zoekvragen van de ingelogde gebruiker
  *    voegZoekvraagToe()    - slaat een nieuwe zoekvraag op
  *    verwijderZoekvraag()  - wist een zoekvraag
@@ -164,13 +164,49 @@ export async function haalAanbiedingen() {
 }
 
 /**
- * De productgroepen die op dit moment in de aanbiedingen zitten, met de winkel
- * en het aantal erbij. Hiermee vult het profielscherm zijn keuzelijst, zodat er
- * nooit een groep te kiezen is die niets oplevert.
+ * Alle productgroepen die Dealbot ooit bij een winkel heeft gezien, met het
+ * aantal aanbiedingen dat er nú in zit. Hiermee vult het profielscherm zijn
+ * keuzelijst: ook een groep die deze week leeg is, blijft te kiezen.
  */
 export async function haalProductgroepen() {
     const data = await probeer('productgroepen ophalen', () => db.rpc('productgroepen'));
     return data || [];
+}
+
+/**
+ * Wanneer er voor het laatst met succes is opgehaald, en of de poging daarna
+ * is mislukt.
+ *
+ * Het logboek bevat één regel per winkel per ronde; het gaat hier om het meest
+ * recente moment. Een mislukking na dat moment is de moeite van het melden
+ * waard: de lijst is dan ouder dan je zou verwachten.
+ */
+export async function haalLaatsteRun() {
+    const gelukt = await probeer('laatste ophaalronde opzoeken', () => db
+        .from('scan_logs')
+        .select('klaar_op')
+        .eq('status', 'gelukt')
+        .not('klaar_op', 'is', null)
+        .order('klaar_op', { ascending: false })
+        .limit(1));
+
+    const mislukt = await probeer('laatste storing opzoeken', () => db
+        .from('scan_logs')
+        .select('gestart_op')
+        .eq('status', 'mislukt')
+        .order('gestart_op', { ascending: false })
+        .limit(1));
+
+    const laatsteGelukt = gelukt && gelukt.length > 0 ? gelukt[0].klaar_op : null;
+    const laatsteMislukt = mislukt && mislukt.length > 0 ? mislukt[0].gestart_op : null;
+
+    return {
+        gelukt: laatsteGelukt,
+        // Alleen een storing van ná de laatste geslaagde ronde is nog actueel.
+        storing: laatsteMislukt && (!laatsteGelukt || laatsteMislukt > laatsteGelukt)
+            ? laatsteMislukt
+            : null,
+    };
 }
 
 // -- zoekvragen --------------------------------------------------------------
