@@ -7,25 +7,47 @@
     <link rel="stylesheet" href="assets/stijl.css">
 </head>
 <body>
-    <header class="balk">
+    <header class="balk" data-na-inloggen hidden>
         <a class="merk" href="index.html">Dealbot</a>
         <nav>
             <a href="index.html">Aanbiedingen</a>
+            <a class="huidig" href="standaardprijzen.html">Standaardprijzen</a>
             <a href="profiel.html">Mijn profiel</a>
+            <button type="button" id="uitloggen">Uitloggen</button>
         </nav>
     </header>
 
-    <main>
+    <div id="inlogscherm" hidden></div>
+
+    <main data-na-inloggen hidden>
         <h1>Standaardprijzen</h1>
-        <div class="leeg">
-            <h2>Deze pagina komt later</h2>
-            <p>
-                Hier komen straks de gewone winkelprijzen te staan, zodat je ook kunt
-                kijken wat iets kost als er even geen aanbieding is. Die pagina staat
-                op de lijst voor een volgende fase.
-            </p>
-            <a class="knop" href="index.html">Terug naar mijn aanbiedingen</a>
-        </div>
+        <p class="uitleg">
+            Wat kost iets als er even geen aanbieding is? Hier staan de gewone
+            winkelprijzen. Zoek op een merk of productnaam, of kies een productgroep.
+        </p>
+        <p class="melding" id="melding" role="alert" hidden></p>
+
+        <section class="zoekbalk">
+            <label>
+                Zoeken op merk of productnaam
+                <input type="search" id="zoekterm" placeholder="bijvoorbeeld koffiebonen"
+                       autocomplete="off">
+                <small>Zoekt in het merk en de productnaam.</small>
+            </label>
+
+            <label>
+                Of kies een productgroep
+                <select id="groep">
+                    <option value="">— kies een groep —</option>
+                </select>
+                <small>De indeling van de winkel zelf, met het aantal producten erin.</small>
+            </label>
+        </section>
+
+        <p class="samenvatting" id="samenvatting" hidden></p>
+        <div id="lijst"></div>
     </main>
+
+    <script type="module" src="assets/prijzen.js"></script>
 </body>
 </html>

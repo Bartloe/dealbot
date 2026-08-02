@@ -2,21 +2,22 @@
  * =============================================================================
  *  Dealbot — vormgeving van de website
  *
- *  Versie      : 1.3
- *  Reden       : De keuzelijst met productgroepen is een zoekveld met
- *                aanvinkbare treffers geworden; dat heeft eigen opmaak nodig,
- *                ook op een telefoon.
- *  Datum       : 01-08-2026 14:32
+ *  Versie      : 1.4
+ *  Reden       : De standaardprijzen-pagina is erbij gekomen: een zoekbalk met
+ *                een keuzelijst ernaast, en een productkaart met één vaste prijs
+ *                in plaats van een rijtje aanbiedingen.
+ *  Datum       : 02-08-2026 13:45
  *
  *  Onderdelen:
- *    basis         - kleuren, lettertype en de indeling van de pagina
- *    laatste-run   - de regel met het moment van de laatste ophaalronde
- *    groepkiezer   - productgroepen zoeken en aanvinken
- *    bovenbalk     - naam en navigatie
- *    inlogscherm   - het scherm vóór het inloggen
- *    productkaart  - een product met zijn aanbiedingen
- *    handrun       - het tijdelijke blokje om de 07.00-run te starten
- *    profiel       - zoekvragen en het formulier om er één toe te voegen
+ *    basis           - kleuren, lettertype en de indeling van de pagina
+ *    laatste-run     - de regel met het moment van de laatste ophaalronde
+ *    groepkiezer     - productgroepen zoeken en aanvinken
+ *    bovenbalk       - naam en navigatie
+ *    inlogscherm     - het scherm vóór het inloggen
+ *    productkaart    - een product met zijn aanbiedingen
+ *    standaardprijzen- de zoekbalk en de prijsregel op die pagina
+ *    handrun         - het tijdelijke blokje om de 07.00-run te starten
+ *    profiel         - zoekvragen en het formulier om er één toe te voegen
  * =============================================================================
  */
 
@@ -319,6 +320,73 @@ button:disabled { opacity: 0.6; cursor: default; }
 .knop.tweede:hover { background: #e8f4ec; }
 
 /* -- handmatige 07.00-run (TIJDELIJK, tijdens het testen) ----------------- */
+
+/* =============================================================================
+ *  Standaardprijzen — de zoekbalk en de kaart met één vaste prijs
+ * ========================================================================== */
+
+/* Twee velden naast elkaar op een groot scherm, onder elkaar op een telefoon. */
+.zoekbalk {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 18px;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: var(--wit);
+    border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
+}
+
+@media (max-width: 620px) {
+    .zoekbalk { grid-template-columns: 1fr; }
+}
+
+.zoekbalk label { margin-bottom: 0; }
+
+/* De keuzelijst hetzelfde laten ogen als een invoerveld. */
+.zoekbalk select {
+    display: block;
+    width: 100%;
+    margin-top: 5px;
+    padding: 11px 12px;
+    font-size: 1rem;
+    font-family: inherit;
+    color: var(--tekst);
+    border: 1px solid var(--lijn);
+    border-radius: 8px;
+    background: var(--wit);
+}
+
+.zoekbalk select:focus {
+    outline: 2px solid var(--groen);
+    outline-offset: 1px;
+    border-color: var(--groen);
+}
+
+.zoekbalk select:disabled { opacity: 0.6; }
+
+/* De winkelindeling onder de productnaam, zodat duidelijk is waar iets bij hoort. */
+.groep {
+    margin: 2px 0 0;
+    font-size: 0.8rem;
+    color: var(--grijs);
+}
+
+/* Eén regel met de vaste prijs; geen rijtje aanbiedingen zoals op de startpagina. */
+.prijsregel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    align-items: baseline;
+    padding-top: 10px;
+    border-top: 1px solid var(--lijn);
+}
+
+.winkellink {
+    margin-left: auto;
+    font-size: 0.85rem;
+    color: var(--groen-donker);
+}
 
 .handrun {
     margin: 0 0 20px;

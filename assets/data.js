@@ -2,24 +2,25 @@
  * =============================================================================
  *  Dealbot — verkeer met de database vanuit de website
  *
- *  Versie      : 1.4
- *  Reden       : De keuzelijst dekt nu het hele assortiment van alle winkels:
- *                bijna vierduizend productgroepen. De database geeft er hooguit
- *                duizend per keer, dus worden ze in blokken opgehaald. Anders
- *                zou driekwart van de groepen stil wegvallen.
- *  Datum       : 01-08-2026 19:10
+ *  Versie      : 1.5
+ *  Reden       : De standaardprijzen-pagina is erbij gekomen. Die haalt niet
+ *                alles in één keer op — er staan ruim zesduizend producten in —
+ *                maar vraagt gericht om één productgroep of om een zoekterm.
+ *  Datum       : 02-08-2026 13:10
  *
  *  Onderdelen:
- *    meldAan()             - maakt een nieuw account met e-mailadres + pincode
- *    logIn()               - logt in met e-mailadres + pincode
- *    logUit()              - beëindigt de sessie
- *    haalGebruiker()       - geeft de ingelogde gebruiker, of niets
- *    haalAanbiedingen()    - de aanbiedingen die bij het profiel passen
- *    haalProductgroepen()  - de groepen waaruit een zoekvraag kan kiezen
- *    haalLaatsteRun()      - wanneer er voor het laatst is opgehaald
- *    haalZoekvragen()      - de zoekvragen van de ingelogde gebruiker
- *    voegZoekvragenToe()   - slaat een of meer nieuwe zoekvragen op
- *    verwijderZoekvraag()  - wist een zoekvraag
+ *    meldAan()               - maakt een nieuw account met e-mail + pincode
+ *    logIn()                 - logt in met e-mailadres + pincode
+ *    logUit()                - beëindigt de sessie
+ *    haalGebruiker()         - geeft de ingelogde gebruiker, of niets
+ *    haalAanbiedingen()      - de aanbiedingen die bij het profiel passen
+ *    haalProductgroepen()    - de groepen waaruit een zoekvraag kan kiezen
+ *    haalLaatsteRun()        - wanneer er voor het laatst is opgehaald
+ *    haalZoekvragen()        - de zoekvragen van de ingelogde gebruiker
+ *    voegZoekvragenToe()     - slaat een of meer nieuwe zoekvragen op
+ *    verwijderZoekvraag()    - wist een zoekvraag
+ *    haalPrijsgroepen()      - de groepen op de standaardprijzen-pagina
+ *    zoekStandaardprijzen()  - de gewone winkelprijzen binnen groep of zoekterm
  * =============================================================================
  */
 
@@ -242,6 +243,69 @@ export async function haalLaatsteRun() {
             ? laatsteMislukt
             : null,
     };
+}
+
+// -- standaardprijzen --------------------------------------------------------
+
+// Hooguit zoveel producten per zoekopdracht op het scherm. De grootste groep
+// telt er een paar honderd; deze grens is er voor het geval iemand op "a" zoekt.
+const PRIJZEN_MAXIMUM = 300;
+
+/**
+ * De productgroepen op de standaardprijzen-pagina, met hun afdeling en aantal.
+ *
+ * Anders dan de groepenlijst van het profielscherm komt deze rechtstreeks uit
+ * de producten die er nú zijn: hier valt niets te wachten op een aanbieding, dus
+ * een lege groep heeft geen zin.
+ */
+export async function haalPrijsgroepen() {
+    const data = await probeer('productgroepen van de standaardprijzen ophalen',
+        () => db.rpc('standaardprijs_groepen'));
+    return data || [];
+}
+
+/**
+ * De gewone winkelprijzen binnen één productgroep, of die op een zoekterm passen.
+ *
+ * Er staan ruim zesduizend producten in de database; die haalt de pagina bewust
+ * niet allemaal op. Zonder groep én zonder zoekterm komt er dus niets terug —
+ * de pagina vraagt dan eerst om een keuze.
+ *
+ * Sorteren gebeurt op kiloprijs, want daar gaat het om bij vergelijken. Wat
+ * geen kiloprijs heeft, zakt naar onderen in plaats van te verdwijnen.
+ */
+export async function zoekStandaardprijzen({ groep = '', tekst = '' } = {}) {
+    const groepsnaam = (groep || '').trim();
+    const zoekterm = (tekst || '').trim();
+
+    if (!groepsnaam && !zoekterm) {
+        return [];
+    }
+
+    const data = await probeer('standaardprijzen ophalen', () => {
+        let vraag = db
+            .from('standaardprijzen')
+            .select('id, product_naam, merk, afdeling, productgroep, prijs, '
+                + 'inhoud_waarde, inhoud_eenheid, prijs_per_eenheid, eenheid_norm, '
+                + 'ean, product_url, afbeelding_url');
+
+        if (groepsnaam) {
+            vraag = vraag.eq('productgroep', groepsnaam);
+        }
+        if (zoekterm) {
+            // De zoektekst bevat merk en productnaam in kleine letters. Procent-
+            // en liggend-streepjetekens hebben in een zoekopdracht een eigen
+            // betekenis; die halen we eruit zodat ze gewoon als tekst gelden.
+            const schoon = zoekterm.toLowerCase().replace(/[%_\\]/g, ' ');
+            vraag = vraag.ilike('zoektekst', `%${schoon}%`);
+        }
+
+        return vraag
+            .order('prijs_per_eenheid', { ascending: true, nullsFirst: false })
+            .limit(PRIJZEN_MAXIMUM);
+    });
+
+    return data || [];
 }
 
 // -- zoekvragen --------------------------------------------------------------
