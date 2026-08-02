@@ -1,5 +1,27 @@
 # Wijzigingen — Dealbot
 
+## 02-08-2026 — Dirk is acht keer zo fijn ingedeeld
+
+- **Dirk bleek méér te publiceren dan zijn 17 grove afdelingen.** Onder
+  "Dranken, sap, koffie & thee" zit een tweede laag met onder meer *Koffie &
+  cacao*, *Thee*, *Bier* en *Vruchtensappen*. In totaal **146 groepen** in plaats
+  van 17. Dat gegeven kwam al met elke aanbieding mee — het werd alleen gebruikt
+  om de link naar dirk.nl mee te bouwen, niet om op te zoeken.
+- **In de keuzelijst staan nu die 146 groepen.** Wie op koffie zoekt krijgt bij
+  Dirk niet langer het hele drankenschap mee, inclusief bier en thee. Op dit
+  moment liggen er 22 dingen uit *Koffie & cacao* in de aanbieding.
+- Vreemde afdelingen als "DekaGebak" en "Non food inout" zijn uit de lijst
+  verdwenen; die hoorden bij de oude grove indeling.
+- **Dieper gaat het bij Dirk niet.** Een groep *Koffiebonen* bestaat daar niet:
+  het veld voor een derde laag zit wel in hun systeem, maar komt leeg terug en
+  staat niet op de producten. Wil je bij Dirk echt alleen bonen, gebruik dan
+  **Vrije tekst** — Dirk zet het woord "Koffiebonen" gewoon in de productnaam
+  (34 producten in het schap). Dat is precies wat vergelijkingssites als
+  supermarktscanner.nl doen: die gebruiken helemaal geen productgroepen.
+- Levert Dirk een keer geen groep mee, dan valt Dealbot terug op de afdeling;
+  gaat het ophalen van de hele lijst mis, dan blijven de 17 afdelingen staan.
+  Beide terugvallen zijn afgedekt met een controle (`scripts/tests/test_dirk.py`).
+
 ## 01-08-2026 — zoeken op koffiebonen kan nu ook bij Albert Heijn
 
 - **Bij Albert Heijn zat het merk in de groepsnaam.** De groepen heetten

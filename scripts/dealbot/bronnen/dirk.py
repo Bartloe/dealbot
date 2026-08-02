@@ -2,18 +2,19 @@
 ===============================================================================
  Dealbot — aanbiedingen ophalen bij Dirk van den Broek
 
- Versie      : 1.2
- Reden       : De keuzelijst op het profielscherm kende alleen de afdelingen
-               waar deze week iets in de aanbieding lag: elf van de zeventien.
-               Dirk noemt zijn hele indeling in één vraag, dus die halen we nu op
-               en geven we mee met de ophaalronde. Zo is ook "Bloemen & planten"
-               aan te vinken in een week dat daar niets van in de folder staat.
- Datum       : 01-08-2026 18:40
+ Versie      : 1.3
+ Reden       : Dirk werd ingedeeld in zijn zeventien grove afdelingen, waardoor
+               koffie onder "Dranken, sap, koffie & thee" viel en niet apart te
+               zoeken was. Onder die afdelingen blijkt een tweede laag te zitten
+               van 146 groepen ("Koffie & cacao"). Die is nu de productgroep en
+               vult ook de keuzelijst op het profielscherm.
+ Datum       : 02-08-2026 00:45
 
  Onderdelen:
-   haal_op()        - de weekaanbiedingen én de volledige afdelingenlijst
+   haal_op()        - de weekaanbiedingen én de volledige winkelindeling
    _vraag()         - stelt één vraag aan de gegevensingang van Dirk
-   _afdelingen()    - welke afdelingen er zijn (groente, zuivel, ...)
+   _afdelingen()    - de zeventien afdelingen; de folder komt per afdeling binnen
+   _webgroepen()    - de laag daaronder, en dat is wat wij als productgroep tonen
    _actie_tekst()   - alleen een label als het iets toevoegt, zoals "VR, ZA & ZO"
    _webadres()      - bouwt de link naar de productpagina op dirk.nl
 ===============================================================================
@@ -72,6 +73,17 @@ _LOZE_LABELS = {"actie"}
 _VRAAG_AFDELINGEN = """
 query Afdelingen {
   listDepartments { departments { id description } }
+}
+"""
+
+# De laag onder de afdelingen: "Koffie & cacao" onder "Dranken, sap, koffie &
+# thee". Dieper gaat Dirk niet — het veld voor een derde laag bestaat wel in zijn
+# systeem, maar komt leeg terug en staat niet op de producten zelf.
+_VRAAG_WEBGROEPEN = """
+query Webgroepen($afdelingen: [Int!]) {
+  webGroups(departmentIds: $afdelingen) {
+    webGroups { description }
+  }
 }
 """
 
@@ -138,7 +150,9 @@ def _afdelingen(sessie: requests.Session) -> list[dict[str, Any]]:
     De afdelingen waarin Dirk zijn winkel indeelt, met nummer en naam.
 
     Dit is de hele indeling, niet alleen de afdelingen waar deze week iets in de
-    aanbieding ligt. De namen voeden de keuzelijst op het profielscherm.
+    aanbieding ligt. De folder komt per afdeling binnen, dus deze nummers sturen
+    de ophaalronde. De namen zelf zijn alleen de terugval voor de keuzelijst;
+    die wordt normaal gevuld met de fijnere groepen uit _webgroepen().
     """
     try:
         data = _vraag(sessie, _VRAAG_AFDELINGEN, {})
@@ -152,6 +166,32 @@ def _afdelingen(sessie: requests.Session) -> list[dict[str, Any]]:
         return [{"id": nummer, "naam": ""} for nummer in _AFDELINGEN_TERUGVAL]
 
     return afdelingen or [{"id": nummer, "naam": ""} for nummer in _AFDELINGEN_TERUGVAL]
+
+
+def _webgroepen(sessie: requests.Session, afdelingen: list[dict[str, Any]]) -> list[str]:
+    """
+    De groepen waarin Dirk zijn afdelingen verder opdeelt.
+
+    Dit is de indeling die op de producten staat en die wij als productgroep
+    tonen. Lukt het ophalen niet, dan komt er een lege lijst terug en valt
+    haal_op() terug op de namen van de afdelingen zelf.
+    """
+    nummers = [afdeling["id"] for afdeling in afdelingen if afdeling.get("id") is not None]
+    if not nummers:
+        return []
+
+    try:
+        data = _vraag(sessie, _VRAAG_WEBGROEPEN, {"afdelingen": nummers})
+    except DirkFout as fout:
+        log.warning("Groepenlijst van Dirk niet opgehaald (%s); afdelingen gebruikt.", fout)
+        return []
+
+    namen = {
+        (groep.get("description") or "").strip()
+        for afdeling in data.get("webGroups") or []
+        for groep in afdeling.get("webGroups") or []
+    }
+    return sorted(naam for naam in namen if naam)
 
 
 def _slug(tekst: str | None) -> str:
@@ -216,12 +256,17 @@ def _naar_aanbieding(product: dict[str, Any], actie: dict[str, Any]) -> Aanbiedi
     # aanbieding ("Bak 500 gram of 1 kilo"); die laatste is de terugval.
     inhoud = info.get("packaging") or actie.get("packaging")
 
+    # De groep onder de afdeling is de fijnste indeling die Dirk geeft: liever
+    # "Koffie & cacao" dan "Dranken, sap, koffie & thee". Ontbreekt hij, dan is
+    # de afdeling de terugval.
+    groep = (info.get("webgroup") or "").strip() or (info.get("department") or "").strip()
+
     return maak_aanbieding(
         winkel_id=WINKEL_ID,
         bron_id=str(product["productId"]),
         product_naam=info.get("headerText") or actie.get("headerText") or "",
         merk=info.get("brand"),
-        productgroep=info.get("department"),
+        productgroep=groep,
         actie_tekst=_actie_tekst(actie),
         actieprijs=_bedrag(product.get("offerPrice")),
         normale_prijs=_bedrag(product.get("normalPrice")),
@@ -244,7 +289,7 @@ def _voordeligste(nieuw: Aanbieding, bestaand: Aanbieding | None) -> Aanbieding:
 
 def haal_op() -> Oogst:
     """
-    Haalt alle actuele weekaanbiedingen van Dirk op, plus zijn afdelingenlijst.
+    Haalt alle actuele weekaanbiedingen van Dirk op, plus zijn winkelindeling.
 
     De folder komt per afdeling binnen. Gaat één afdeling mis, dan gaat het
     script door met de rest: liever een lijst die een hoek mist dan helemaal
@@ -303,7 +348,9 @@ def haal_op() -> Oogst:
         WINKEL_NAAM, acties, bekeken, len(gevonden), zonder_kiloprijs,
     )
 
-    groepen = sorted({afdeling["naam"] for afdeling in afdelingen if afdeling["naam"]})
-    log.info("  %s afdelingen in de winkelindeling van Dirk.", len(groepen))
+    groepen = _webgroepen(sessie, afdelingen)
+    if not groepen:
+        groepen = sorted({afdeling["naam"] for afdeling in afdelingen if afdeling["naam"]})
+    log.info("  %s groepen in de winkelindeling van Dirk.", len(groepen))
 
     return Oogst(list(gevonden.values()), groepen)

@@ -22,6 +22,9 @@ Bijgewerkt: 02-08-2026 00:20
 - [x] Zoeken op koffiebonen zonder merk: bij Albert Heijn zat het merk in de
       groepsnaam ("Lavazza koffiebonen", 1791 groepen). De groep is nu de lade uit
       de winkelindeling ("Koffiebonen", 313 laden); het merk heeft zijn eigen veld
+- [x] Dirk fijner ingedeeld: 146 groepen ("Koffie & cacao") in plaats van 17 grove
+      afdelingen. Fijner publiceert Dirk niet; voor "koffiebonen" is vrije tekst
+      daar de route
 - [ ] Uitzoeken of Nettorama betrouwbaar uit te lezen is (folder, geen prijzenlijst)
 - [x] Automatisch elke ochtend laten draaien via GitHub — 07:00, duurt een halve minuut
 - [x] Oude aanbiedingen pas opruimen nadat de nieuwe binnen zijn
@@ -45,23 +48,18 @@ Bijgewerkt: 02-08-2026 00:20
 - [ ] Productgroepen van de verschillende ketens aan elkaar knopen. Voor Albert Heijn
       (313 laden) en Jumbo (2153) lost het zichzelf grotendeels op: de namen lijken
       sterk op elkaar en een zoekvraag bewaart alleen de naam, dus "Koffiebonen" pakt
-      allebei. Wat overblijft zijn namen die net anders geschreven zijn, en vooral
-      **Dirk met zijn 17 grove afdelingen** — daar is geen fijnere indeling te halen,
-      dus die vraagt iets eigens (bijvoorbeeld op woorden in de productnaam).
+      allebei. Wat overblijft zijn namen die net anders geschreven zijn, en
+      **Dirk met zijn 146 groepen** — die zijn een slag grover ("Koffie & cacao"),
+      dus daar blijft vrije tekst op de productnaam de route.
       Eventueel met een achtergrondlijst van producten en EAN-codes
 - [ ] **Voorvoegsel "lokaal" bij Jumbo-groepen opschonen.** Een deel van Jumbo's
       groepsnamen begint met "lokaal" ("lokaal Koffiebonen"), waardoor dezelfde
       groep twee keer in de keuzelijst staat en niet meer op één naam matcht met
       Albert Heijn. Uitzoeken of het voorvoegsel altijd weg mag, of dat het iets
       betekent (streekproducten) dat we willen bewaren
-- [ ] **Dirk fijner indelen: `webgroup` gebruiken in plaats van `department`.**
-      Dirk levert náást de 17 afdelingen een tweede laag van 146 groepen
-      ("Koffie & cacao" onder "Dranken, sap, koffie & thee"). Dat veld halen we
-      al op — het wordt nu alleen gebruikt om de link naar dirk.nl te bouwen.
-      Nog steeds grover dan de 313 laden van Albert Heijn, maar acht keer zo fijn
-      als nu. Het hele Dirk-assortiment is er ook langs op te halen
-      (`webGroups` + `listWebGroupProducts` + `products`)
-- [ ] De standaardprijzen-pagina bouwen
+- [ ] De standaardprijzen-pagina bouwen. Het hele Dirk-assortiment is hiervoor op
+      te halen met `listWebGroupProducts(webGroupId)` per groep, gevolgd door
+      `products(productIds, storeId)` in blokken
 - [ ] Ook merk als keuzelijst in het profielscherm (de productgroep is er al één)
 - [ ] Geschikt maken voor een mobiele app
 
