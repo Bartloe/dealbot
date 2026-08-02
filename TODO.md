@@ -1,6 +1,6 @@
 # Dealbot — takenlijst
 
-Bijgewerkt: 01-08-2026 22:05
+Bijgewerkt: 02-08-2026 00:20
 
 ## Fase 1 — de minimale basis (nu)
 
@@ -49,6 +49,18 @@ Bijgewerkt: 01-08-2026 22:05
       **Dirk met zijn 17 grove afdelingen** — daar is geen fijnere indeling te halen,
       dus die vraagt iets eigens (bijvoorbeeld op woorden in de productnaam).
       Eventueel met een achtergrondlijst van producten en EAN-codes
+- [ ] **Voorvoegsel "lokaal" bij Jumbo-groepen opschonen.** Een deel van Jumbo's
+      groepsnamen begint met "lokaal" ("lokaal Koffiebonen"), waardoor dezelfde
+      groep twee keer in de keuzelijst staat en niet meer op één naam matcht met
+      Albert Heijn. Uitzoeken of het voorvoegsel altijd weg mag, of dat het iets
+      betekent (streekproducten) dat we willen bewaren
+- [ ] **Dirk fijner indelen: `webgroup` gebruiken in plaats van `department`.**
+      Dirk levert náást de 17 afdelingen een tweede laag van 146 groepen
+      ("Koffie & cacao" onder "Dranken, sap, koffie & thee"). Dat veld halen we
+      al op — het wordt nu alleen gebruikt om de link naar dirk.nl te bouwen.
+      Nog steeds grover dan de 313 laden van Albert Heijn, maar acht keer zo fijn
+      als nu. Het hele Dirk-assortiment is er ook langs op te halen
+      (`webGroups` + `listWebGroupProducts` + `products`)
 - [ ] De standaardprijzen-pagina bouwen
 - [ ] Ook merk als keuzelijst in het profielscherm (de productgroep is er al één)
 - [ ] Geschikt maken voor een mobiele app
