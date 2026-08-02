@@ -285,9 +285,9 @@ export async function zoekStandaardprijzen({ groep = '', tekst = '' } = {}) {
     const data = await probeer('standaardprijzen ophalen', () => {
         let vraag = db
             .from('standaardprijzen')
-            .select('id, product_naam, merk, afdeling, productgroep, prijs, '
+            .select('id, product_naam, merk, productgroep, prijs, '
                 + 'inhoud_waarde, inhoud_eenheid, prijs_per_eenheid, eenheid_norm, '
-                + 'ean, product_url, afbeelding_url');
+                + 'product_url, afbeelding_url');
 
         if (groepsnaam) {
             vraag = vraag.eq('productgroep', groepsnaam);

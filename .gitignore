@@ -10,3 +10,8 @@ venv/
 
 # Geheimen — nooit online zetten
 .env
+
+# Hulpmiddelen en werkmateriaal dat lokaal blijft: te groot voor de repo en
+# niet nodig om Dealbot te laten draaien.
+poppler-*/
+folder_paginas/
