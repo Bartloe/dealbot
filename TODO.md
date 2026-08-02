@@ -1,6 +1,6 @@
 # Dealbot — takenlijst
 
-Bijgewerkt: 02-08-2026 14:10
+Bijgewerkt: 02-08-2026 22:25
 
 ## Fase 1 — de minimale basis (nu)
 
@@ -64,12 +64,21 @@ Bijgewerkt: 02-08-2026 14:10
 - [x] De standaardprijzen-pagina bouwen — gedaan op 02-08-2026, gevuld met Vomar.
       Zoeken op merk of productnaam, of een productgroep kiezen; resultaten van
       goedkoop naar duur per kilo
-- [ ] Meer winkels op de standaardprijzen-pagina. Het hele Dirk-assortiment is op
-      te halen met `listWebGroupProducts(webGroupId)` per groep, gevolgd door
-      `products(productIds, storeId)` in blokken. Let op: van de 1123 artikelen in
-      "Koffie & cacao" levert maar een zesde een prijs in winkel 66. Zolang er één
-      winkel in staat, valt er nog niets te vergelijken — dáár wordt de pagina pas
-      echt nuttig
+- [ ] **Dirk (en Lidl) erbij als tweede winkel op de standaardprijzen-pagina, zodat
+      er echt te vergelijken valt.** Met één winkel erin staat er alleen een prijs;
+      pas met een tweede wordt de pagina nuttig.
+      - **Dirk** is de makkelijke: het hele assortiment is op te halen met
+        `listWebGroupProducts(webGroupId)` per groep, gevolgd door
+        `products(productIds, storeId)` in blokken. Let op: van de 1123 artikelen
+        in "Koffie & cacao" levert maar een zesde een prijs in winkel 66.
+      - **Lidl is een uitzoekpunt, geen zekerheid.** Bij het bronnenonderzoek van
+        31-07-2026 bleek Lidl automatisch ophalen te blokkeren (net als Plus, Coop
+        en Hoogvliet). Eerst uitzoeken óf er een bruikbare ingang is voordat er
+        gebouwd wordt. Aanknopingspunt: supermarktscanner.nl toont wél prijzen van
+        Plus, Hoogvliet en Aldi, dus die blokkade is kennelijk te omzeilen — hoe,
+        is de vraag.
+      - Koppelen tussen winkels gaat het beste op streepjescode. Vomar levert die
+        bij 100% van zijn producten; van Dirk en Lidl is dat nog onbekend
 - [ ] Ook merk als keuzelijst in het profielscherm (de productgroep is er al één)
 - [ ] Geschikt maken voor een mobiele app
 
