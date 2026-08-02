@@ -1,11 +1,11 @@
 # =============================================================================
 #  Dealbot — dagelijks de aanbiedingen ophalen
 #
-#  Versie : 1.1
-#  Reden  : GitHub stopt met de oude motor waarop de hulpstukken draaiden en
-#           waarschuwde daarover. De hulpstukken zijn bijgewerkt naar de versie
-#           die op de nieuwe motor loopt, zodat de ochtendrun blijft werken.
-#  Datum  : 31-07-2026 10:52
+#  Versie : 1.2
+#  Reden  : Dezelfde ronde haalt nu ook de gewone winkelprijzen op voor de
+#           standaardprijzen-pagina. Dat kost er twee verzoeken extra bij, dus
+#           er hoeft niets aan de tijden te veranderen.
+#  Datum  : 02-08-2026 14:00
 #
 #  Draait elke ochtend om 07:00 Nederlandse tijd (05:00 UTC) en is daarnaast
 #  handmatig te starten via het tabblad Actions op GitHub.
@@ -36,7 +36,7 @@ jobs:
       - name: Benodigdheden installeren
         run: pip install -r requirements.txt
 
-      - name: Aanbiedingen ophalen
+      - name: Aanbiedingen en standaardprijzen ophalen
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}

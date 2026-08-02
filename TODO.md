@@ -1,6 +1,6 @@
 # Dealbot — takenlijst
 
-Bijgewerkt: 02-08-2026 00:20
+Bijgewerkt: 02-08-2026 14:10
 
 ## Fase 1 — de minimale basis (nu)
 
@@ -43,23 +43,33 @@ Bijgewerkt: 02-08-2026 00:20
       aanbiedingen ziet van een winkel dertig kilometer verderop
 - [ ] Meer winkels: DekaMarkt (werkt precies als Dirk, dus weinig werk), Bol, Amazon,
       Picnic. Plus, Coop, Hoogvliet en Lidl blokkeren automatisch ophalen
-- [ ] Vomar gebruiken voor de standaardprijzen-pagina: hun productlijst geeft het hele
-      assortiment met normale prijs, merk, inhoud én streepjescode (EAN)
+- [x] Vomar gebruiken voor de standaardprijzen-pagina: hun productlijst geeft het hele
+      assortiment met normale prijs, merk, inhoud én streepjescode (EAN). Gedaan op
+      02-08-2026: 6174 producten, allemaal met kiloprijs en EAN, in twee verzoeken.
+      Vomar staat aan als assortimentsbron, níet als aanbiedingenbron — zijn
+      aanbiedingen staan alleen in de folder en dat blijft onleesbaar
 - [ ] Productgroepen van de verschillende ketens aan elkaar knopen. Voor Albert Heijn
       (313 laden) en Jumbo (2153) lost het zichzelf grotendeels op: de namen lijken
       sterk op elkaar en een zoekvraag bewaart alleen de naam, dus "Koffiebonen" pakt
       allebei. Wat overblijft zijn namen die net anders geschreven zijn, en
       **Dirk met zijn 146 groepen** — die zijn een slag grover ("Koffie & cacao"),
       dus daar blijft vrije tekst op de productnaam de route.
-      Eventueel met een achtergrondlijst van producten en EAN-codes
+      De achtergrondlijst met EAN-codes is er inmiddels: 6174 Vomar-producten,
+      allemaal mét streepjescode, in de tabel `standaardprijzen`
 - [ ] **Voorvoegsel "lokaal" bij Jumbo-groepen opschonen.** Een deel van Jumbo's
       groepsnamen begint met "lokaal" ("lokaal Koffiebonen"), waardoor dezelfde
       groep twee keer in de keuzelijst staat en niet meer op één naam matcht met
       Albert Heijn. Uitzoeken of het voorvoegsel altijd weg mag, of dat het iets
       betekent (streekproducten) dat we willen bewaren
-- [ ] De standaardprijzen-pagina bouwen. Het hele Dirk-assortiment is hiervoor op
+- [x] De standaardprijzen-pagina bouwen — gedaan op 02-08-2026, gevuld met Vomar.
+      Zoeken op merk of productnaam, of een productgroep kiezen; resultaten van
+      goedkoop naar duur per kilo
+- [ ] Meer winkels op de standaardprijzen-pagina. Het hele Dirk-assortiment is op
       te halen met `listWebGroupProducts(webGroupId)` per groep, gevolgd door
-      `products(productIds, storeId)` in blokken
+      `products(productIds, storeId)` in blokken. Let op: van de 1123 artikelen in
+      "Koffie & cacao" levert maar een zesde een prijs in winkel 66. Zolang er één
+      winkel in staat, valt er nog niets te vergelijken — dáár wordt de pagina pas
+      echt nuttig
 - [ ] Ook merk als keuzelijst in het profielscherm (de productgroep is er al één)
 - [ ] Geschikt maken voor een mobiele app
 

@@ -1,5 +1,41 @@
 # Wijzigingen — Dealbot
 
+## 02-08-2026 — de standaardprijzen-pagina werkt, met dank aan Vomar
+
+- **De pagina "Standaardprijzen" is niet langer een belofte.** Je kunt er nu
+  opzoeken wat iets gewoon kost als er even geen aanbieding is: zoek op een merk
+  of productnaam, of kies een productgroep. De treffers staan van goedkoop naar
+  duur per kilo, met een link naar de winkel.
+- **Vomar staat weer aan — maar alleen voor prijzen, niet voor aanbiedingen.**
+  Hij levert **6.174 producten**, allemaal met een kiloprijs én allemaal met een
+  streepjescode. Dat laatste heeft geen enkele andere keten. Het ophalen kost
+  twee verzoeken en duurt een halve seconde.
+- **Vomar deelt dieper in dan Dirk.** Drie lagen: 10 afdelingen, 85 hoofdgroepen
+  en **339 groepen** als *Koffiebonen*, *Koffiecups* en *Oploskoffie*. Dat is
+  hetzelfde niveau als de laden van Albert Heijn.
+- Die groepen komen bewust **niet** in de keuzelijst van je profiel. Vomar levert
+  geen aanbiedingen, dus een zoekvraag op zo'n groep zou nooit een treffer geven.
+  Ze staan alleen op de standaardprijzen-pagina zelf.
+
+### Waar supermarktscanner.nl zijn Vomar-prijzen vandaan haalt
+
+Op hun koffiebonen-pagina stonden veertien Vomar-producten, terwijl wij
+dachten dat er bij Vomar niets te halen viel. Uitgezocht:
+
+- Ze gebruiken **de webshop-ingang van Vomar zelf**. De prijzen kloppen tot op de
+  cent. Wij halen daar nu hetzelfde vandaan — en completer: Vomar voert 21
+  soorten koffiebonen, supermarktscanner toont er 14.
+- Het zijn **gewone winkelprijzen, geen aanbiedingen**. Van hun veertien
+  Vomar-kaarten had er geen enkele een "t/m zondag"-datum; bij Albert Heijn zeven
+  van de vierentwintig.
+- **De aanbiedingen van Vomar blijven onbereikbaar,** en dat is nu uitgezocht in
+  plaats van vermoed. De ingang kent geen actieprijs en geen einddatum. Er zit
+  een aanzet in hun website (een pagina "Discount Deals" en een kortingsvlaggetje),
+  maar die staat uit. De folder bevat alleen drukwerk waarin de productnamen op
+  één hoop staan en de bedragen op een andere — met prijzen als "99 3." voor
+  € 3,99. Zetten ze hun Discount Deals ooit aan, dan is dat het moment om terug
+  te komen.
+
 ## 02-08-2026 — Dirk is acht keer zo fijn ingedeeld
 
 - **Dirk bleek méér te publiceren dan zijn 17 grove afdelingen.** Onder
