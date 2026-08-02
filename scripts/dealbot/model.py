@@ -2,17 +2,20 @@
 ===============================================================================
  Dealbot — gemeenschappelijke vorm van een aanbieding
 
- Versie      : 1.2
- Reden       : Een ophaalronde levert voortaan twee dingen op: de aanbiedingen
-               én de volledige productgroep-indeling van die winkel. Die tweede
-               is nodig om een groep te kunnen aanvinken die op dit moment niet
-               in de bonus ligt.
- Datum       : 01-08-2026 18:05
+ Versie      : 1.3
+ Reden       : Vomar levert geen aanbiedingen maar wél zijn hele assortiment met
+               gewone winkelprijzen en streepjescodes. Daar hoort een eigen vorm
+               bij: een product dat altijd in de schappen ligt, zonder actie en
+               zonder einddatum.
+ Datum       : 02-08-2026 11:15
 
  Onderdelen:
-   Aanbieding      - één aanbieding zoals die in de database terechtkomt
-   maak_aanbieding - vult de kiloprijs en de groepeersleutel automatisch aan
-   Oogst           - wat één ophaalronde bij één winkel oplevert
+   Aanbieding                 - één aanbieding zoals die in de database komt
+   maak_aanbieding            - vult de kiloprijs en de groepeersleutel aan
+   Oogst                      - wat één ophaalronde bij één winkel oplevert
+   Standaardprijs             - één gewoon schapproduct met zijn vaste prijs
+   maak_standaardprijs        - idem, met kiloprijs en groepeersleutel
+   Assortiment                - wat één assortimentsronde oplevert
 ===============================================================================
 """
 
@@ -96,6 +99,79 @@ class Oogst:
         return sorted(groepen)
 
 
+@dataclass
+class Standaardprijs:
+    """
+    Eén product zoals het gewoon in het schap ligt, met de prijs zonder actie.
+
+    Dit is bewust iets anders dan een aanbieding: er is geen actietekst en geen
+    einddatum, want deze prijs geldt gewoon totdat de winkel hem verandert. De
+    streepjescode (EAN) staat er wel bij; die is nodig om hetzelfde product bij
+    verschillende ketens aan elkaar te kunnen knopen.
+    """
+
+    winkel_id: int
+    bron_id: str
+    product_naam: str
+    merk: str | None = None
+    afdeling: str | None = None
+    productgroep: str | None = None
+    prijs: float | None = None
+    inhoud_waarde: float | None = None
+    inhoud_eenheid: str | None = None
+    prijs_per_eenheid: float | None = None
+    eenheid_norm: str | None = None
+    ean: str | None = None
+    product_sleutel: str = ""
+    product_url: str | None = None
+    afbeelding_url: str | None = None
+
+    def als_rij(self) -> dict[str, Any]:
+        """Het product als regel voor de database."""
+        return {
+            "winkel_id": self.winkel_id,
+            "bron_id": self.bron_id,
+            "product_naam": self.product_naam,
+            "merk": self.merk,
+            "afdeling": self.afdeling,
+            "productgroep": self.productgroep,
+            "prijs": self.prijs,
+            "inhoud_waarde": self.inhoud_waarde,
+            "inhoud_eenheid": self.inhoud_eenheid,
+            "prijs_per_eenheid": self.prijs_per_eenheid,
+            "eenheid_norm": self.eenheid_norm,
+            "ean": self.ean,
+            "product_sleutel": self.product_sleutel,
+            "product_url": self.product_url,
+            "afbeelding_url": self.afbeelding_url,
+        }
+
+
+@dataclass
+class Assortiment:
+    """
+    Wat één assortimentsronde bij één winkel oplevert.
+
+    Naast de producten met hun gewone prijs gaat de productgroep-indeling mee,
+    net als bij een Oogst. Bij een winkel die géén aanbiedingen levert blijft die
+    indeling bewust buiten de keuzelijst van het profielscherm: een zoekvraag op
+    zo'n groep zou nooit een treffer geven.
+    """
+
+    producten: list[Standaardprijs] = field(default_factory=list)
+    productgroepen: list[str] = field(default_factory=list)
+
+    def alle_groepen(self) -> list[str]:
+        """De winkelindeling, aangevuld met wat er op de producten zelf stond."""
+        groepen = {groep.strip() for groep in self.productgroepen if groep and groep.strip()}
+        groepen |= {
+            product.productgroep.strip()
+            for product in self.producten
+            if product.productgroep and product.productgroep.strip()
+        }
+        return sorted(groepen)
+
+
 def maak_aanbieding(
     *,
     winkel_id: int,
@@ -137,6 +213,48 @@ def maak_aanbieding(
         product_sleutel=product_sleutel(merk, product_naam),
         geldig_van=geldig_van,
         geldig_tot=geldig_tot,
+        product_url=product_url,
+        afbeelding_url=afbeelding_url,
+    )
+
+
+def maak_standaardprijs(
+    *,
+    winkel_id: int,
+    bron_id: str,
+    product_naam: str,
+    prijs: float | None,
+    merk: str | None = None,
+    afdeling: str | None = None,
+    productgroep: str | None = None,
+    inhoud_tekst: str | None = None,
+    ean: str | None = None,
+    product_url: str | None = None,
+    afbeelding_url: str | None = None,
+) -> Standaardprijs:
+    """
+    Maakt een schapproduct en rekent daarbij zelf de kiloprijs uit.
+
+    Anders dan bij een aanbieding is er niets om te herrekenen: de prijs die de
+    winkel doorgeeft ís de prijs die je betaalt.
+    """
+    inhoud = lees_inhoud(inhoud_tekst)
+    bedrag = round(float(prijs), 4) if prijs is not None else None
+
+    return Standaardprijs(
+        winkel_id=winkel_id,
+        bron_id=str(bron_id),
+        product_naam=product_naam.strip(),
+        merk=(merk or None),
+        afdeling=(afdeling or None),
+        productgroep=(productgroep or None),
+        prijs=bedrag,
+        inhoud_waarde=inhoud.waarde if inhoud else None,
+        inhoud_eenheid=inhoud.eenheid if inhoud else None,
+        prijs_per_eenheid=prijs_per_eenheid(bedrag, inhoud) if inhoud else None,
+        eenheid_norm=inhoud.norm_eenheid if inhoud else None,
+        ean=(ean or None),
+        product_sleutel=product_sleutel(merk, product_naam),
         product_url=product_url,
         afbeelding_url=afbeelding_url,
     )
