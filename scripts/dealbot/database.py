@@ -2,20 +2,21 @@
 ===============================================================================
  Dealbot — verkeer met de database (Supabase)
 
- Versie      : 1.3
- Reden       : De groepenlijst groeide alleen maar aan. Toen Albert Heijn een
-               andere indeling kreeg (de lade "Koffiebonen" in plaats van 1791
-               merkschappen) bleven de oude namen dus staan. De lijst wordt nu
-               vervangen in plaats van aangevuld, met een rem erop voor het geval
-               een ronde half mislukt.
- Datum       : 01-08-2026 21:35
+ Versie      : 1.4
+ Reden       : Vomar levert geen aanbiedingen maar het hele assortiment met
+               gewone winkelprijzen. Die gaan naar een eigen tabel, met dezelfde
+               voorzichtigheid als bij de aanbiedingen: eerst het nieuwe erin,
+               daarna pas het oude eruit.
+ Datum       : 02-08-2026 12:20
 
  Onderdelen:
-   Database.start_ronde()      - zet een regel in het logboek en geeft het moment
-   Database.schrijf()          - schrijft de aanbiedingen weg in blokken
-   Database.ruim_oude_op()     - wist wat niet in deze ronde is ververst
-   Database.bewaar_groepen()   - zet de winkelindeling in de blijvende lijst
-   Database.sluit_ronde()      - schrijft het resultaat in het logboek
+   Database.start_ronde()             - logboekregel, en geeft het moment terug
+   Database.schrijf()                 - schrijft de aanbiedingen weg in blokken
+   Database.ruim_oude_op()            - wist wat niet in deze ronde is ververst
+   Database.schrijf_standaardprijzen()- idem, voor het gewone schap
+   Database.ruim_oude_prijzen_op()    - idem
+   Database.bewaar_groepen()          - zet de winkelindeling in de vaste lijst
+   Database.sluit_ronde()             - schrijft het resultaat in het logboek
 ===============================================================================
 """
 
@@ -28,7 +29,7 @@ from typing import Any
 
 import requests
 
-from .model import Aanbieding
+from .model import Aanbieding, Standaardprijs
 
 log = logging.getLogger(__name__)
 
@@ -172,6 +173,54 @@ class Database:
             headers={"Prefer": "return=minimal"},
         )
         log.info("  Aanbiedingen van vóór deze ronde opgeruimd.")
+
+    # -- standaardprijzen ----------------------------------------------------
+
+    def schrijf_standaardprijzen(self, producten: list[Standaardprijs], moment: str) -> int:
+        """
+        Schrijft het gewone schap weg; bestaande regels worden bijgewerkt.
+
+        Gaat net als bij de aanbiedingen in blokken, met hetzelfde ophaalmoment
+        voor alles, zodat daarna precies te bepalen is welke producten de winkel
+        niet meer voert.
+        """
+        weggeschreven = 0
+
+        for start in range(0, len(producten), _BLOKGROOTTE):
+            blok = producten[start:start + _BLOKGROOTTE]
+            rijen = []
+            for product in blok:
+                rij = product.als_rij()
+                rij["opgehaald_op"] = moment
+                rijen.append(rij)
+
+            self._rest(
+                "POST", "standaardprijzen?on_conflict=winkel_id,bron_id",
+                json=rijen,
+                headers={"Prefer": "resolution=merge-duplicates,return=minimal"},
+            )
+            weggeschreven += len(rijen)
+            log.info("  %s van %s producten weggeschreven.", weggeschreven, len(producten))
+
+        return weggeschreven
+
+    def ruim_oude_prijzen_op(self, winkel_id: int, moment: str) -> None:
+        """
+        Wist de producten van deze winkel die in deze ronde niet terugkwamen.
+
+        Net als bij de aanbiedingen bewust pas ná het wegschrijven: mislukt het
+        ophalen, dan blijft de lijst van gisteren staan in plaats van dat de
+        pagina leeg is.
+        """
+        self._rest(
+            "DELETE", "standaardprijzen",
+            params={
+                "winkel_id": f"eq.{winkel_id}",
+                "opgehaald_op": f"lt.{moment}",
+            },
+            headers={"Prefer": "return=minimal"},
+        )
+        log.info("  Producten van vóór deze ronde opgeruimd.")
 
     # -- productgroepen ------------------------------------------------------
 

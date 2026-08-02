@@ -2,19 +2,19 @@
 ===============================================================================
  Dealbot — het dagelijkse ophalen van aanbiedingen
 
- Versie      : 1.5
- Reden       : De winkelindeling wordt voortaan vervangen in plaats van
-               aangevuld, zodat groepsnamen die een winkel niet meer gebruikt
-               ook uit de keuzelijst verdwijnen.
- Datum       : 01-08-2026 21:35
+ Versie      : 1.6
+ Reden       : Naast de aanbiedingen wordt nu ook het gewone schap opgehaald.
+               Vomar levert geen aanbiedingen maar wél zijn hele assortiment met
+               vaste prijzen; dat voedt de standaardprijzen-pagina.
+ Datum       : 02-08-2026 12:35
 
  Onderdelen:
-   main()          - gaat alle winkels langs en vat het resultaat samen
-   verwerk_winkel() - haalt op, schrijft weg, ruimt het oude op en bewaart de
-                      winkelindeling
+   main()               - gaat alle winkels langs en vat het resultaat samen
+   verwerk_winkel()     - aanbiedingen: ophalen, wegschrijven, oude opruimen
+   verwerk_assortiment()- hetzelfde voor het gewone schap
 
  Uitvoeren:
-   python scripts/scan.py            alle winkels
+   python scripts/scan.py            alles
    python scripts/scan.py --proef    alleen ophalen, niets wegschrijven
 ===============================================================================
 """
@@ -29,7 +29,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from dealbot.bronnen import albert_heijn, dirk, jumbo  # noqa: E402
+from dealbot.bronnen import albert_heijn, dirk, jumbo, vomar  # noqa: E402
 from dealbot.database import Database, DatabaseFout  # noqa: E402
 
 # Elke winkel met de module die zijn aanbiedingen ophaalt.
@@ -37,6 +37,13 @@ WINKELS = [
     (albert_heijn.WINKEL_ID, albert_heijn.WINKEL_NAAM, albert_heijn.haal_op),
     (jumbo.WINKEL_ID, jumbo.WINKEL_NAAM, jumbo.haal_op),
     (dirk.WINKEL_ID, dirk.WINKEL_NAAM, dirk.haal_op),
+]
+
+# Winkels die hun hele assortiment met gewone prijzen publiceren. Dat is iets
+# anders dan een aanbiedingenbron: Vomar staat hier wél in en bij WINKELS niet,
+# omdat zijn aanbiedingen alleen in een digitale folder staan.
+ASSORTIMENTEN = [
+    (vomar.WINKEL_ID, vomar.WINKEL_NAAM, vomar.haal_assortiment),
 ]
 
 log = logging.getLogger("dealbot")
@@ -111,6 +118,44 @@ def verwerk_winkel(database: Database, winkel_id: int, naam: str, haal_op) -> in
     return aantal
 
 
+def verwerk_assortiment(database: Database, winkel_id: int, naam: str, haal_op) -> int:
+    """
+    Haalt het hele assortiment van één winkel op en zet het in de database.
+
+    Werkt net als verwerk_winkel(), maar dan voor het gewone schap. Er komen
+    hier geen aanbiedingen binnen, dus de winkelindeling gaat bewust níet naar
+    de keuzelijst van het profielscherm: een zoekvraag op zo'n groep zou nooit
+    een treffer opleveren. De groepen komen wel op de standaardprijzen-pagina
+    zelf terecht, rechtstreeks uit de producten.
+    """
+    log.info("== %s (assortiment) ==", naam)
+    log_id, moment = database.start_ronde(winkel_id)
+
+    try:
+        assortiment = haal_op()
+    except Exception as fout:  # noqa: BLE001 - elke bronfout netjes vastleggen
+        log.error("%s: ophalen mislukt: %s", naam, fout)
+        database.sluit_ronde(log_id, "mislukt", 0, f"Ophalen mislukt: {fout}")
+        return 0
+
+    if not assortiment.producten:
+        log.warning("%s: geen producten gevonden, oude lijst blijft staan.", naam)
+        database.sluit_ronde(log_id, "mislukt", 0, "Geen producten gevonden.")
+        return 0
+
+    try:
+        aantal = database.schrijf_standaardprijzen(assortiment.producten, moment)
+        database.ruim_oude_prijzen_op(winkel_id, moment)
+    except DatabaseFout as fout:
+        log.error("%s: wegschrijven mislukt: %s", naam, fout)
+        database.sluit_ronde(log_id, "mislukt", 0, f"Wegschrijven mislukt: {fout}")
+        return 0
+
+    database.sluit_ronde(log_id, "gelukt", aantal)
+    log.info("%s: %s standaardprijzen klaargezet.", naam, aantal)
+    return aantal
+
+
 def proefdraai() -> int:
     """Haalt alles op zonder de database aan te raken, om te kunnen kijken."""
     totaal = 0
@@ -142,6 +187,23 @@ def proefdraai() -> int:
                 aanbieding.eenheid_norm,
                 aanbieding.prijs_per_eenheid,
             )
+
+    for _, naam, haal_op in ASSORTIMENTEN:
+        log.info("== %s (assortiment, proef) ==", naam)
+        try:
+            assortiment = haal_op()
+        except Exception as fout:  # noqa: BLE001
+            log.error("%s: ophalen mislukt: %s", naam, fout)
+            continue
+
+        producten = assortiment.producten
+        met_ean = sum(1 for p in producten if p.ean)
+        log.info(
+            "%s: %s producten met een gewone prijs, waarvan %s met streepjescode; "
+            "%s productgroepen in de winkelindeling.",
+            naam, len(producten), met_ean, len(assortiment.productgroepen),
+        )
+
     return totaal
 
 
@@ -175,7 +237,16 @@ def main() -> int:
         if aantal == 0:
             mislukt.append(naam)
 
-    log.info("Klaar: %s aanbiedingen in de database.", totaal)
+    prijzen = 0
+    for winkel_id, naam, haal_op in ASSORTIMENTEN:
+        aantal = verwerk_assortiment(database, winkel_id, naam, haal_op)
+        prijzen += aantal
+        if aantal == 0:
+            mislukt.append(f"{naam} (assortiment)")
+
+    log.info(
+        "Klaar: %s aanbiedingen en %s standaardprijzen in de database.", totaal, prijzen
+    )
     if mislukt:
         log.error("Niet gelukt bij: %s", ", ".join(mislukt))
         return 1
