@@ -1,1 +1,10 @@
 requests>=2.31
+
+# Voor het lezen van digitale folders: de folder wordt blad voor blad een
+# afbeelding (pypdfium2 + pillow) en die laat de AI aflezen (google-genai).
+# pypdfium2 is met opzet gekozen boven poppler: het komt gewoon met pip mee, dus
+# er hoeft naast Python niets geïnstalleerd te worden — op de laptop niet en op
+# GitHub niet.
+pypdfium2>=4.30
+pillow>=10.0
+google-genai>=1.0

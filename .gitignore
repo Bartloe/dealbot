@@ -15,3 +15,9 @@ venv/
 # niet nodig om Dealbot te laten draaien.
 poppler-*/
 folder_paginas/
+
+# Proefwerk waarmee is uitgezocht of een folder leesbaar is, plus de folders en
+# uitdraaien zelf. Blijft op de laptop staan; de werkende versie zit in scripts/.
+poc/
+*.pdf
+vomar_aanbiedingen.xlsx
