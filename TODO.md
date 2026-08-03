@@ -58,10 +58,11 @@ Bijgewerkt: 03-08-2026 11:00
 - [ ] Bevestigingsmail bij het aanmelden van een nieuw account
 - [ ] In het profiel kunnen aanvinken bij welke winkels je daadwerkelijk komt, zodat je geen
       aanbiedingen ziet van een winkel dertig kilometer verderop
-- [ ] **Vijfde keten: Lidl.** Uitgezocht op 03-08-2026 en kansrijk: één verzoek naar
-      `www.lidl.nl/c/aanbiedingen/a10008785` levert 108 aanbiedingen met prijs,
-      van-prijs, productgroep en looptijd. Let op: maar ongeveer de helft noemt de
-      inhoud, dus de rest krijgt "kiloprijs onbekend". Een merkveld is er niet
+- [x] **Vijfde keten: Lidl.** Gedaan op 03-08-2026: één verzoek naar
+      `www.lidl.nl/aanbiedingen` levert 108 aanbiedingen met prijs, van-prijs,
+      productgroep en looptijd; 89 daarvan met kiloprijs. Veertig aanbiedingen
+      zijn Lidl Plus-kaartprijzen en staan in een eigen veld — die tellen mee,
+      met "met Lidl Plus" in de actietekst. Een merkveld is er niet
 - [ ] Meer winkels: DekaMarkt (werkt precies als Dirk, dus weinig werk), Bol, Amazon,
       Picnic. Plus, Coop en Hoogvliet blokkeren automatisch ophalen
 - [x] Vomar gebruiken voor de standaardprijzen-pagina: hun productlijst geeft het hele
