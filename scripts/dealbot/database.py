@@ -391,7 +391,10 @@ class Database:
         log.info("  %s koppelingen weggeschreven.", weggeschreven)
         return weggeschreven
 
-    def aanbiedingen_ruw(self, velden: str = "id,winkel_id,product_naam,productgroep") -> list[dict[str, Any]]:
+    def aanbiedingen_ruw(
+        self,
+        velden: str = "id,winkel_id,product_naam,productgroep,hoofdgroep,subgroep",
+    ) -> list[dict[str, Any]]:
         """Alle aanbiedingen die er nu staan, om ze opnieuw in te kunnen delen."""
         return self._alles("aanbiedingen", {"select": velden, "order": "id"})
 
@@ -402,18 +405,32 @@ class Database:
         Wordt gebruikt om in één keer alles opnieuw in te delen nadat het
         vertaalboekje is bijgewerkt, zonder eerst een hele ophaalronde te hoeven
         draaien.
-        """
-        bijgewerkt = 0
 
-        for start in range(0, len(regels), _BLOKGROOTTE):
-            blok = regels[start:start + _BLOKGROOTTE]
-            self._rest(
-                "POST", "aanbiedingen?on_conflict=id",
-                json=blok,
-                headers={"Prefer": "resolution=merge-duplicates,return=minimal"},
-            )
-            bijgewerkt += len(blok)
-            log.info("  %s van de %s aanbiedingen ingedeeld.", bijgewerkt, len(regels))
+        Het bijwerken gaat per groep en niet per aanbieding. Dat scheelt enorm:
+        duizenden aanbiedingen krijgen dezelfde twee waarden, dus één opdracht
+        met een lijst nummers volstaat. Die lijst gaat in stukken, want een
+        webadres mag niet eindeloos lang worden.
+        """
+        per_groep: dict[tuple[str | None, str | None], list[int]] = {}
+        for regel in regels:
+            sleutel = (regel.get("hoofdgroep"), regel.get("subgroep"))
+            per_groep.setdefault(sleutel, []).append(regel["id"])
+
+        bijgewerkt = 0
+        for (hoofdgroep, subgroep), nummers in per_groep.items():
+            for start in range(0, len(nummers), _BLOKGROOTTE):
+                blok = nummers[start:start + _BLOKGROOTTE]
+                self._rest(
+                    "PATCH", "aanbiedingen",
+                    params={"id": f"in.({','.join(str(n) for n in blok)})"},
+                    json={"hoofdgroep": hoofdgroep, "subgroep": subgroep},
+                    headers={"Prefer": "return=minimal"},
+                )
+                bijgewerkt += len(blok)
+
+            log.info("  %s / %s: %s aanbiedingen.",
+                     hoofdgroep or "(uit de indeling gehaald)",
+                     subgroep or "(alleen de afdeling)", len(nummers))
 
         return bijgewerkt
 

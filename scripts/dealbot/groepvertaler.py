@@ -50,11 +50,16 @@ class Koppeling:
     die grover is dan onze indeling: Dirks "Koffie & cacao" bevat zowel bonen
     als cacaopoeder, dus daar valt alleen de hoofdgroep met zekerheid over te
     zeggen. De productnaam vult dat later per product aan.
+
+    Ook de hoofdgroep mag leeg zijn, en dat betekent iets anders dan "onbekend":
+    het betekent "bekeken, en deze groep hoort nergens bij ons". Die uitkomst
+    wordt net zo goed bewaard als een treffer, want anders gaan dezelfde 2500
+    afgewezen groepsnamen elke ronde opnieuw langs de AI.
     """
 
     winkel_id: int
     productgroep: str
-    hoofdgroep: str
+    hoofdgroep: str | None
     subgroep: str | None = None
     gemengd: bool = False
     herkomst: str = "ai"
@@ -165,6 +170,10 @@ def _lees_antwoord(
     werkelijk onder die hoofdgroep. Zo kan een verzonnen naam nooit in de
     database belanden.
 
+    "Hoort nergens bij" komt als volwaardige koppeling terug, met een lege
+    hoofdgroep. Dat is een antwoord dat bewaard hoort te worden — anders wordt
+    dezelfde groepsnaam elke ronde opnieuw gevraagd.
+
     Geeft de koppelingen terug plus het aantal antwoorden dat is afgekeurd.
     """
     koppelingen: list[Koppeling] = []
@@ -184,7 +193,8 @@ def _lees_antwoord(
 
         hoofd = (regel.get("hoofdgroep") or "").strip()
         if not hoofd:
-            continue                        # hoort nergens bij: een geldig antwoord
+            koppelingen.append(Koppeling(winkel_id, origineel, None))
+            continue
 
         if not bestaat(hoofd):
             log.debug("Verzonnen hoofdgroep %r bij %r; overgeslagen.", hoofd, origineel)
@@ -219,9 +229,9 @@ def vertaal(
     Hangt de groepsnamen van één winkel onder onze indeling.
 
     Gaat in blokken, zodat één mislukt blok de rest niet meesleept. Wat terugkomt
-    zijn alleen de groepen die érgens onder vallen; de rest hoort simpelweg niet
-    bij een tak die wij al kennen en komt in de tweede lijst met meldingen te
-    staan als er iets misging.
+    zijn álle bekeken groepen — ook die nergens bij horen, met een lege
+    hoofdgroep. Die worden net zo goed bewaard, zodat er nooit twee keer naar
+    dezelfde groepsnaam gevraagd wordt.
     """
     if not groepen:
         return [], []
@@ -252,9 +262,10 @@ def vertaal(
 
         koppelingen, afgekeurd = _lees_antwoord(antwoord.inhoud, winkel_id, gevraagd)
         alles.extend(koppelingen)
+        raak = sum(1 for k in koppelingen if k.hoofdgroep)
         log.info(
-            "  %s blok %s: %s van de %s groepen ingedeeld%s.",
-            winkelnaam or winkel_id, nummer, len(koppelingen), len(blok),
+            "  %s blok %s: %s van de %s groepen vallen onder onze indeling%s.",
+            winkelnaam or winkel_id, nummer, raak, len(blok),
             f", {afgekeurd} antwoord(en) afgekeurd" if afgekeurd else "",
         )
 

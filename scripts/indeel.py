@@ -149,10 +149,13 @@ def stap_vertalen(
         alles.extend(koppelingen)
         klachten.extend(fouten)
 
-    log.info("%s van de %s groepsnamen vallen onder onze indeling "
+    raak = sum(1 for k in alles if k.hoofdgroep)
+    log.info("%s van de %s bekeken groepsnamen vallen onder onze indeling "
              "(de rest gaat over andere boodschappen). %s AI-vragen, %s tokens.",
-             len(alles), totaal, vraagbaak.aanroepen, vraagbaak.tokens)
+             raak, len(alles), vraagbaak.aanroepen, vraagbaak.tokens)
 
+    # Ook de afwijzingen gaan mee naar de database. Zo is één vraag per
+    # groepsnaam werkelijk één vraag: een volgende ronde slaat ze over.
     if alles and not proef:
         db.bewaar_koppelingen([k.als_rij() for k in alles])
 
@@ -199,37 +202,63 @@ def stap_toepassen(db: Database, proef: bool) -> tuple[list[dict], Counter, Coun
     Dit gebeurt hier in één keer voor alles, zodat een verbeterd vertaalboekje
     meteen doorwerkt zonder op de ophaalronde van morgenochtend te wachten.
     """
+    # Regels zonder hoofdgroep horen bewust niet in het boekje: die zeggen "deze
+    # winkelgroep hoort nergens bij ons". Ze staan er alleen zodat de AI er niet
+    # nog eens naar gevraagd wordt.
+    alle_regels = db.koppelingen()
     boekje = {
         (rij["winkel_id"], eigen.schoon(rij["productgroep"])):
             (rij["hoofdgroep"], rij.get("subgroep"), bool(rij.get("gemengd")))
-        for rij in db.koppelingen()
+        for rij in alle_regels if rij.get("hoofdgroep")
     }
-    log.info("Vertaalboekje: %s winkelgroepen.", len(boekje))
+    afgevallen = sum(1 for rij in alle_regels if not rij.get("hoofdgroep"))
+    log.info("Vertaalboekje: %s winkelgroepen onder onze indeling, "
+             "%s bekeken en afgevallen.",
+             len(alle_regels) - afgevallen, afgevallen)
 
     aanbiedingen = db.aanbiedingen_ruw()
     log.info("%s aanbiedingen om in te delen.", len(aanbiedingen))
 
+    ingedeeld: list[dict] = []
     bijwerken: list[dict] = []
     per_winkel: Counter = Counter()
     per_groep: Counter = Counter()
 
     for aanbieding in aanbiedingen:
         plek = _plek_van(aanbieding, boekje)
+        hoofdgroep = plek.hoofdgroep if plek else None
+        subgroep = plek.subgroep if plek else None
+
+        # Alleen wegschrijven wat werkelijk verandert. Een verbeterd
+        # vertaalboekje raakt meestal een handvol groepen; dan hoeven er geen
+        # duizenden ongewijzigde regels langs de database.
+        if (hoofdgroep, subgroep) != (aanbieding.get("hoofdgroep"),
+                                      aanbieding.get("subgroep")):
+            bijwerken.append({
+                "id": aanbieding["id"],
+                "hoofdgroep": hoofdgroep,
+                "subgroep": subgroep,
+            })
+
         if plek is None:
             continue
 
-        bijwerken.append({
-            "id": aanbieding["id"],
-            "hoofdgroep": plek.hoofdgroep,
-            "subgroep": plek.subgroep,
-        })
+        ingedeeld.append({"id": aanbieding["id"], "hoofdgroep": hoofdgroep,
+                          "subgroep": subgroep})
         per_winkel[aanbieding["winkel_id"]] += 1
         per_groep[(plek.hoofdgroep, plek.subgroep or "(alleen de afdeling)")] += 1
 
+    kwijt = sum(1 for regel in bijwerken if regel["hoofdgroep"] is None)
+    if kwijt:
+        log.info("%s aanbiedingen vallen niet langer onder de indeling en worden "
+                 "leeggemaakt.", kwijt)
+
     if bijwerken and not proef:
         db.zet_eigen_groepen(bijwerken)
+    elif not bijwerken:
+        log.info("Er verandert niets; alles stond al op de goede plek.")
 
-    return bijwerken, per_winkel, per_groep
+    return ingedeeld, per_winkel, per_groep
 
 
 # -----------------------------------------------------------------------------
