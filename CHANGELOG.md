@@ -1,5 +1,35 @@
 # Wijzigingen — Dealbot
 
+## 03-08-2026 — Lidl erbij als vijfde winkel
+
+Lidl doet mee. Zijn aanbiedingenpagina draagt de prijzen zelf bij zich, dus er
+is geen folder, geen AI en geen inloggen nodig: één verzoek per ochtend levert
+de hele week.
+
+- **108 aanbiedingen, 89 daarvan met een kiloprijs (82%).** Ze staan in de
+  database en zijn op de website te zoeken.
+- **De hele week in één keer.** De acties die op maandag beginnen staan er, maar
+  ook die van woensdag en vrijdag. Elke aanbieding houdt zijn eigen begindatum,
+  zodat te zien is vanaf wanneer je hem kunt halen.
+- **46 productgroepen** ("Yoghurt", "Bier & Cider") zijn aan te vinken op het
+  profielscherm.
+
+### Twee dingen om te weten
+
+- **Veertig aanbiedingen gelden alleen met de Lidl Plus-kaart.** Dat is bij Lidl
+  geen uitzondering maar een derde van de folder, vooral groente, fruit en vlees.
+  Ze tellen mee — het zijn echte aanbiedingen — maar er staat "met Lidl Plus"
+  bij, zodat je niet voor een verrassing bij de kassa staat.
+- **Lidl deelt zijn eigen producten weleens raar in.** "Bruine bollen" staat bij
+  hem onder "Chocoladeproducten". Dat nemen we over zoals hij het aanlevert; het
+  komt alleen voor bij de groep, niet bij de prijs.
+
+### Wat Lidl niet geeft
+
+Schapprijzen en streepjescodes. Alleen wat in de aanbieding ligt heeft een prijs,
+dus Lidl komt niet op de standaardprijzen-pagina en is niet op streepjescode aan
+Vomar te koppelen.
+
 ## 03-08-2026 — de folder van Vomar wordt voorgelezen
 
 Gisteren stond hier nog dat de aanbiedingen van Vomar onbereikbaar zijn. Dat is

@@ -8,3 +8,8 @@ requests>=2.31
 pypdfium2>=4.30
 pillow>=10.0
 google-genai>=1.0
+
+# Lidl geeft de looptijd van een aanbieding als tijdstempel; om die naar de
+# juiste Nederlandse dag om te rekenen is de tijdzonelijst nodig. Linux heeft
+# die zelf (GitHub dus ook), Windows niet altijd — vandaar alleen daar.
+tzdata; sys_platform == "win32"

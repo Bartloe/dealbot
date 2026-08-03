@@ -2,12 +2,11 @@
 ===============================================================================
  Dealbot — het dagelijkse ophalen van aanbiedingen
 
- Versie      : 1.7
- Reden       : De weekfolder van Vomar wordt nu ook uitgelezen. Dat gaat met AI
-               en kost tientallen vragen per folder, dus deze bron werkt anders
-               dan de rest: er wordt alleen gelezen als er een nieuwe folder
-               hangt. Vomar levert daarmee én aanbiedingen én schapprijzen.
- Datum       : 03-08-2026 10:40
+ Versie      : 1.8
+ Reden       : Lidl komt erbij als vijfde winkel. Zijn aanbiedingen staan met
+               prijs en al op zijn eigen aanbiedingenpagina, dus hij werkt als
+               Albert Heijn, Jumbo en Dirk: gewoon elke ochtend ophalen.
+ Datum       : 03-08-2026 13:10
 
  Onderdelen:
    main()               - gaat alle winkels langs en vat het resultaat samen
@@ -31,7 +30,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from dealbot.bronnen import albert_heijn, dirk, jumbo, vomar, vomar_folder  # noqa: E402
+from dealbot.bronnen import albert_heijn, dirk, jumbo, lidl, vomar, vomar_folder  # noqa: E402
 from dealbot.database import Database, DatabaseFout  # noqa: E402
 
 # Elke winkel met de module die zijn aanbiedingen ophaalt.
@@ -39,6 +38,7 @@ WINKELS = [
     (albert_heijn.WINKEL_ID, albert_heijn.WINKEL_NAAM, albert_heijn.haal_op),
     (jumbo.WINKEL_ID, jumbo.WINKEL_NAAM, jumbo.haal_op),
     (dirk.WINKEL_ID, dirk.WINKEL_NAAM, dirk.haal_op),
+    (lidl.WINKEL_ID, lidl.WINKEL_NAAM, lidl.haal_op),
 ]
 
 # Winkels die hun hele assortiment met gewone prijzen publiceren. Dat is iets
