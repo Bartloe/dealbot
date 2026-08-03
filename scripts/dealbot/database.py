@@ -2,11 +2,13 @@
 ===============================================================================
  Dealbot — verkeer met de database (Supabase)
 
- Versie      : 1.5
- Reden       : Een weekfolder laten aflezen kost tientallen AI-vragen, en die
-               zijn per dag beperkt. Daarom kan er nu gevraagd worden of een
-               folder al eens ingelezen is; zo blijft het bij één keer per week.
- Datum       : 03-08-2026 10:45
+ Versie      : 1.6
+ Reden       : Dealbot krijgt een eigen productindeling van twee lagen, los van
+               wat de winkels zelf hanteren. Daar hoort verkeer bij: de indeling
+               wegschrijven, het vertaalboekje van winkelgroepen lezen en
+               bijwerken, en de groepsnamen ophalen die nog vertaald moeten
+               worden.
+ Datum       : 03-08-2026 22:50
 
  Onderdelen:
    Database.start_ronde()             - logboekregel, en geeft het moment terug
@@ -17,6 +19,12 @@
    Database.bewaar_groepen()          - zet de winkelindeling in de vaste lijst
    Database.folder_al_gelezen()       - staat deze folderuitgave er al in?
    Database.sluit_ronde()             - schrijft het resultaat in het logboek
+
+   Database.winkels()                 - de winkels met hun naam
+   Database.winkelgroepen()           - de groepsnamen van de winkels zelf
+   Database.bewaar_eigen_indeling()   - onze eigen indeling wegschrijven
+   Database.koppelingen()             - het vertaalboekje, per winkel
+   Database.bewaar_koppelingen()      - vertalingen toevoegen of bijwerken
 ===============================================================================
 """
 
@@ -290,6 +298,124 @@ class Database:
         except (DatabaseFout, ValueError) as fout:
             log.warning("Kon niet nagaan of de folder al ingelezen is: %s", fout)
             return False
+
+    # -- eigen indeling ------------------------------------------------------
+
+    def _alles(self, pad: str, params: dict[str, str] | None = None) -> list[dict[str, Any]]:
+        """
+        Haalt een hele tabel op, in blokken.
+
+        De database geeft hooguit 1000 regels per keer terug. Bij 2606
+        groepsnamen zou je zonder deze lus dus stilzwijgend twee derde missen —
+        precies het soort fout dat pas weken later opvalt.
+        """
+        alles: list[dict[str, Any]] = []
+        sprong = 1000
+        offset = 0
+
+        while True:
+            opties = dict(params or {})
+            opties.update({"limit": str(sprong), "offset": str(offset)})
+            blok = self._rest("GET", pad, params=opties).json()
+            alles.extend(blok)
+            if len(blok) < sprong:
+                return alles
+            offset += sprong
+
+    def winkels(self) -> dict[int, str]:
+        """De winkels met hun naam, om leesbaar te kunnen melden wat er gebeurt."""
+        rijen = self._rest("GET", "winkels", params={"select": "id,naam"}).json()
+        return {rij["id"]: rij["naam"] for rij in rijen}
+
+    def winkelgroepen(self, winkel_id: int | None = None) -> list[dict[str, Any]]:
+        """
+        De groepsnamen zoals de winkels ze zelf hanteren.
+
+        Dit is de lijst die vertaald moet worden naar onze eigen indeling. Hij
+        komt uit het hele assortiment van elke winkel, niet alleen uit wat er
+        deze week in de bonus ligt.
+        """
+        params = {"select": "winkel_id,productgroep", "order": "winkel_id,productgroep"}
+        if winkel_id is not None:
+            params["winkel_id"] = f"eq.{winkel_id}"
+        return self._alles("bekende_productgroepen", params)
+
+    def bewaar_eigen_indeling(self, regels: list[dict[str, Any]]) -> int:
+        """
+        Zet onze eigen indeling in de database.
+
+        De indeling zelf staat in indeling.py — dat is de enige plek waar hij
+        wordt onderhouden. Hier komt hij terecht zodat de website dezelfde
+        keuzelijst kan tonen als waarmee het ophaalscript indeelt.
+        """
+        if not regels:
+            return 0
+
+        self._rest(
+            "POST", "eigen_groepen?on_conflict=hoofdgroep,subgroep",
+            json=regels,
+            headers={"Prefer": "resolution=merge-duplicates,return=minimal"},
+        )
+        log.info("  Eigen indeling bijgewerkt: %s subgroepen.", len(regels))
+        return len(regels)
+
+    def koppelingen(self, winkel_id: int | None = None) -> list[dict[str, Any]]:
+        """Het vertaalboekje: welke winkelgroep hangt onder welke eigen groep."""
+        params = {"select": "winkel_id,productgroep,hoofdgroep,subgroep,gemengd,herkomst"}
+        if winkel_id is not None:
+            params["winkel_id"] = f"eq.{winkel_id}"
+        return self._alles("groep_koppelingen", params)
+
+    def bewaar_koppelingen(self, koppelingen: list[dict[str, Any]]) -> int:
+        """
+        Schrijft vertalingen weg; bestaande regels worden bijgewerkt.
+
+        Gaat in blokken, net als de aanbiedingen. Wat met de hand verbeterd is
+        (herkomst 'hand') hoort niet overschreven te worden — dat filtert de
+        aanroeper eruit, want alleen die weet wat er nu in de database staat.
+        """
+        weggeschreven = 0
+
+        for start in range(0, len(koppelingen), _BLOKGROOTTE):
+            blok = koppelingen[start:start + _BLOKGROOTTE]
+            for rij in blok:
+                rij["gewijzigd_op"] = datetime.now(timezone.utc).isoformat()
+
+            self._rest(
+                "POST", "groep_koppelingen?on_conflict=winkel_id,productgroep",
+                json=blok,
+                headers={"Prefer": "resolution=merge-duplicates,return=minimal"},
+            )
+            weggeschreven += len(blok)
+
+        log.info("  %s koppelingen weggeschreven.", weggeschreven)
+        return weggeschreven
+
+    def aanbiedingen_ruw(self, velden: str = "id,winkel_id,product_naam,productgroep") -> list[dict[str, Any]]:
+        """Alle aanbiedingen die er nu staan, om ze opnieuw in te kunnen delen."""
+        return self._alles("aanbiedingen", {"select": velden, "order": "id"})
+
+    def zet_eigen_groepen(self, regels: list[dict[str, Any]]) -> int:
+        """
+        Zet bij bestaande aanbiedingen onze hoofd- en subgroep.
+
+        Wordt gebruikt om in één keer alles opnieuw in te delen nadat het
+        vertaalboekje is bijgewerkt, zonder eerst een hele ophaalronde te hoeven
+        draaien.
+        """
+        bijgewerkt = 0
+
+        for start in range(0, len(regels), _BLOKGROOTTE):
+            blok = regels[start:start + _BLOKGROOTTE]
+            self._rest(
+                "POST", "aanbiedingen?on_conflict=id",
+                json=blok,
+                headers={"Prefer": "resolution=merge-duplicates,return=minimal"},
+            )
+            bijgewerkt += len(blok)
+            log.info("  %s van de %s aanbiedingen ingedeeld.", bijgewerkt, len(regels))
+
+        return bijgewerkt
 
     def aantal_aanbiedingen(self, winkel_id: int) -> int:
         """Hoeveel aanbiedingen er nu voor deze winkel in de database staan."""

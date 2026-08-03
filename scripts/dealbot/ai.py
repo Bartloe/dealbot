@@ -2,14 +2,13 @@
 ===============================================================================
  Dealbot — vragen stellen aan Gemini over een folderpagina
 
- Versie      : 1.0
- Reden       : De aanbiedingen van Vomar staan alleen in een digitale folder.
-               Die is met het blote oog prima te lezen maar niet met gewone
-               programmacode: prijzen staan als losse cijfers over de plaatjes
-               heen. Een AI die naar de pagina kíjkt lost dat op. Deze module
-               regelt het gesprek met Google Gemini en houdt vol als de dienst
-               het even laat afweten (foutmelding 503, "high demand").
- Datum       : 02-08-2026 22:40
+ Versie      : 1.1
+ Reden       : Er is een tweede soort vraag bijgekomen die niets met plaatjes te
+               maken heeft: bij welke van onze eigen productgroepen hoort de
+               groepsnaam van een winkel? Dat is een tekstvraag. De hele
+               machinerie eromheen — sleutels, geduld bij drukte, doorschakelen
+               — is voor allebei dezelfde en wordt nu gedeeld.
+ Datum       : 03-08-2026 22:20
 
  De aanpak met de sleutels en het geduld is overgenomen uit project subs, waar
  hetzelfde probleem al is uitgevochten: dezelfde foutcode betekent daar soms
@@ -18,11 +17,13 @@
  af die nog prima werken.
 
  Onderdelen:
-   sleutels()          - de Gemini-sleutels uit .env, op volgorde
-   Antwoord            - wat er uit één vraag komt: gegevens of een nette fout
-   Vraagbaak           - stelt de vraag, wisselt van sleutel en heeft geduld
-   _soort_fout()       - vertaalt de klacht van Google naar wat we moeten doen
-   _voorgestelde_rust()- de wachttijd die Google zelf noemt, met een bovengrens
+   sleutels()               - de Gemini-sleutels uit .env, op volgorde
+   Antwoord                 - wat er uit één vraag komt: gegevens of een nette fout
+   Vraagbaak                - stelt de vraag, wisselt van sleutel en heeft geduld
+   .vraag_over_afbeelding() - laat het model naar een folderpagina kijken
+   .vraag_over_tekst()      - stelt een vraag zonder plaatje, bijv. over groepsnamen
+   _soort_fout()            - vertaalt de klacht van Google naar wat we moeten doen
+   _voorgestelde_rust()     - de wachttijd die Google zelf noemt, met een bovengrens
 ===============================================================================
 """
 
@@ -184,6 +185,24 @@ class Vraagbaak:
         doorschakelen als die sleutel echt niet meer kan, en pas helemaal opnieuw
         beginnen als de hele rij niets opleverde.
         """
+        return self._stel(afbeelding, opdracht, vorm, omschrijving)
+
+    def vraag_over_tekst(self, opdracht: str, vorm: dict[str, Any],
+                         omschrijving: str = "") -> Antwoord:
+        """
+        Stelt een vraag zonder plaatje erbij, met hetzelfde geduld en dezelfde
+        sleutelwissels als een vraag over een folderpagina.
+
+        Hiermee worden de groepsnamen van de winkels onder onze eigen indeling
+        gehangen. Zo'n vraag is veel goedkoper dan een folderpagina — er gaat
+        alleen tekst in — en hij hoeft maar één keer per groepsnaam gesteld te
+        worden, want het antwoord wordt bewaard.
+        """
+        return self._stel(None, opdracht, vorm, omschrijving)
+
+    def _stel(self, afbeelding: bytes | None, opdracht: str,
+              vorm: dict[str, Any], omschrijving: str = "") -> Antwoord:
+        """Het eigenlijke vragen, met of zonder plaatje erbij."""
         kan, reden = self.beschikbaar()
         if not kan:
             return Antwoord(fout=reden)
@@ -249,7 +268,7 @@ class Vraagbaak:
                                   f"elke sleutel ({laatste_klacht[:120]})"))
         return Antwoord(fout="Gemini gaf geen antwoord")
 
-    def _sleutel_gebruiken(self, nummer: int, afbeelding: bytes, opdracht: str,
+    def _sleutel_gebruiken(self, nummer: int, afbeelding: bytes | None, opdracht: str,
                            instelling) -> tuple[Antwoord | None, str, str]:
         """
         Probeert één sleutel, en blijft geduldig zolang het alleen om drukte gaat.
@@ -313,19 +332,21 @@ class Vraagbaak:
             temperature=TEMPERATUUR,
         )
 
-    def _proberen(self, sleutel: str, afbeelding: bytes, opdracht: str, instelling):
+    def _proberen(self, sleutel: str, afbeelding: bytes | None, opdracht: str, instelling):
         """Eén sleutel één keer proberen. Elke fout komt als tekst terug, niet als crash."""
         from google import genai
         from google.genai import types
+
+        inhoud: list[Any] = []
+        if afbeelding is not None:
+            inhoud.append(types.Part.from_bytes(data=afbeelding, mime_type="image/jpeg"))
+        inhoud.append(opdracht)
 
         try:
             klant = genai.Client(api_key=sleutel)
             antwoord = klant.models.generate_content(
                 model=self.model,
-                contents=[
-                    types.Part.from_bytes(data=afbeelding, mime_type="image/jpeg"),
-                    opdracht,
-                ],
+                contents=inhoud,
                 config=instelling,
             )
             return antwoord, "", ""

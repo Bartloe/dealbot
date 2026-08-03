@@ -75,14 +75,21 @@ Bijgewerkt: 03-08-2026 21:45
       02-08-2026: 6174 producten, allemaal met kiloprijs en EAN, in twee verzoeken.
       Vomar levert sinds 03-08-2026 allebei: schapprijzen uit de webshop-ingang én
       aanbiedingen uit de voorgelezen folder
-- [ ] Productgroepen van de verschillende ketens aan elkaar knopen. Voor Albert Heijn
-      (313 laden) en Jumbo (2153) lost het zichzelf grotendeels op: de namen lijken
-      sterk op elkaar en een zoekvraag bewaart alleen de naam, dus "Koffiebonen" pakt
-      allebei. Wat overblijft zijn namen die net anders geschreven zijn, en
-      **Dirk met zijn 146 groepen** — die zijn een slag grover ("Koffie & cacao"),
-      dus daar blijft vrije tekst op de productnaam de route.
-      De achtergrondlijst met EAN-codes is er inmiddels: 6174 Vomar-producten,
-      allemaal mét streepjescode, in de tabel `standaardprijzen`
+- [x] **Eigen productindeling van twee lagen, los van de winkels.** In plaats van de
+      indelingen van vijf ketens aan elkaar te lijmen staat er nu één eigen indeling
+      boven, en hangt elk product daaronder. Proefstuk Koffie & thee gedaan op
+      03-08-2026: 340 aanbiedingen over alle vijf de winkels, steekproef van vijftig
+      vijftig keer goed, 2% viel buiten de indeling. Zie CHANGELOG voor hoe het werkt
+- [ ] **De overige 28 takken van de indeling erbij** (groente, zuivel, vlees,
+      enzovoort). Dit is herhaalwerk nu het proefstuk staat: de takken in
+      `scripts/dealbot/indeling.py` zetten en `python scripts/indeel.py` draaien.
+      Reken op zo'n 45 AI-vragen voor alle 2606 winkelgroepen in één keer — dat past
+      binnen een dag, maar het eet wel sleutels die de folderlezer die dag niet meer
+      heeft. Pas dáárna kan de website over
+- [ ] **De website op de eigen indeling zetten** zodra alle takken er zijn: het
+      zoekveld op het profielscherm (nu 2606 losse namen, straks ~20 hoofdgroepen met
+      hun subgroepen) en de startpagina. De winkelpagina houdt de indeling van de
+      winkel zelf — daar blader je door één folder
 - [ ] **Voorvoegsel "lokaal" bij Jumbo-groepen opschonen.** Een deel van Jumbo's
       groepsnamen begint met "lokaal" ("lokaal Koffiebonen"), waardoor dezelfde
       groep twee keer in de keuzelijst staat en niet meer op één naam matcht met

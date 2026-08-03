@@ -1,5 +1,74 @@
 # Wijzigingen — Dealbot
 
+## 03-08-2026 — Een eigen productindeling: proefstuk Koffie & thee
+
+Elke winkel deelt zijn assortiment anders in. Albert Heijn zegt "Koffiebonen",
+Jumbo zegt "lokaal Koffiebonen", Dirk gooit alles op één hoop ("Koffie & cacao")
+en de voorgelezen Vomar-folder levert helemaal geen groep. Samen 2606 losse
+groepsnamen, en met één zoekvraag vond je nooit alle winkels.
+
+Daar staat nu één eigen indeling boven: **hoofdgroep en subgroep, in onze eigen
+woorden**. Elk product hangt daaronder, ongeacht wat de winkel er zelf van vindt.
+Als proefstuk is één tak gebouwd — Koffie & thee — over alle vijf de winkels.
+
+### Hoe het werkt
+
+- **Het skelet komt van Albert Heijn.** Zijn winkelindeling (29 afdelingen met
+  313 laden) is al twee lagen diep, staat in gewoon Nederlands en dekt het hele
+  assortiment. Eén keer overgenomen, daarna van ons: hij verandert niet mee als
+  Albert Heijn morgen iets hernoemt.
+- **Vertaald wordt er per groep, niet per product.** Er zijn 2606 winkelgroepen
+  tegenover tienduizenden producten, dus één groep vertalen dekt er duizenden in
+  één klap — en volgende week gelden dezelfde groepen nog gewoon.
+- **Het vertalen doet de AI die er al zat** (dezelfde die de folder voorleest),
+  en het antwoord wordt bewaard. Een gewone ophaalronde 's ochtends kost daardoor
+  geen enkele AI-vraag.
+- **De productnaam is het vangnet** voor Dirk (te grof) en de Vomar-folder (geen
+  groep). Zo komen Dirks koffiebonen alsnog onder "Koffiebonen" terecht.
+- **De groep van de winkel zelf blijft gewoon staan.** Op de winkelpagina — waar
+  je door één folder bladert — is die juist de logische.
+
+### Drie soorten winkelgroep, en waarom dat nodig was
+
+Bij de eerste proef belandde "Nivea Men **Espresso** deodorant" bij de koffie, en
+"AH Brownie espresso" ook. Dat werd rechtgezet door onderscheid te maken:
+
+1. **De groep valt onder onze indeling** → die is leidend.
+2. **De groep valt er zeker niet onder** (deodorant, chocoladerepen) → het product
+   telt niet mee. De winkel heeft al gezegd wat het is.
+3. **De groep is gemengd** ("IJskoffie en milkshakes") → het product telt pas mee
+   als zijn eigen naam laat zien dat het erbij hoort. Zonder deze derde soort moet
+   je kiezen tussen milkshakes bij de koffie, of de ijskoffie kwijtraken.
+
+### Wat het proefstuk opleverde
+
+340 koffie- en thee-aanbiedingen, over alle vijf de winkels:
+
+| Subgroep | AH | Jumbo | Dirk | Vomar | Lidl |
+| --- | --- | --- | --- | --- | --- |
+| Thee | 87 | – | 35 | 1 | – |
+| IJsthee | 40 | 23 | – | – | – |
+| Koffiecups | 3 | 33 | 21 | 2 | – |
+| Koffiebonen | 9 | 21 | – | 1 | 1 |
+| Filterkoffie | 23 | – | 1 | 1 | – |
+| Cacao & chocolademelk | 12 | 8 | – | – | – |
+| IJskoffie | – | 15 | – | – | – |
+| Oploskoffie, Koffiemelk | 1 | 1 | – | – | – |
+
+Gecontroleerd: een steekproef van vijftig stond **vijftig keer op de goede plek**.
+Van alles wat naar koffie of thee ruikt bleef 2% buiten de indeling — vrijwel
+allemaal terecht (deodorant, brownie, limonadesiroop). Dat Dirk geen koffiebonen
+heeft klopt: hij heeft er deze week simpelweg geen in de bonus, alleen Hak-bonen.
+
+De AI hield zelf de valstrikken tegen: "Theeworst" is worst, "Wasmiddel capsules"
+zijn geen koffiecups, en chocoladerepen horen niet bij de cacao.
+
+### Nog te doen
+
+De website gebruikt de nieuwe indeling nog niet — eerst moeten de overige 28
+takken erbij (groente, zuivel, vlees, enzovoort). Dat is herhaalwerk: takken in
+`indeling.py` zetten en `indeel.py` draaien.
+
 ## 03-08-2026 — Nieuwe pagina: aanbiedingen per winkel
 
 Naast je eigen zoekvragen kun je nu ook gewoon door een winkel bladeren. Bovenaan
