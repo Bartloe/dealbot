@@ -1,6 +1,6 @@
 # Dealbot — takenlijst
 
-Bijgewerkt: 03-08-2026 11:00
+Bijgewerkt: 03-08-2026 21:45
 
 ## Fase 1 — de minimale basis (nu)
 
@@ -40,6 +40,11 @@ Bijgewerkt: 03-08-2026 11:00
 - [x] Oude aanbiedingen pas opruimen nadat de nieuwe binnen zijn
 - [x] Prijs per kilo/liter berekenen; lukt dat niet, dan onderaan met de melding "kiloprijs onbekend"
 - [x] Startpagina: persoonlijke aanbiedingen, gegroepeerd per product, goedkoop naar duur
+- [x] Winkelpagina: alle aanbiedingen van één winkel in de lopende week, per productgroep.
+      Winkel kiezen op logo; gedaan op 03-08-2026
+- [ ] **De folderlezer ook een productgroep laten meegeven.** Vomar komt nu zonder
+      indeling binnen, waardoor zijn 153 aanbiedingen op de winkelpagina onder één
+      kopje "Overig" staan en op het profielscherm geen productgroep te kiezen is
 - [x] Profielpagina: zoekvragen bekijken, toevoegen en verwijderen
       (merk, productgroep, vrije tekst)
 - [x] Melding als er deze week geen aanbiedingen zijn, met link naar de standaardprijzen-pagina

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dealbot — aanbiedingen per winkel</title>
+    <link rel="stylesheet" href="assets/stijl.css">
+</head>
+<body>
+    <header class="balk" data-na-inloggen hidden>
+        <a class="merk" href="index.html">Dealbot</a>
+        <nav>
+            <a href="index.html">Aanbiedingen</a>
+            <a class="huidig" href="winkel.html">Per winkel</a>
+            <a href="standaardprijzen.html">Standaardprijzen</a>
+            <a href="profiel.html">Mijn profiel</a>
+            <button type="button" id="uitloggen">Uitloggen</button>
+        </nav>
+    </header>
+
+    <div id="inlogscherm" hidden></div>
+
+    <main data-na-inloggen hidden>
+        <h1>Aanbiedingen per winkel</h1>
+        <p class="uitleg">
+            Kies een winkel. Je ziet dan alles wat daar deze week in de aanbieding
+            is, op volgorde van productgroep.
+        </p>
+        <p class="melding" id="melding" role="alert" hidden></p>
+
+        <nav class="winkelkiezer" id="winkelkiezer" aria-label="Kies een winkel"></nav>
+
+        <p class="samenvatting" id="samenvatting" hidden></p>
+
+        <div class="knoppen groepknoppen" id="groepknoppen" hidden>
+            <button type="button" class="knop tweede" id="allesuit">Alles uitklappen</button>
+            <button type="button" class="knop tweede" id="allesin">Alles inklappen</button>
+        </div>
+
+        <div id="lijst"></div>
+    </main>
+
+    <script type="module" src="assets/winkel.js"></script>
+</body>
+</html>

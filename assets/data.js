@@ -2,11 +2,11 @@
  * =============================================================================
  *  Dealbot — verkeer met de database vanuit de website
  *
- *  Versie      : 1.5
- *  Reden       : De standaardprijzen-pagina is erbij gekomen. Die haalt niet
- *                alles in één keer op — er staan ruim zesduizend producten in —
- *                maar vraagt gericht om één productgroep of om een zoekterm.
- *  Datum       : 02-08-2026 13:10
+ *  Versie      : 1.6
+ *  Reden       : De winkelpagina is erbij gekomen: alle aanbiedingen van één
+ *                winkel in de lopende week. Daar horen twee nieuwe vragen bij —
+ *                welke winkels er zijn, en wat er deze week bij één winkel ligt.
+ *  Datum       : 03-08-2026 21:10
  *
  *  Onderdelen:
  *    meldAan()               - maakt een nieuw account met e-mail + pincode
@@ -16,6 +16,9 @@
  *    haalAanbiedingen()      - de aanbiedingen die bij het profiel passen
  *    haalProductgroepen()    - de groepen waaruit een zoekvraag kan kiezen
  *    haalLaatsteRun()        - wanneer er voor het laatst is opgehaald
+ *    haalWinkels()           - de winkels waaruit Dealbot ophaalt
+ *    telAanbiedingen()       - hoeveel een winkel er deze week heeft liggen
+ *    haalWinkelAanbiedingen()- alles wat er deze week bij één winkel ligt
  *    haalZoekvragen()        - de zoekvragen van de ingelogde gebruiker
  *    voegZoekvragenToe()     - slaat een of meer nieuwe zoekvragen op
  *    verwijderZoekvraag()    - wist een zoekvraag
@@ -243,6 +246,118 @@ export async function haalLaatsteRun() {
             ? laatsteMislukt
             : null,
     };
+}
+
+// -- winkels -----------------------------------------------------------------
+
+// De database geeft hooguit duizend regels per keer terug en de grootste winkel
+// heeft er ruim twaalfhonderd, dus wordt er blok voor blok opgehaald. Het
+// maximum is een noodrem tegen eindeloos doorvragen bij een fout aan de andere
+// kant; geen enkele winkel komt in de buurt.
+const AANBIEDINGEN_BLOK = 1000;
+const AANBIEDINGEN_MAXIMUM = 20000;
+
+// De datum in Nederlandse tijd, als 2026-08-03. Nodig om te bepalen wat er
+// vandaag geldig is: een gebruiker op vakantie hoort dezelfde week te zien als
+// iemand die in de winkel staat.
+const DAGDELEN = new Intl.DateTimeFormat('nl-NL', {
+    timeZone: 'Europe/Amsterdam',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+});
+
+function vandaag() {
+    const delen = {};
+    for (const deel of DAGDELEN.formatToParts(new Date())) {
+        delen[deel.type] = deel.value;
+    }
+    return `${delen.year}-${delen.month}-${delen.day}`;
+}
+
+/**
+ * Beperkt een vraag tot de aanbiedingen die vandaag gelden.
+ *
+ * Niet elke aanbieding heeft datums — bij sommige winkels ontbreken ze. Die
+ * blijven staan: ze zijn opgehaald in de ronde van vanochtend en horen dus bij
+ * deze week. Wat wél een periode heeft, moet er vandaag binnen vallen; zo
+ * verdwijnen de weekendacties uit de folder zodra het weekend voorbij is.
+ */
+function alleenDezeWeek(vraag) {
+    const dag = vandaag();
+    return vraag
+        .or(`geldig_van.is.null,geldig_van.lte.${dag}`)
+        .or(`geldig_tot.is.null,geldig_tot.gte.${dag}`);
+}
+
+/** De winkels waaruit Dealbot ophaalt, in vaste volgorde. */
+export async function haalWinkels() {
+    const data = await probeer('winkels ophalen', () => db
+        .from('winkels')
+        .select('id, code, naam')
+        .eq('actief', true)
+        .order('id', { ascending: true }));
+    return data || [];
+}
+
+/**
+ * Hoeveel aanbiedingen een winkel deze week heeft liggen.
+ *
+ * Alleen het aantal, niet de aanbiedingen zelf: de keuzestrook bovenaan de
+ * pagina laat daarmee zien waar iets te halen valt zonder alles op te halen.
+ * Lukt het tellen niet, dan komt er null terug — het aantal is bijzaak en mag
+ * de pagina niet tegenhouden.
+ */
+export async function telAanbiedingen(winkelId) {
+    try {
+        const vraag = alleenDezeWeek(db
+            .from('aanbiedingen')
+            .select('id', { count: 'exact', head: true })
+            .eq('winkel_id', winkelId));
+
+        const { count, error } = await vraag;
+        if (error) {
+            console.error(`Dealbot — aanbiedingen tellen van winkel ${winkelId} mislukt:`, error);
+            return null;
+        }
+        return count;
+    } catch (fout) {
+        console.error(`Dealbot — aanbiedingen tellen van winkel ${winkelId} mislukt:`, fout);
+        return null;
+    }
+}
+
+/**
+ * Alles wat er deze week bij één winkel ligt, op volgorde van productgroep.
+ *
+ * Binnen een groep staat het goedkoopste per kilo vooraan; wat geen kiloprijs
+ * heeft, zakt naar onderen in plaats van te verdwijnen. Het nummer sluit de
+ * rij, zodat de volgorde tussen twee blokken door niet kan verspringen — anders
+ * zou een aanbieding dubbel of helemaal niet binnenkomen.
+ */
+export async function haalWinkelAanbiedingen(winkelId) {
+    const alles = [];
+
+    for (let begin = 0; begin < AANBIEDINGEN_MAXIMUM; begin += AANBIEDINGEN_BLOK) {
+        const blok = await probeer('aanbiedingen van de winkel ophalen', () => alleenDezeWeek(db
+            .from('aanbiedingen')
+            .select('id, product_naam, merk, productgroep, actie_tekst, prijs, normale_prijs, '
+                + 'inhoud_waarde, inhoud_eenheid, prijs_per_eenheid, eenheid_norm, '
+                + 'geldig_van, geldig_tot, product_url, afbeelding_url')
+            .eq('winkel_id', winkelId))
+            .order('productgroep', { ascending: true, nullsFirst: false })
+            .order('prijs_per_eenheid', { ascending: true, nullsFirst: false })
+            .order('id', { ascending: true })
+            .range(begin, begin + AANBIEDINGEN_BLOK - 1));
+
+        alles.push(...(blok || []));
+
+        if (!blok || blok.length < AANBIEDINGEN_BLOK) {
+            return alles;
+        }
+    }
+
+    return alles;
 }
 
 // -- standaardprijzen --------------------------------------------------------

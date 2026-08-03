@@ -1,5 +1,40 @@
 # Wijzigingen — Dealbot
 
+## 03-08-2026 — Nieuwe pagina: aanbiedingen per winkel
+
+Naast je eigen zoekvragen kun je nu ook gewoon door een winkel bladeren. Bovenaan
+de pagina staan de logo's van de winkels; klik er één aan en je ziet alles wat
+daar deze week in de aanbieding is, geordend per productgroep.
+
+- **Kiezen doe je op het logo.** Onder elk logo staat hoeveel er deze week ligt,
+  zodat je meteen ziet waar iets te halen valt. De gekozen winkel blijft achter
+  het adres staan (`winkel.html#jumbo`): verversen houdt je bij dezelfde winkel.
+- **Alles van de lopende week.** Aanbiedingen met een periode moeten vandaag
+  geldig zijn; zo verdwijnt een weekendactie vanzelf zodra het weekend voorbij is.
+- **Per productgroep, goedkoopste bovenaan.** Elke groep is een blokje dat je
+  open- en dichtklapt. Bij winkels met veel groepen staat alles dichtgeklapt: je
+  ziet dan eerst de indeling en klapt open wat je interesseert.
+
+### Wat er per winkel te zien is
+
+| Winkel | Aanbiedingen | Productgroepen |
+| --- | --- | --- |
+| Albert Heijn | 4624 | 140 |
+| Jumbo | 1227 | 248 |
+| Dirk | 405 | 55 |
+| Vomar | 153 | geen indeling |
+| Lidl | 82 | 38 |
+
+### Twee dingen om te weten
+
+- **Vomar komt zonder productgroep binnen.** Zijn aanbiedingen worden uit de
+  folder voorgelezen, en daar wordt nu geen groep bij vastgelegd. Alle 153 staan
+  daarom onder één kopje "Overig". Dat is te verhelpen door de folderlezer ook om
+  een productgroep te vragen; staat op de takenlijst.
+- **Albert Heijn is fors gegroeid.** Er staan 4624 aanbiedingen, veel meer dan de
+  1024 uit de bonusfolder: de meerpakken tellen mee. De pagina bouwt een groep
+  daarom pas op als je hem openklapt, anders wordt hij traag.
+
 ## 03-08-2026 — Lidl erbij als vijfde winkel
 
 Lidl doet mee. Zijn aanbiedingenpagina draagt de prijzen zelf bij zich, dus er
