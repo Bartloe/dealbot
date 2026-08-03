@@ -79,6 +79,10 @@ def sleutels() -> list[tuple[str, str]]:
     GEMINI_API_KEY, daarna GEMINI_API_KEY_2, _3 en zo verder. Elke sleutel heeft
     zijn eigen gratis dagvoorraad, dus hoe meer er staan, hoe meer folderpagina's
     er op een dag gelezen kunnen worden.
+
+    Daarnaast mag er één GEMINI_API_KEYS staan met alle sleutels achter elkaar,
+    gescheiden door komma's. Dat is er voor GitHub: daar is één instelling met
+    negen sleutels een stuk overzichtelijker dan negen losse instellingen.
     """
     gevonden: list[tuple[str, str]] = []
     eerste = os.environ.get("GEMINI_API_KEY")
@@ -93,6 +97,15 @@ def sleutels() -> list[tuple[str, str]]:
             break
         gevonden.append((naam, waarde.strip()))
         nummer += 1
+
+    al_bekend = {waarde for _, waarde in gevonden}
+    for volgnummer, waarde in enumerate(
+        (os.environ.get("GEMINI_API_KEYS") or "").split(","), start=1
+    ):
+        sleutel = waarde.strip()
+        if sleutel and sleutel not in al_bekend:
+            gevonden.append((f"GEMINI_API_KEYS[{volgnummer}]", sleutel))
+            al_bekend.add(sleutel)
 
     return gevonden
 

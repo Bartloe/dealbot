@@ -13,7 +13,7 @@
    test_stuksprijs()     - "1+1 gratis" wordt de prijs voor één stuk
    test_bedragen()       - nul, niets en onzin leveren geen prijs op
    test_artikel()        - wat er van één afgelezen artikel overblijft
-   test_periode()        - de datums: alleen echte, en de meerderheid wint
+   test_periode()        - de datums: alleen echte, en de folder loopt het langst
    test_vomar_week()     - de folderweek van Vomar loopt zondag t/m zaterdag
    test_folder_zoeken()  - geen folder of geen PDF is een nette melding
    test_soort_fout()     - 503 is drukte, "per day" is de dagvoorraad
@@ -28,7 +28,6 @@ from __future__ import annotations
 
 import os
 import sys
-from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -132,7 +131,7 @@ def test_artikel():
 
 
 def test_periode():
-    """Alleen echte datums tellen, en de periode van de meeste pagina's wint."""
+    """Alleen echte datums tellen, en de folder loopt van de eerste tot de laatste dag."""
     assert folderlezer._datum("2026-08-02") == "2026-08-02"
     assert folderlezer._datum("2026-08-02T00:00:00") == "2026-08-02"
     assert folderlezer._datum("zondag 2 augustus") is None
@@ -140,9 +139,15 @@ def test_periode():
     assert folderlezer._datum("") is None
     assert folderlezer._datum(None) is None
 
-    stemmen = Counter({("2026-08-02", "2026-08-08"): 9, ("2026-09-02", "2026-09-08"): 1})
-    assert folderlezer._periode(stemmen) == ("2026-08-02", "2026-08-08")
-    assert folderlezer._periode(Counter()) == (None, None)
+    # De folder loopt van de vroegste tot de laatste dag die er gelezen is. De
+    # meerderheid mag hier níet winnen: in de folder van week 32 stonden meer
+    # pagina's met alleen weekendacties (6 t/m 8 augustus) dan de ene omslag met
+    # de echte looptijd (2 t/m 8 augustus).
+    weekend = ("2026-08-06", "2026-08-08")
+    hele_week = ("2026-08-02", "2026-08-08")
+    assert folderlezer._folderperiode([weekend] * 9 + [hele_week]) == hele_week
+    assert folderlezer._folderperiode([hele_week]) == hele_week
+    assert folderlezer._folderperiode([]) == (None, None)
 
     print("  geldigheidsperiode: goed")
 

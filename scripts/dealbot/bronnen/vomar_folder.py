@@ -76,6 +76,17 @@ class Folderinfo:
     pdf_url: str
     week: int | None = None
 
+    @property
+    def voorvoegsel(self) -> str:
+        """
+        Waaraan de aanbiedingen uit déze uitgave te herkennen zijn.
+
+        Het staat vooraan in het bron_id van elke regel, zodat naderhand te zien
+        is uit welke folder een aanbieding komt — en dus of een folder al eens
+        gelezen is.
+        """
+        return f"folder-{self.week or 'x'}"
+
 
 def zoek_folder(welke: str = "deze-week") -> Folderinfo:
     """
@@ -137,14 +148,18 @@ def haal_pdf(folder: Folderinfo) -> bytes:
     return antwoord.content
 
 
-def haal_op(welke: str = "deze-week", *, laatste_pagina: int = 0) -> Oogst:
+def haal_op(welke: str = "deze-week", *, folder: Folderinfo | None = None,
+            laatste_pagina: int = 0) -> Oogst:
     """
     Haalt de aanbiedingen van Vomar uit de folder die nu geldt.
+
+    Is er al opgezocht welke folder er hangt, geef die dan mee: dat scheelt een
+    tweede bezoek aan de folderpagina.
 
     Met `laatste_pagina` is het lezen te beperken tot de eerste zoveel pagina's;
     handig om te proberen zonder de hele dagvoorraad AI-vragen op te maken.
     """
-    folder = zoek_folder(welke)
+    folder = folder or zoek_folder(welke)
     log.info("%s: folder gevonden — %s (%s).", WINKEL_NAAM, folder.titel, folder.folder_url)
 
     pdf = haal_pdf(folder)
@@ -153,18 +168,19 @@ def haal_op(welke: str = "deze-week", *, laatste_pagina: int = 0) -> Oogst:
         winkel_id=WINKEL_ID,
         winkel_naam=WINKEL_NAAM,
         folder_url=folder.folder_url,
-        bron_voorvoegsel=f"folder-{folder.week or 'x'}",
+        bron_voorvoegsel=folder.voorvoegsel,
         laatste_pagina=laatste_pagina,
     )
 
     # Stond de periode nergens leesbaar op de pagina's, dan rekenen we hem uit
     # het weeknummer in de titel: zondag tot en met zaterdag.
-    if not oogst.geldig_van and folder.week:
+    if folder.week and any(not a.geldig_van for a in oogst.aanbiedingen):
         van, tot = _periode(folder.week)
-        log.info("%s: geen periode op de pagina's gevonden; gerekend met week %s "
+        log.info("%s: voor aanbiedingen zonder leesbare periode gerekend met week %s "
                  "(%s t/m %s).", WINKEL_NAAM, folder.week, van, tot)
         for aanbieding in oogst.aanbiedingen:
-            aanbieding.geldig_van, aanbieding.geldig_tot = van, tot
+            if not aanbieding.geldig_van:
+                aanbieding.geldig_van, aanbieding.geldig_tot = van, tot
 
     if oogst.fouten:
         log.warning("%s: %s van de %s pagina's zijn niet gelezen.",

@@ -2,12 +2,11 @@
 ===============================================================================
  Dealbot — verkeer met de database (Supabase)
 
- Versie      : 1.4
- Reden       : Vomar levert geen aanbiedingen maar het hele assortiment met
-               gewone winkelprijzen. Die gaan naar een eigen tabel, met dezelfde
-               voorzichtigheid als bij de aanbiedingen: eerst het nieuwe erin,
-               daarna pas het oude eruit.
- Datum       : 02-08-2026 12:20
+ Versie      : 1.5
+ Reden       : Een weekfolder laten aflezen kost tientallen AI-vragen, en die
+               zijn per dag beperkt. Daarom kan er nu gevraagd worden of een
+               folder al eens ingelezen is; zo blijft het bij één keer per week.
+ Datum       : 03-08-2026 10:45
 
  Onderdelen:
    Database.start_ronde()             - logboekregel, en geeft het moment terug
@@ -16,6 +15,7 @@
    Database.schrijf_standaardprijzen()- idem, voor het gewone schap
    Database.ruim_oude_prijzen_op()    - idem
    Database.bewaar_groepen()          - zet de winkelindeling in de vaste lijst
+   Database.folder_al_gelezen()       - staat deze folderuitgave er al in?
    Database.sluit_ronde()             - schrijft het resultaat in het logboek
 ===============================================================================
 """
@@ -262,6 +262,34 @@ class Database:
             uitslag.get("behouden", 0),
         )
         return len(groepen)
+
+    def folder_al_gelezen(self, winkel_id: int, voorvoegsel: str) -> bool:
+        """
+        Staat deze folder al in de database?
+
+        Een folder uitlezen kost tientallen AI-vragen, en die zijn per dag
+        beperkt. De folder verandert maar één keer per week, dus als de uitgave
+        die nu op de site hangt er al in staat, hoeft hij niet nog een keer
+        gelezen te worden. Elke regel draagt de folder waar hij uit komt in zijn
+        bron_id, dus daar is het aan te zien.
+
+        Bij twijfel (de database antwoordt niet) zeggen we "nee": een folder een
+        keer te veel lezen is minder erg dan een week zonder aanbiedingen.
+        """
+        try:
+            antwoord = self._rest(
+                "GET", "aanbiedingen",
+                params={
+                    "winkel_id": f"eq.{winkel_id}",
+                    "bron_id": f"like.{voorvoegsel}%",
+                    "select": "id",
+                    "limit": "1",
+                },
+            )
+            return bool(antwoord.json())
+        except (DatabaseFout, ValueError) as fout:
+            log.warning("Kon niet nagaan of de folder al ingelezen is: %s", fout)
+            return False
 
     def aantal_aanbiedingen(self, winkel_id: int) -> int:
         """Hoeveel aanbiedingen er nu voor deze winkel in de database staan."""

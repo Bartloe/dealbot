@@ -2,14 +2,19 @@
 ===============================================================================
  Dealbot — een digitale folder uitlezen met behulp van AI
 
- Versie      : 1.0
- Reden       : Sommige ketens publiceren hun aanbiedingen alleen als folder.
+ Versie      : 1.1
+ Reden       : De geldigheidsperiode ging mis op de eerste echte folder. Die van
+               Vomar staat vol pagina's met alleen weekendacties ("donderdag 6
+               t/m zaterdag 8"), en dat zijn er meer dan de ene omslag met de
+               echte looptijd. Elke pagina houdt nu zijn eigen periode; de folder
+               als geheel loopt van de vroegste tot de laatste dag.
+ Reden (1.0) : Sommige ketens publiceren hun aanbiedingen alleen als folder.
                In zo'n PDF staan productnamen en bedragen los van elkaar over
                de plaatjes heen ("99 3." voor € 3,99), dus met gewone code is er
                niets van te maken. Een AI die naar de pagina kíjkt wél. Deze
                module doet dat voor elke keten hetzelfde: pagina's maken,
                laten aflezen en er onze eigen aanbiedingen van maken.
- Datum       : 03-08-2026 00:05
+ Datum       : 03-08-2026 10:55
 
  Twee valkuilen zitten er ingebakken, allebei gezien in de folder van Vomar:
    1. De doorgestreepte prijs bij "1+1 gratis" is de prijs van twéé stuks
@@ -23,10 +28,9 @@
    Folderoogst        - de aanbiedingen uit één folder, met de geldigheidsperiode
    paginas_uit_pdf()  - maakt van elk blad een afbeelding, zonder extra software
    lees_folder()      - de hele folder langs, pagina voor pagina
-   _lees_pagina()     - één pagina laten aflezen door de AI
    _naar_aanbieding() - één afgelezen artikel naar onze eigen vorm
    _stuksprijs()      - het bedrag omrekenen naar de prijs voor één stuk
-   _periode()         - de geldigheidsperiode die het vaakst op de pagina's stond
+   _folderperiode()   - van de vroegste tot de laatste dag die er gelezen is
 ===============================================================================
 """
 
@@ -35,7 +39,6 @@ from __future__ import annotations
 import io
 import logging
 import re
-from collections import Counter
 from dataclasses import dataclass, field
 from datetime import date
 
@@ -191,7 +194,7 @@ def lees_folder(
              winkel_naam, len(afbeeldingen))
 
     oogst = Folderoogst(paginas=len(afbeeldingen))
-    periodes: Counter[tuple[str, str]] = Counter()
+    periodes: list[tuple[str, str]] = []
     gevonden: dict[str, Aanbieding] = {}
     vandaag = date.today().isoformat()
 
@@ -215,9 +218,14 @@ def lees_folder(
         oogst.gelezen += 1
         pagina = antwoord.inhoud if isinstance(antwoord.inhoud, dict) else {}
 
+        # De periode staat per pagina, en dat is geen formaliteit: een folder van
+        # een week bevat vaak pagina's met alleen weekendacties. Die krijgen hier
+        # meteen hun eigen kortere periode mee.
         van, tot = _datum(pagina.get("geldig_van")), _datum(pagina.get("geldig_tot"))
-        if van and tot:
-            periodes[(van, tot)] += 1
+        if van and tot and van <= tot:
+            periodes.append((van, tot))
+        else:
+            van = tot = None
 
         nieuw = 0
         for artikel in pagina.get("artikelen") or []:
@@ -227,6 +235,7 @@ def lees_folder(
             )
             if aanbieding is None:
                 continue
+            aanbieding.geldig_van, aanbieding.geldig_tot = van, tot
             if aanbieding.bron_id not in gevonden:
                 nieuw += 1
             gevonden.setdefault(aanbieding.bron_id, aanbieding)
@@ -235,13 +244,13 @@ def lees_folder(
                  winkel_naam, volgnummer, len(afbeeldingen) + eerste_pagina - 1, nieuw)
 
     oogst.aanbiedingen = list(gevonden.values())
-    oogst.geldig_van, oogst.geldig_tot = _periode(periodes)
+    oogst.geldig_van, oogst.geldig_tot = _folderperiode(periodes)
 
-    # De periode hoort bij de folder, niet bij de losse pagina waar hij toevallig
-    # op stond: alle aanbiedingen krijgen hem alsnog.
+    # Pagina's waarop geen periode stond, vallen terug op die van de folder.
     for aanbieding in oogst.aanbiedingen:
-        aanbieding.geldig_van = oogst.geldig_van
-        aanbieding.geldig_tot = oogst.geldig_tot
+        if not aanbieding.geldig_van:
+            aanbieding.geldig_van = oogst.geldig_van
+            aanbieding.geldig_tot = oogst.geldig_tot
 
     log.info(
         "%s: %s aanbiedingen uit %s van de %s pagina's; %s met kilo- of literprijs. "
@@ -339,15 +348,18 @@ def _datum(waarde) -> str | None:
     return tekst
 
 
-def _periode(periodes: Counter[tuple[str, str]]) -> tuple[str | None, str | None]:
+def _folderperiode(periodes: list[tuple[str, str]]) -> tuple[str | None, str | None]:
     """
-    De geldigheidsperiode die op de meeste pagina's stond.
+    De periode van de folder als geheel: van de eerste dag tot de laatste.
 
-    Eén pagina die zich verleest hoort de hele folder niet de verkeerde week in
-    te duwen; de meerderheid wint. Staat er nergens een periode, dan blijft hij
-    leeg en vult de bron zelf iets in.
+    Niet de meest voorkomende periode, want die zit ernaast: een weekfolder staat
+    vol pagina's met alleen weekendacties ("van donderdag 6 t/m zaterdag 8"), en
+    dat zijn er zomaar meer dan de ene omslag met de echte looptijd. De vroegste
+    begindatum hoort bij de folder, de laatste einddatum ook.
+
+    Staat er nergens een periode, dan blijft hij leeg en vult de bron zelf iets
+    in aan de hand van het weeknummer.
     """
     if not periodes:
         return None, None
-    (van, tot), _ = periodes.most_common(1)[0]
-    return van, tot
+    return min(van for van, _ in periodes), max(tot for _, tot in periodes)

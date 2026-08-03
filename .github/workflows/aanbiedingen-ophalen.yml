@@ -1,11 +1,12 @@
 # =============================================================================
 #  Dealbot — dagelijks de aanbiedingen ophalen
 #
-#  Versie : 1.2
-#  Reden  : Dezelfde ronde haalt nu ook de gewone winkelprijzen op voor de
-#           standaardprijzen-pagina. Dat kost er twee verzoeken extra bij, dus
-#           er hoeft niets aan de tijden te veranderen.
-#  Datum  : 02-08-2026 14:00
+#  Versie : 1.3
+#  Reden  : De weekfolder van Vomar wordt nu met AI uitgelezen. Dat gebeurt
+#           alleen als er een nieuwe folder hangt (in de praktijk één keer per
+#           week) maar duurt dan een minuut of tien; vandaar de ruimere tijd.
+#           De Gemini-sleutels komen als één instelling mee.
+#  Datum  : 03-08-2026 10:50
 #
 #  Draait elke ochtend om 07:00 Nederlandse tijd (05:00 UTC) en is daarnaast
 #  handmatig te starten via het tabblad Actions op GitHub.
@@ -21,7 +22,7 @@ on:
 jobs:
   ophalen:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
 
     steps:
       - name: Code ophalen
@@ -40,4 +41,8 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          # Alle Gemini-sleutels achter elkaar, gescheiden door komma's. Zonder
+          # deze instelling gaat alles gewoon door; alleen de folder van Vomar
+          # blijft dan ongelezen.
+          GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
         run: python scripts/scan.py

@@ -2,16 +2,18 @@
 ===============================================================================
  Dealbot — het dagelijkse ophalen van aanbiedingen
 
- Versie      : 1.6
- Reden       : Naast de aanbiedingen wordt nu ook het gewone schap opgehaald.
-               Vomar levert geen aanbiedingen maar wél zijn hele assortiment met
-               vaste prijzen; dat voedt de standaardprijzen-pagina.
- Datum       : 02-08-2026 12:35
+ Versie      : 1.7
+ Reden       : De weekfolder van Vomar wordt nu ook uitgelezen. Dat gaat met AI
+               en kost tientallen vragen per folder, dus deze bron werkt anders
+               dan de rest: er wordt alleen gelezen als er een nieuwe folder
+               hangt. Vomar levert daarmee én aanbiedingen én schapprijzen.
+ Datum       : 03-08-2026 10:40
 
  Onderdelen:
    main()               - gaat alle winkels langs en vat het resultaat samen
    verwerk_winkel()     - aanbiedingen: ophalen, wegschrijven, oude opruimen
    verwerk_assortiment()- hetzelfde voor het gewone schap
+   verwerk_folder()     - de weekfolder laten aflezen, alleen als hij nieuw is
 
  Uitvoeren:
    python scripts/scan.py            alles
@@ -29,7 +31,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from dealbot.bronnen import albert_heijn, dirk, jumbo, vomar  # noqa: E402
+from dealbot.bronnen import albert_heijn, dirk, jumbo, vomar, vomar_folder  # noqa: E402
 from dealbot.database import Database, DatabaseFout  # noqa: E402
 
 # Elke winkel met de module die zijn aanbiedingen ophaalt.
@@ -40,11 +42,22 @@ WINKELS = [
 ]
 
 # Winkels die hun hele assortiment met gewone prijzen publiceren. Dat is iets
-# anders dan een aanbiedingenbron: Vomar staat hier wél in en bij WINKELS niet,
-# omdat zijn aanbiedingen alleen in een digitale folder staan.
+# anders dan een aanbiedingenbron: dit zijn de gewone schapprijzen.
 ASSORTIMENTEN = [
     (vomar.WINKEL_ID, vomar.WINKEL_NAAM, vomar.haal_assortiment),
 ]
+
+# Winkels waarvan de aanbiedingen alleen in een digitale folder staan. Die wordt
+# door een AI afgelezen, en dat kost tientallen vragen per folder. Daarom worden
+# deze bronnen anders behandeld dan de rest: eerst kijken of de folder die er nu
+# hangt al ingelezen is, en alleen lezen als hij nieuw is.
+FOLDERS = [
+    (vomar_folder.WINKEL_ID, vomar_folder.WINKEL_NAAM, vomar_folder),
+]
+
+# Zoveel folderpagina's leest een proefdraai; genoeg om te zien of het klopt,
+# zonder de dagvoorraad AI-vragen op te maken.
+PROEFPAGINAS = 2
 
 log = logging.getLogger("dealbot")
 
@@ -156,6 +169,56 @@ def verwerk_assortiment(database: Database, winkel_id: int, naam: str, haal_op) 
     return aantal
 
 
+def verwerk_folder(database: Database, winkel_id: int, naam: str, bron) -> int:
+    """
+    Leest de weekfolder van één winkel, maar alleen als hij nieuw is.
+
+    Een folder laten aflezen kost tientallen AI-vragen en de folder verandert
+    maar één keer per week. Staat de uitgave die nu op de site hangt al in de
+    database, dan is er niets te doen: de aanbiedingen blijven gewoon staan.
+
+    Geeft het aantal aanbiedingen terug, of -1 als er niets te doen was. Dat
+    verschil telt: niets te doen is een goede uitkomst, nul aanbiedingen niet.
+    """
+    log.info("== %s (folder) ==", naam)
+
+    try:
+        folder = bron.zoek_folder()
+    except Exception as fout:  # noqa: BLE001 - elke bronfout netjes vastleggen
+        log.error("%s: de folder is niet te vinden: %s", naam, fout)
+        return 0
+
+    if database.folder_al_gelezen(winkel_id, folder.voorvoegsel):
+        log.info("%s: '%s' staat al in de database; niets te lezen.", naam, folder.titel)
+        return -1
+
+    log_id, moment = database.start_ronde(winkel_id)
+
+    try:
+        oogst = bron.haal_op(folder=folder)
+    except Exception as fout:  # noqa: BLE001
+        log.error("%s: het lezen van de folder mislukte: %s", naam, fout)
+        database.sluit_ronde(log_id, "mislukt", 0, f"Folder lezen mislukt: {fout}")
+        return 0
+
+    if not oogst.aanbiedingen:
+        log.warning("%s: geen aanbiedingen uit de folder, oude lijst blijft staan.", naam)
+        database.sluit_ronde(log_id, "mislukt", 0, "Geen aanbiedingen in de folder gevonden.")
+        return 0
+
+    try:
+        aantal = database.schrijf(oogst.aanbiedingen, moment)
+        database.ruim_oude_op(winkel_id, moment)
+    except DatabaseFout as fout:
+        log.error("%s: wegschrijven mislukt: %s", naam, fout)
+        database.sluit_ronde(log_id, "mislukt", 0, f"Wegschrijven mislukt: {fout}")
+        return 0
+
+    database.sluit_ronde(log_id, "gelukt", aantal)
+    log.info("%s: %s aanbiedingen uit '%s' klaargezet.", naam, aantal, folder.titel)
+    return aantal
+
+
 def proefdraai() -> int:
     """Haalt alles op zonder de database aan te raken, om te kunnen kijken."""
     totaal = 0
@@ -204,6 +267,29 @@ def proefdraai() -> int:
             naam, len(producten), met_ean, len(assortiment.productgroepen),
         )
 
+    # Van een folder worden in de proef maar een paar pagina's gelezen: elke
+    # pagina kost een AI-vraag en die zijn per dag beperkt.
+    for _, naam, bron in FOLDERS:
+        log.info("== %s (folder, proef: %s pagina's) ==", naam, PROEFPAGINAS)
+        try:
+            folder = bron.zoek_folder()
+            log.info("%s: er hangt nu '%s'.", naam, folder.titel)
+            oogst = bron.haal_op(folder=folder, laatste_pagina=PROEFPAGINAS)
+        except Exception as fout:  # noqa: BLE001
+            log.error("%s: het lezen van de folder mislukte: %s", naam, fout)
+            continue
+
+        for aanbieding in oogst.aanbiedingen:
+            log.info(
+                "   %-45s %-22s € %-7s (was %s) per %s: € %s",
+                aanbieding.product_naam[:45],
+                (aanbieding.actie_tekst or "")[:22],
+                aanbieding.prijs,
+                aanbieding.normale_prijs,
+                aanbieding.eenheid_norm,
+                aanbieding.prijs_per_eenheid,
+            )
+
     return totaal
 
 
@@ -243,6 +329,13 @@ def main() -> int:
         prijzen += aantal
         if aantal == 0:
             mislukt.append(f"{naam} (assortiment)")
+
+    for winkel_id, naam, bron in FOLDERS:
+        aantal = verwerk_folder(database, winkel_id, naam, bron)
+        if aantal > 0:
+            totaal += aantal
+        elif aantal == 0:
+            mislukt.append(f"{naam} (folder)")
 
     log.info(
         "Klaar: %s aanbiedingen en %s standaardprijzen in de database.", totaal, prijzen
