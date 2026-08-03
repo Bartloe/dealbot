@@ -1,5 +1,53 @@
 # Wijzigingen — Dealbot
 
+## 03-08-2026 — de folder van Vomar wordt voorgelezen
+
+Gisteren stond hier nog dat de aanbiedingen van Vomar onbereikbaar zijn. Dat is
+niet meer zo. Ze staan nog steeds alleen in de folder, maar die folder wordt nu
+**voorgelezen door een AI die naar de pagina's kijkt** — precies zoals jij dat
+zelf zou doen.
+
+- **219 aanbiedingen uit de folder van week 32**, 172 daarvan met een kiloprijs
+  (79%). Alle 37 pagina's zijn gelezen.
+- **De folder komt vanzelf binnen.** Vomar heeft een vaste ingang "folder deze
+  week" die altijd naar de nieuwste uitgave wijst. Daar hangt de folder als PDF
+  aan; die halen we op en maken er plaatjes van.
+- **De acties gelden niet allemaal even lang.** Een deel van de pagina's is een
+  weekendactie ("donderdag 6 t/m zaterdag 8 augustus"), de rest loopt de hele
+  week. Elke pagina houdt nu zijn eigen periode aan, afgelezen van de pagina zelf.
+- **De folder wordt maar één keer per week gelezen.** Elke ochtend wordt gekeken
+  welke uitgave er hangt; staat die er al in, dan gebeurt er niets. Dat scheelt
+  ruim dertig AI-vragen per dag.
+
+### Twee dingen die je zo over het hoofd ziet
+
+- **"1+1 gratis" is een valstrik.** Op de omslag stond ijs met 7,58 doorgestreept
+  en 3,79 groot in beeld — maar één pak kost gewoon 3,79. Dat grote bedrag geldt
+  voor twéé pakken, dus je betaalt 1,90 per pak. Wie dat niet doorheeft, zet de
+  aanbieding twee keer zo duur in de lijst. De AI geeft daarom door voor hoeveel
+  stuks een bedrag geldt; het rekenwerk doen we zelf.
+- **Het paginanummer in de folder klopt niet met het blad in het bestand.** Blad 1
+  van de PDF droeg nummer 32. Wij tellen daarom zelf.
+
+### Als Google het even te druk heeft
+
+Bij het eerste proefdraaien kwam de melding "This model is currently experiencing
+high demand" langs (foutcode 503). Dat is opgelost zoals in het project subs:
+
+- Bij drukte wordt er **gewacht** (4, 8, 16 en dan 32 seconden) en het bij
+  dezelfde sleutel opnieuw geprobeerd. Vraagt Google zelf om een bepaalde
+  wachttijd, dan houden we die aan.
+- Is een sleutel **echt op voor vandaag**, dán pas gaat de volgende sleutel aan
+  de beurt. Er staan er nu tien klaar, elk met een eigen dagvoorraad.
+- Dat verschil is het hele punt: Google gebruikt voor "je gaat te snel" en "je
+  bent door je dagvoorraad heen" dezelfde foutcode. Bij twijfel wachten we, want
+  wachten kost niets en een goede sleutel afschrijven wel.
+
+Tijdens het lezen van deze folder gebeurde precies dat: na achttien pagina's was
+de eerste sleutel op, en zonder haperen ging het verder op de tweede. Op de
+laatste pagina viel de verbinding weg; ook dat werd op de volgende sleutel
+gewoon afgemaakt.
+
 ## 02-08-2026 — de standaardprijzen-pagina werkt, met dank aan Vomar
 
 - **De pagina "Standaardprijzen" is niet langer een belofte.** Je kunt er nu

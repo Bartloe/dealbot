@@ -111,8 +111,17 @@ Verder:
 - geldig_van en geldig_tot: alleen invullen als de geldigheidsperiode op deze
   pagina staat ("geldig van zondag 2 t/m zaterdag 8 augustus"). Gebruik hele
   datums met jaartal.
-- Sla sfeerteksten, winkeladressen, recepten en vacatures over: alleen echte
-  artikelen met een prijs of een korting.
+
+Staat er een keuzelijst bij één prijs ("Kies & Mix", "keuze uit", gevolgd door
+een opsomming), schrijf dan elk genoemd product apart op, elk met diezelfde prijs
+en actie. Iemand zoekt namelijk op "nectarines", niet op "zomerfruit".
+
+Sla over, dit zijn géén aanbiedingen:
+- Prijsvergelijkingen met andere supermarkten: pagina's met kassabonnen naast
+  elkaar, of lange lijstjes met gewone winkelprijzen om te laten zien dat deze
+  winkel goedkoper is. Ook al staan er tientallen producten met bedragen op.
+- Sfeerteksten, winkeladressen, openingstijden, recepten, vacatures, spaaracties
+  en winacties.
 """
 
 

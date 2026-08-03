@@ -1,6 +1,6 @@
 # Dealbot — takenlijst
 
-Bijgewerkt: 02-08-2026 22:25
+Bijgewerkt: 03-08-2026 11:00
 
 ## Fase 1 — de minimale basis (nu)
 
@@ -8,8 +8,11 @@ Bijgewerkt: 02-08-2026 22:25
 - [x] Inloggen met e-mailadres + pincode van 4 cijfers; mensen mogen zichzelf aanmelden
 - [x] Ophaalscript Albert Heijn — 1024 weekaanbiedingen, 99% met kiloprijs
 - [x] Ophaalscript Jumbo — 1242 aanbiedingen, 99,7% met kiloprijs
-- [x] Derde keten: Dirk van den Broek — 417 aanbiedingen, 94% met kiloprijs.
-      Vomar viel af: die publiceert zijn aanbiedingen alleen als digitale folder
+- [x] Derde keten: Dirk van den Broek — 417 aanbiedingen, 94% met kiloprijs
+- [x] Vierde keten: Vomar — zijn aanbiedingen staan alleen in de digitale folder,
+      en die wordt sinds 03-08-2026 door een AI voorgelezen. 219 aanbiedingen uit
+      37 pagina's, 79% met kiloprijs. Wordt één keer per week gelezen: alleen als
+      er een nieuwe uitgave hangt
 - [x] Zoekvelden herindeeld: Merk, Productgroep (keuzelijst per winkel) en Vrije tekst
       zoeken elk in hun eigen deel van de aanbieding. Vrije tekst kijkt niet meer in de
       productgroep, waardoor "koffie" geen krat bier meer oplevert
@@ -25,7 +28,14 @@ Bijgewerkt: 02-08-2026 22:25
 - [x] Dirk fijner ingedeeld: 146 groepen ("Koffie & cacao") in plaats van 17 grove
       afdelingen. Fijner publiceert Dirk niet; voor "koffiebonen" is vrije tekst
       daar de route
-- [ ] Uitzoeken of Nettorama betrouwbaar uit te lezen is (folder, geen prijzenlijst)
+- [ ] **De folder van vólgende week aanbieden.** Vomar heeft daar een eigen vaste
+      ingang voor ("folder volgende week"), en de folderlezer kan hem al aan —
+      alleen is er nog geen plek waar je hem ziet. Uit te zoeken: op zondag 2
+      augustus stond die ingang leeg, dus we weten nog niet op welke dag Vomar de
+      folder van de week erna klaarzet. Dat bepaalt of het een aparte pagina moet
+      worden ("aanbiedingen volgende week") of een schakelaar op de startpagina
+- [ ] Uitzoeken of Nettorama betrouwbaar uit te lezen is — nu wél kansrijk: een
+      folder is geen belemmering meer, mits hij als PDF te downloaden is
 - [x] Automatisch elke ochtend laten draaien via GitHub — 07:00, duurt een halve minuut
 - [x] Oude aanbiedingen pas opruimen nadat de nieuwe binnen zijn
 - [x] Prijs per kilo/liter berekenen; lukt dat niet, dan onderaan met de melding "kiloprijs onbekend"
@@ -33,6 +43,13 @@ Bijgewerkt: 02-08-2026 22:25
 - [x] Profielpagina: zoekvragen bekijken, toevoegen en verwijderen
       (merk, productgroep, vrije tekst)
 - [x] Melding als er deze week geen aanbiedingen zijn, met link naar de standaardprijzen-pagina
+- [ ] **De Gemini-sleutels op GitHub zetten**, anders wordt de folder alleen op de
+      laptop gelezen en niet in de ochtendrun. Eén instelling volstaat:
+      `GEMINI_API_KEYS` met alle sleutels achter elkaar, gescheiden door komma's
+      (Settings → Secrets and variables → Actions). Let op: het zijn dezelfde tien
+      sleutels als in project subs, en elke sleutel heeft ongeveer twintig vragen
+      per dag. Eén folder kost er zo'n veertig, dus de folderlezer eet twee
+      sleutels op van wat subs die dag nog kan vertalen
 - [ ] Testknop op de site om het ophalen handmatig te starten (via Supabase, zodat er geen sleutel op de openbare pagina staat) — gaat er na de testfase weer uit
 
 ## Fase 2 — later
@@ -46,8 +63,8 @@ Bijgewerkt: 02-08-2026 22:25
 - [x] Vomar gebruiken voor de standaardprijzen-pagina: hun productlijst geeft het hele
       assortiment met normale prijs, merk, inhoud én streepjescode (EAN). Gedaan op
       02-08-2026: 6174 producten, allemaal met kiloprijs en EAN, in twee verzoeken.
-      Vomar staat aan als assortimentsbron, níet als aanbiedingenbron — zijn
-      aanbiedingen staan alleen in de folder en dat blijft onleesbaar
+      Vomar levert sinds 03-08-2026 allebei: schapprijzen uit de webshop-ingang én
+      aanbiedingen uit de voorgelezen folder
 - [ ] Productgroepen van de verschillende ketens aan elkaar knopen. Voor Albert Heijn
       (313 laden) en Jumbo (2153) lost het zichzelf grotendeels op: de namen lijken
       sterk op elkaar en een zoekvraag bewaart alleen de naam, dus "Koffiebonen" pakt
@@ -77,6 +94,13 @@ Bijgewerkt: 02-08-2026 22:25
         gebouwd wordt. Aanknopingspunt: supermarktscanner.nl toont wél prijzen van
         Plus, Hoogvliet en Aldi, dus die blokkade is kennelijk te omzeilen — hoe,
         is de vraag.
+        Stand 03-08-2026: hun aanbiedingenpagina bevat zelf geen prijzen, die
+        worden pas in de browser opgehaald. Twee ingangen leven wel maar wijzen
+        ons af: `www.lidl.nl/q/api/search` (400/406) en `endpoints.leaflets.schwarz`
+        (404 op elk pad dat we probeerden). Een folder als PDF, zoals bij Vomar,
+        is er niet gevonden. **Volgende stap:** met de ontwikkelaarsvenster van de
+        browser meekijken welk verzoek de prijzen ophaalt — dat is de enige manier
+        om de goede parameters te achterhalen.
       - Koppelen tussen winkels gaat het beste op streepjescode. Vomar levert die
         bij 100% van zijn producten; van Dirk en Lidl is dat nog onbekend
 - [ ] Ook merk als keuzelijst in het profielscherm (de productgroep is er al één)

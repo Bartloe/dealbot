@@ -92,6 +92,13 @@ def _stel_logging_in(uitgebreid: bool) -> None:
         datefmt="%H:%M:%S",
     )
 
+    # De AI-bibliotheek meldt elk verzoek apart. Bij een folder van veertig
+    # pagina's verdrinkt het echte verhaal daarin, dus die houden we stil tenzij
+    # er om uitgebreide meldingen is gevraagd.
+    if not uitgebreid:
+        for naam in ("httpx", "httpcore", "google_genai", "google.genai"):
+            logging.getLogger(naam).setLevel(logging.WARNING)
+
 
 def verwerk_winkel(database: Database, winkel_id: int, naam: str, haal_op) -> int:
     """
