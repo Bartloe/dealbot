@@ -58,8 +58,12 @@ Bijgewerkt: 03-08-2026 11:00
 - [ ] Bevestigingsmail bij het aanmelden van een nieuw account
 - [ ] In het profiel kunnen aanvinken bij welke winkels je daadwerkelijk komt, zodat je geen
       aanbiedingen ziet van een winkel dertig kilometer verderop
+- [ ] **Vijfde keten: Lidl.** Uitgezocht op 03-08-2026 en kansrijk: één verzoek naar
+      `www.lidl.nl/c/aanbiedingen/a10008785` levert 108 aanbiedingen met prijs,
+      van-prijs, productgroep en looptijd. Let op: maar ongeveer de helft noemt de
+      inhoud, dus de rest krijgt "kiloprijs onbekend". Een merkveld is er niet
 - [ ] Meer winkels: DekaMarkt (werkt precies als Dirk, dus weinig werk), Bol, Amazon,
-      Picnic. Plus, Coop, Hoogvliet en Lidl blokkeren automatisch ophalen
+      Picnic. Plus, Coop en Hoogvliet blokkeren automatisch ophalen
 - [x] Vomar gebruiken voor de standaardprijzen-pagina: hun productlijst geeft het hele
       assortiment met normale prijs, merk, inhoud én streepjescode (EAN). Gedaan op
       02-08-2026: 6174 producten, allemaal met kiloprijs en EAN, in twee verzoeken.
@@ -88,21 +92,14 @@ Bijgewerkt: 03-08-2026 11:00
         `listWebGroupProducts(webGroupId)` per groep, gevolgd door
         `products(productIds, storeId)` in blokken. Let op: van de 1123 artikelen
         in "Koffie & cacao" levert maar een zesde een prijs in winkel 66.
-      - **Lidl is een uitzoekpunt, geen zekerheid.** Bij het bronnenonderzoek van
-        31-07-2026 bleek Lidl automatisch ophalen te blokkeren (net als Plus, Coop
-        en Hoogvliet). Eerst uitzoeken óf er een bruikbare ingang is voordat er
-        gebouwd wordt. Aanknopingspunt: supermarktscanner.nl toont wél prijzen van
-        Plus, Hoogvliet en Aldi, dus die blokkade is kennelijk te omzeilen — hoe,
-        is de vraag.
-        Stand 03-08-2026: hun aanbiedingenpagina bevat zelf geen prijzen, die
-        worden pas in de browser opgehaald. Twee ingangen leven wel maar wijzen
-        ons af: `www.lidl.nl/q/api/search` (400/406) en `endpoints.leaflets.schwarz`
-        (404 op elk pad dat we probeerden). Een folder als PDF, zoals bij Vomar,
-        is er niet gevonden. **Volgende stap:** met de ontwikkelaarsvenster van de
-        browser meekijken welk verzoek de prijzen ophaalt — dat is de enige manier
-        om de goede parameters te achterhalen.
+      - **Lidl valt hier af, maar is wél bruikbaar voor aanbiedingen.** Uitgezocht
+        op 03-08-2026: Lidl blokkeert niet — zijn aanbiedingenpagina bevat de
+        prijzen gewoon zelf, 108 stuks in één verzoek. Maar schapprijzen bestaan
+        bij Lidl niet online: alleen wat in de bonus ligt heeft een bedrag.
+        Voor deze pagina is Dirk dus de tweede winkel.
       - Koppelen tussen winkels gaat het beste op streepjescode. Vomar levert die
-        bij 100% van zijn producten; van Dirk en Lidl is dat nog onbekend
+        bij 100% van zijn producten; van Dirk is dat nog onbekend, Lidl geeft er
+        geen (alleen eigen artikelnummers, dus koppelen op naam)
 - [ ] Ook merk als keuzelijst in het profielscherm (de productgroep is er al één)
 - [ ] Geschikt maken voor een mobiele app
 
