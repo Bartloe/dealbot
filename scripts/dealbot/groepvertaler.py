@@ -2,14 +2,21 @@
 ===============================================================================
  Dealbot — winkelgroepen onder onze eigen indeling hangen
 
- Versie      : 1.0
+ Versie      : 1.1
  Reden       : De vijf ketens hebben samen 2606 groepsnamen, elk in hun eigen
                taal. Ze stuk voor stuk met de hand vertalen is geen doen, en per
                product beslissen is verspilling: een groep vertalen dekt in één
                klap duizenden producten en blijft volgende week gewoon gelden.
                Daarom vraagt dit onderdeel het één keer aan de AI en bewaart het
                antwoord.
- Datum       : 03-08-2026 22:30
+
+               Bijgewerkt nu de indeling het hele assortiment dekt. De opdracht
+               vertelde de AI nog dat "hoort er niet bij" het meest voorkomende
+               antwoord was — dat gold toen alleen koffie en thee in de indeling
+               stonden en zou nu duizenden groepen ten onrechte afwijzen. Ook
+               staan de twee regels erbij die dwars door alle takken lopen:
+               diepvries wint, en glutenvrij is een eigenschap en geen afdeling.
+ Datum       : 04-08-2026 00:05
 
  Onderdelen:
    Koppeling         - één winkelgroep met de plek waar hij onder valt
@@ -102,13 +109,21 @@ C. De groep is gemengd: een deel van wat erin ligt hoort bij ons, een ander deel
    Voorbeeld: "Drinkyoghurt, chocolademelk, ontbijtdranken" -> ook gemengd.
 
 D. De groepsnaam heeft niets met onze indeling te maken.
-   Laat hoofdgroep leeg. Dit is het meest voorkomende antwoord: de meeste
-   groepsnamen gaan over heel andere boodschappen.
+   Laat hoofdgroep leeg. Dit antwoord is zeldzaam geworden: onze indeling dekt
+   het hele supermarktassortiment. Gebruik het alleen voor wat echt geen
+   boodschap is — een dienst, een spaaractie, statiegeld, een afhaalpunt.
 
 REGELS:
 - Kies uitsluitend namen die letterlijk in onze indeling staan. Verzin niets.
 - Twijfel je tussen B en C, kies dan C. Bij een gemengde groep kijken we daarna
   nog naar de productnaam zelf, dus daar gaat niets verloren.
+- Diepvries wint van elke andere afdeling. "Diepvries groente" hoort bij
+  Diepvries, niet bij de groente; alleen als de groepsnaam niet zegt dat het uit
+  de vriezer komt, gaat het product naar zijn eigen afdeling.
+- Glutenvrij, lactosevrij, biologisch en "vrij van" zijn eigenschappen, geen
+  afdelingen. "Glutenvrije koekjes" horen gewoon bij de koek. Alleen waar onze
+  indeling er zelf een plek voor heeft (halal vlees, lactosevrije kaas) mag je
+  die kiezen.
 - Let op groepsnamen die misleiden. "Theeworst" is worst en heeft niets met thee
   te maken. "Wasmiddel capsules" zijn geen koffiecups.
 - Sommige namen beginnen met "lokaal". Negeer dat woord; het zegt niets over wat

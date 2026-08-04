@@ -20,7 +20,11 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from dealbot.indeling import (  # noqa: E402
+    HOOFD_TREFWOORDEN,
     INDELING,
+    TOELICHTING,
+    TREFWOORDEN,
+    VRIEZERPLEK,
     Plek,
     bestaat,
     hoofdgroep_van,
@@ -52,6 +56,54 @@ controleer("subgroepen komen terug", len(subgroepen(KOFFIE)), len(INDELING[KOFFI
 
 for hoofd, subs in INDELING.items():
     controleer(f"geen dubbele subgroepen in {hoofd}", len(set(subs)), len(subs))
+    controleer(f"{hoofd} heeft subgroepen", bool(subs), True)
+
+# Elke subgroepnaam mag in de héle indeling maar één keer voorkomen: de naam is
+# de sleutel waarmee de hoofdgroep wordt opgezocht. Stond "Verspakketten" onder
+# twee afdelingen, dan was niet meer te zeggen welke van de twee bedoeld werd.
+alle_subgroepen = [sub for subs in INDELING.values() for sub in subs]
+controleer(
+    "elke subgroepnaam komt maar één keer voor",
+    sorted(naam for naam in set(alle_subgroepen)
+           if alle_subgroepen.count(naam) > 1),
+    [],
+)
+
+# De trefwoordenlijsten wijzen naar groepen; wijst er eentje naar een groep die
+# niet bestaat, dan verdwijnt dat product stilletjes in de restbak.
+controleer(
+    "trefwoorden horen bij een bestaande subgroep",
+    sorted(naam for naam in TREFWOORDEN if naam not in alle_subgroepen),
+    [],
+)
+controleer(
+    "elke afdeling heeft eigen trefwoorden",
+    sorted(naam for naam in INDELING if naam not in HOOFD_TREFWOORDEN),
+    [],
+)
+controleer(
+    "toelichting hoort bij een bestaande groep",
+    sorted(naam for naam in TOELICHTING
+           if naam not in alle_subgroepen and naam not in INDELING),
+    [],
+)
+controleer(
+    "elke vriezerplek bestaat in de diepvries",
+    sorted(sub for sub in VRIEZERPLEK.values() if sub not in INDELING["Diepvries"]),
+    [],
+)
+
+# Twee even lange trefwoorden voor verschillende groepen betekent dat het toeval
+# beslist welk schap wint. Dat mag niet: dan is de uitkomst niet te voorspellen.
+_gezien: dict[str, str] = {}
+_botsingen: list[str] = []
+for _groep, _woorden in TREFWOORDEN.items():
+    for _woord in _woorden:
+        _plat = schoon(_woord)
+        if _plat in _gezien and _gezien[_plat] != _groep:
+            _botsingen.append(f"{_woord} ({_gezien[_plat]} én {_groep})")
+        _gezien[_plat] = _groep
+controleer("geen trefwoord bij twee groepen tegelijk", sorted(_botsingen), [])
 
 
 # --- Namen opschonen --------------------------------------------------------
@@ -94,12 +146,67 @@ controleer(
     Plek(KOFFIE, None, "productnaam"),
 )
 
-# De valstrikken: hier hoort níets uit te komen.
-controleer("theeworst is worst", uit_naam("Unox theeworst 250 g"), None)
-controleer("theedoek is een doek", uit_naam("Blokker theedoek katoen"), None)
-controleer("koffiezetapparaat is geen koffie", uit_naam("Philips koffiezetapparaat"), None)
-controleer("hagelslag hoort hier niet", uit_naam("De Ruijter hagelslag puur 400 g"), None)
+# De valstrikken. Toen de indeling alleen uit koffie en thee bestond, hoorde hier
+# níets uit te komen. Nu de hele winkel erin staat is het scherper te controleren:
+# deze producten horen niet bij de koffie, maar wél op hun eigen plek.
+controleer(
+    "theeworst is smeerbaar vleesbeleg",
+    uit_naam("Unox theeworst 250 g"),
+    Plek("Vleeswaren", "Leverworst, paté & smeerbaar vleesbeleg", "productnaam"),
+)
+controleer(
+    "theedoek is schoonmaakgerei",
+    uit_naam("Blokker theedoek katoen"),
+    Plek("Huishouden", "Schoonmaakgerei", "productnaam"),
+)
+controleer(
+    "koffiezetapparaat is een keukenapparaat",
+    uit_naam("Philips koffiezetapparaat"),
+    Plek("Koken & tafelen", "Keukenapparaten", "productnaam"),
+)
+controleer(
+    "hagelslag is broodbeleg",
+    uit_naam("De Ruijter hagelslag puur 400 g"),
+    Plek("Ontbijtgranen & broodbeleg", "Hagelslag & vlokken", "productnaam"),
+)
+controleer(
+    "chocoladereep is snoep, geen chocolademelk",
+    uit_naam("Tony Chocolonely melkchocolade reep 180 g"),
+    Plek("Koek, snoep & chocolade", "Chocolade", "productnaam"),
+)
+controleer(
+    "pindakaas is geen kaas",
+    uit_naam("Calvé pindakaas 650 g"),
+    Plek("Ontbijtgranen & broodbeleg", "Pindakaas & notenpasta", "productnaam"),
+)
+controleer(
+    "wascapsules zijn geen koffiecups",
+    uit_naam("Ariel wasmiddel capsules 38 stuks"),
+    Plek("Huishouden", "Wasmiddel & wasverzachter", "productnaam"),
+)
 controleer("lege naam", uit_naam(""), None)
+
+# Folderregels die helemaal geen product zijn horen in de restbak te blijven.
+controleer("statiegeld is geen boodschap", uit_naam("Statiegeld emballage krat"), None)
+controleer("een spaaractie is geen boodschap", uit_naam("Spaarzegels sparen voor"), None)
+
+
+# --- De diepvries wint van elke andere afdeling -----------------------------
+controleer(
+    "vissticks liggen in de vriezer, niet bij de vis",
+    uit_naam("Iglo vissticks 15 stuks diepvries"),
+    Plek("Diepvries", "Diepvries vlees & vis", "productnaam"),
+)
+controleer(
+    "diepvriesgroente blijft groente, maar dan uit de vriezer",
+    uit_naam("Diepvries spinazie 450 g"),
+    Plek("Diepvries", "Diepvries groente", "productnaam"),
+)
+controleer(
+    "diepvrieszakken liggen niet in de vriezer",
+    uit_naam("Diepvrieszakken 1 liter 40 stuks"),
+    Plek("Huishouden", "Vuilniszakken & huishoudfolie", "productnaam"),
+)
 
 
 # --- De eindregel: winkelgroep eerst, productnaam als aanvulling ------------
@@ -127,8 +234,13 @@ controleer(
     Plek(KOFFIE, "Thee", "productnaam"),
 )
 controleer(
+    "zonder winkelgroep beslist de naam ook voor de kaas",
+    plaats("Goudse kaas jong belegen stuk", None),
+    Plek("Kaas", "Kaasstukken", "productnaam"),
+)
+controleer(
     "zonder winkelgroep en zonder aanwijzing: niets",
-    plaats("Goudse kaas jong belegen", None),
+    plaats("3 halen 2 betalen deze week", None),
     None,
 )
 
@@ -171,13 +283,19 @@ controleer(
 )
 
 # Een verdwaald product in een grove winkelgroep mag niet naar een andere tak
-# schieten. Er is nu maar één hoofdgroep, dus dit is vooral een afspraak voor
-# later: de subgroep uit de naam moet ónder de hoofdgroep van de winkel hangen.
-verzonnen = Plek("Zuivel", None, "winkelgroep")
+# schieten: de subgroep uit de naam moet ónder de hoofdgroep van de winkel
+# hangen. Zegt de winkel "Kaas", dan blijft het bij de kaas staan, hoe hard het
+# woord koffiebonen ook roept.
+andere_afdeling = Plek("Kaas", None, "winkelgroep")
 controleer(
     "subgroep van een andere hoofdgroep telt niet mee",
-    plaats("Douwe Egberts koffiebonen 500 g", verzonnen),
-    verzonnen,
+    plaats("Douwe Egberts koffiebonen 500 g", andere_afdeling),
+    andere_afdeling,
+)
+controleer(
+    "binnen de eigen afdeling vult de naam wél aan",
+    plaats("Goudse belegen kaas stuk 500 g", andere_afdeling),
+    Plek("Kaas", "Kaasstukken", "winkelgroep+productnaam"),
 )
 
 
