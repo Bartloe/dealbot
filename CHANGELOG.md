@@ -1,5 +1,68 @@
 # Wijzigingen — Dealbot
 
+## 04-08-2026 — De hele winkel onder onze eigen indeling
+
+Het proefstuk met alleen Koffie & thee werkte, dus nu staat het complete
+assortiment in de indeling: **28 hoofdgroepen met 252 subgroepen**. Het skelet
+komt opnieuw van de winkelindeling van Albert Heijn (29 afdelingen, 313 laden),
+vers opgehaald en niet uit het hoofd nagemaakt.
+
+### Vier keuzes die van Albert Heijn afwijken
+
+- **"Glutenvrij" is bij ons geen afdeling.** Glutenvrij is een eigenschap van een
+  product, geen plek in de winkel: glutenvrij brood is brood. Als aparte afdeling
+  zou het brood op twee plekken staan en vond je met "Brood" niet alles.
+- **De twee AH-eigen shops zijn vervangen** door "Huis, tuin & vrije tijd" en
+  "Bloemen & planten" — precies de schappen waarin Lidl zijn wekelijkse non-food
+  kwijt kan.
+- **"Koken, tafelen, vrije tijd" is gesplitst**, anders lagen pannen, kaarsen,
+  kleding en tijdschriften in één bak.
+- **Elke subgroepnaam komt maar één keer voor.** De naam is de sleutel waarmee de
+  afdeling wordt opgezocht; hing "Verspakketten" onder twee afdelingen, dan was
+  niet meer te zeggen welke bedoeld werd.
+
+### Twee regels die door alle takken heen lopen
+
+- **De diepvries wint.** Vissticks zijn vis, maar wie ze zoekt loopt naar de
+  vriezer — en zo staat het ook in elke winkel. Een rol diepvrieszakken trapt
+  daar niet in: die blijft huishoudartikel.
+- **De productnaam mag alleen aanvullen binnen de afdeling die de winkel al
+  noemde.** Zegt de winkel "Kaas", dan blijft het bij de kaas staan, hoe hard het
+  woord koffiebonen in de productnaam ook roept.
+
+### Wat het oplevert
+
+**5984 van de 7159 aanbiedingen** hangen nu onder onze indeling (84%). Per
+winkel: Albert Heijn 4610, Jumbo 1192, Vomar 124, Dirk 57, Lidl 1. Van het
+vertaalboekje staan 2018 winkelgroepen vertaald, waarvan 1982 een plek kregen.
+
+Van de ingedeelde aanbiedingen kwam 12% niet verder dan de afdeling: de
+winkelgroep was te grof en de productnaam gaf niets prijs. Die staan zichtbaar in
+de lijst, zodat er bijgestuurd kan worden in plaats van dat ze stilletjes
+verdwijnen.
+
+### Nog te doen
+
+588 groepsnamen wachten nog (Jumbo 405, Dirk 140, Lidl 43): de dagvoorraad
+AI-vragen was op. Eén keer `python scripts/indeel.py` draaien maakt het af; wat
+al vertaald is wordt overgeslagen. Vooral Dirk en Lidl hebben er baat bij — die
+staan nu nog vrijwel helemaal in de restbak.
+
+Daarna kan de website de nieuwe indeling gaan gebruiken.
+
+### Twee reparaties onderweg
+
+- **Een vertaalronde raakt zijn werk niet meer kwijt.** De eerste grote ronde
+  vertaalde 2490 groepsnamen en verloor er bij het opslaan ruim duizend van:
+  alles ging pas aan het eind naar de database, en één dubbele groepsnaam in een
+  blok laat de database het héle blok weigeren. Nu gaat elk vertaald blok er
+  meteen in, en een groepsnaam die twee keer in een antwoord staat levert nog
+  maar één regel op.
+- **Het indelen is honderd keer sneller.** De trefwoorden werden bij élk product
+  opnieuw opgeschoond. Met ruim 1300 trefwoorden en duizenden aanbiedingen liep
+  dat vast; nu gebeurt het één keer bij het opstarten en gaan 20.000 producten er
+  in iets meer dan een seconde doorheen.
+
 ## 03-08-2026 — Een eigen productindeling: proefstuk Koffie & thee
 
 Elke winkel deelt zijn assortiment anders in. Albert Heijn zegt "Koffiebonen",
