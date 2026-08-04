@@ -36,7 +36,7 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Callable
 
 from .ai import Vraagbaak
 from .indeling import INDELING, TOELICHTING, bestaat, hoofdgroep_van
@@ -192,6 +192,7 @@ def _lees_antwoord(
     Geeft de koppelingen terug plus het aantal antwoorden dat is afgekeurd.
     """
     koppelingen: list[Koppeling] = []
+    beantwoord: set[str] = set()
     afgekeurd = 0
 
     for regel in (inhoud or {}).get("koppelingen", []):
@@ -205,6 +206,16 @@ def _lees_antwoord(
             log.debug("Groepsnaam %r is niet gevraagd; overgeslagen.", naam)
             afgekeurd += 1
             continue
+
+        # Elke groepsnaam hoort één antwoord te krijgen. Zet de AI er twee neer
+        # — de tweede vaak alleen anders geschreven — dan telt het eerste. Twee
+        # regels voor dezelfde groep weigert de database namelijk, en dan gaat
+        # ook al het goede werk in datzelfde blok verloren.
+        if origineel in beantwoord:
+            log.debug("Groepsnaam %r kwam twee keer terug; tweede overgeslagen.", origineel)
+            afgekeurd += 1
+            continue
+        beantwoord.add(origineel)
 
         hoofd = (regel.get("hoofdgroep") or "").strip()
         if not hoofd:
@@ -239,6 +250,7 @@ def vertaal(
     winkel_id: int,
     groepen: list[str],
     winkelnaam: str = "",
+    bewaar: Callable[[list[Koppeling]], None] | None = None,
 ) -> tuple[list[Koppeling], list[str]]:
     """
     Hangt de groepsnamen van één winkel onder onze indeling.
@@ -247,6 +259,11 @@ def vertaal(
     zijn álle bekeken groepen — ook die nergens bij horen, met een lege
     hoofdgroep. Die worden net zo goed bewaard, zodat er nooit twee keer naar
     dezelfde groepsnaam gevraagd wordt.
+
+    Wie een "bewaar" meegeeft, krijgt elk blok meteen aangeboden zodra het binnen
+    is. Dat is er niet voor niets: bij de eerste grote ronde liep het opslaan aan
+    het eind vast en waren veertig AI-vragen in één klap kwijt, terwijl de
+    dagvoorraad vragen beperkt is. Wat vertaald is, hoort vertaald te blijven.
     """
     if not groepen:
         return [], []
@@ -277,6 +294,10 @@ def vertaal(
 
         koppelingen, afgekeurd = _lees_antwoord(antwoord.inhoud, winkel_id, gevraagd)
         alles.extend(koppelingen)
+
+        if bewaar and koppelingen:
+            bewaar(koppelingen)
+
         raak = sum(1 for k in koppelingen if k.hoofdgroep)
         log.info(
             "  %s blok %s: %s van de %s groepen vallen onder onze indeling%s.",

@@ -2,13 +2,19 @@
 ===============================================================================
  Dealbot — verkeer met de database (Supabase)
 
- Versie      : 1.6
+ Versie      : 1.7
  Reden       : Dealbot krijgt een eigen productindeling van twee lagen, los van
                wat de winkels zelf hanteren. Daar hoort verkeer bij: de indeling
                wegschrijven, het vertaalboekje van winkelgroepen lezen en
                bijwerken, en de groepsnamen ophalen die nog vertaald moeten
                worden.
- Datum       : 03-08-2026 22:50
+
+               Bij de eerste grote vertaalronde brak het wegschrijven af nadat
+               er ruim duizend koppelingen in stonden: er zat twee keer dezelfde
+               groepsnaam in één blok, en dan weigert de database het hele blok.
+               Het werk van veertig AI-vragen ging daardoor verloren. Voortaan
+               houdt het wegschrijven per groepsnaam één regel over.
+ Datum       : 04-08-2026 01:20
 
  Onderdelen:
    Database.start_ronde()             - logboekregel, en geeft het moment terug
@@ -40,6 +46,27 @@ import requests
 from .model import Aanbieding, Standaardprijs
 
 log = logging.getLogger(__name__)
+
+
+def _ontdubbel(koppelingen: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """
+    Houdt per winkel en groepsnaam één koppeling over.
+
+    De database heeft één regel per (winkel, groepsnaam) en weigert een blok
+    waarin dezelfde combinatie twee keer voorkomt. Beter hier stilletjes de
+    dubbele eruit halen dan een blok van tweehonderd goede regels laten sneuvelen
+    op één herhaling.
+    """
+    overgebleven: dict[tuple[Any, str], dict[str, Any]] = {}
+    for koppeling in koppelingen:
+        sleutel = (koppeling.get("winkel_id"), koppeling.get("productgroep") or "")
+        overgebleven[sleutel] = koppeling
+
+    dubbel = len(koppelingen) - len(overgebleven)
+    if dubbel:
+        log.info("  %s dubbele groepsnaam(en) overgeslagen.", dubbel)
+    return list(overgebleven.values())
+
 
 _BLOKGROOTTE = 200          # zoveel aanbiedingen per keer wegschrijven
 _TIJDSLIMIET = 60
@@ -373,7 +400,16 @@ class Database:
         Gaat in blokken, net als de aanbiedingen. Wat met de hand verbeterd is
         (herkomst 'hand') hoort niet overschreven te worden — dat filtert de
         aanroeper eruit, want alleen die weet wat er nu in de database staat.
+
+        Dezelfde groepsnaam mag maar één keer in een blok zitten. De database
+        weigert anders het héle blok, ook de goede regels erin: hij kan niet
+        weten welke van de twee antwoorden bedoeld is. Dat gebeurt wanneer de AI
+        een groepsnaam twee keer in zijn antwoord zet — bijvoorbeeld één keer met
+        en één keer zonder hoofdletter, terwijl het om dezelfde groep gaat. Het
+        laatste antwoord wint; dat is willekeurig, maar het is twee keer hetzelfde
+        antwoord op dezelfde vraag.
         """
+        koppelingen = _ontdubbel(koppelingen)
         weggeschreven = 0
 
         for start in range(0, len(koppelingen), _BLOKGROOTTE):

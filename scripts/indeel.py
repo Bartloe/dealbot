@@ -2,7 +2,7 @@
 ===============================================================================
  Dealbot — alles onder onze eigen productindeling hangen
 
- Versie      : 1.0
+ Versie      : 1.1
  Reden       : De vijf ketens spreken elk hun eigen taal: samen 2606 groepsnamen
                waarmee je met één zoekvraag nooit alle winkels vond. Dit script
                legt het vertaalboekje aan (winkelgroep -> onze eigen groep) en
@@ -11,7 +11,12 @@
                Het vertalen gebeurt één keer per groepsnaam en wordt bewaard.
                Een groepsnaam verandert immers niet elke week, en zo kost een
                gewone ophaalronde 's ochtends geen enkele AI-vraag.
- Datum       : 03-08-2026 23:00
+
+               Bijgewerkt na de eerste grote ronde: elk vertaald blok gaat nu
+               meteen naar de database in plaats van alles pas aan het eind. Die
+               eerste ronde liep bij het opslaan vast en nam veertig AI-vragen
+               mee in de val, terwijl de dagvoorraad vragen beperkt is.
+ Datum       : 04-08-2026 01:25
 
  Onderdelen:
    main()              - de drie stappen achter elkaar, met een samenvatting
@@ -99,7 +104,8 @@ def stap_vertalen(
 
     Standaard worden alleen groepen gevraagd die nog niet in het vertaalboekje
     staan. Dat houdt het goedkoop: de eerste keer kost het tientallen AI-vragen,
-    daarna alleen nog de handvol groepen die een winkel nieuw invoert.
+    daarna alleen nog de handvol groepen die een winkel nieuw invoert. Breekt een
+    ronde halverwege af, dan pakt de volgende ronde precies op waar deze bleef.
 
     Wat met de hand is verbeterd blijft altijd staan, ook bij --opnieuw. Een mens
     die de moeite neemt een koppeling recht te zetten, hoort niet de volgende dag
@@ -140,12 +146,20 @@ def stap_vertalen(
         log.error("Vertalen kan niet: %s.", reden)
         return [], [reden]
 
+    # Elk blok gaat meteen naar de database. Een AI-vraag is schaars — de
+    # dagvoorraad is beperkt — dus een storing halverwege mag nooit het al
+    # gedane werk meenemen.
+    def bewaar(koppelingen: list[Koppeling]) -> None:
+        db.bewaar_koppelingen([k.als_rij() for k in koppelingen])
+
     alles: list[Koppeling] = []
     klachten: list[str] = []
     for winkel_id, lijst in sorted(te_doen.items()):
         naam = winkels.get(winkel_id, str(winkel_id))
         log.info("%s: %s groepsnamen.", naam, len(lijst))
-        koppelingen, fouten = vertaal(vraagbaak, winkel_id, lijst, naam)
+        koppelingen, fouten = vertaal(
+            vraagbaak, winkel_id, lijst, naam, bewaar=None if proef else bewaar
+        )
         alles.extend(koppelingen)
         klachten.extend(fouten)
 
@@ -153,11 +167,6 @@ def stap_vertalen(
     log.info("%s van de %s bekeken groepsnamen vallen onder onze indeling "
              "(de rest gaat over andere boodschappen). %s AI-vragen, %s tokens.",
              raak, len(alles), vraagbaak.aanroepen, vraagbaak.tokens)
-
-    # Ook de afwijzingen gaan mee naar de database. Zo is één vraag per
-    # groepsnaam werkelijk één vraag: een volgende ronde slaat ze over.
-    if alles and not proef:
-        db.bewaar_koppelingen([k.als_rij() for k in alles])
 
     return alles, klachten
 
