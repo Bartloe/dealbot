@@ -2,19 +2,22 @@
  * =============================================================================
  *  Dealbot — het inlogscherm
  *
- *  Versie      : 1.0
- *  Reden       : Zonder inloggen mag niemand aanbiedingen of zoekvragen zien.
- *                Elke pagina gebruikt hetzelfde scherm, dus staat het één keer
- *                hier en niet in elke pagina apart.
- *  Datum       : 30-07-2026 23:07
+ *  Versie      : 1.1
+ *  Reden       : De beheerpagina erbij. De knop ernaartoe hoort alleen in de
+ *                balk van de beheerder te staan, dus wordt na het inloggen
+ *                gevraagd of dit account dat is.
+ *  Datum       : 04-08-2026 22:25
  *
  *  Onderdelen:
  *    beveiligPagina() - geeft de ingelogde gebruiker, of toont het inlogscherm
+ *    toonBeheerknop() - zet de beheerknop in de balk als je beheerder bent
  *    koppelUitloggen() - laat de uitlogknop werken
  * =============================================================================
  */
 
-import { logIn, meldAan, logUit, haalGebruiker, DealbotFout, PINCODE_LENGTE } from './data.js';
+import {
+    logIn, meldAan, logUit, haalGebruiker, benIkBeheerder, DealbotFout, PINCODE_LENGTE,
+} from './data.js';
 
 const SCHERM = `
 <div class="inlogkaart">
@@ -64,6 +67,8 @@ export async function beveiligPagina() {
         document.querySelectorAll('[data-na-inloggen]').forEach((deel) => {
             deel.hidden = false;
         });
+        // Los van de pagina zelf: de knop mag gerust een fractie later komen.
+        toonBeheerknop();
         return gebruiker;
     }
 
@@ -71,6 +76,22 @@ export async function beveiligPagina() {
     houder.hidden = false;
     bouwInlogscherm();
     return null;
+}
+
+/**
+ * Zet de knop naar de beheerpagina in de balk, maar alleen bij de beheerder.
+ *
+ * Voor alle anderen bestaat die knop niet. Wie het adres tóch intikt komt niet
+ * verder: de database geeft de beheergegevens alleen aan het beheerdersaccount.
+ */
+async function toonBeheerknop() {
+    const knop = document.getElementById('beheerlink');
+    if (!knop) {
+        return;
+    }
+    if (await benIkBeheerder()) {
+        knop.hidden = false;
+    }
 }
 
 /** Koppelt het inlogformulier: inloggen, aanmelden en het wisselen daartussen. */

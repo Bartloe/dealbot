@@ -2,12 +2,11 @@
  * =============================================================================
  *  Dealbot — vormgeving van de website
  *
- *  Versie      : 1.7
- *  Reden       : De startpagina zet de gevonden producten in blokken per
- *                afdeling, met de lade als tussenkopje. De productkaarten
- *                binnen zo'n blok worden platter, anders wordt het kaart op
- *                kaart.
- *  Datum       : 04-08-2026 12:15
+ *  Versie      : 1.8
+ *  Reden       : De beheerpagina erbij, met twee overzichtstabellen. Het
+ *                tijdelijke blokje om de run met de hand te starten is daarheen
+ *                verhuisd en heet nu gewoon "Ophalen".
+ *  Datum       : 04-08-2026 22:40
  *
  *  Onderdelen:
  *    basis           - kleuren, lettertype en de indeling van de pagina
@@ -19,7 +18,7 @@
  *    productkaart    - een product met zijn aanbiedingen
  *    standaardprijzen- de zoekbalk en de prijsregel op die pagina
  *    winkelpagina    - de logostrook en de blokken per productgroep
- *    handrun         - het tijdelijke blokje om de 07.00-run te starten
+ *    beheerpagina    - het ophaalblok en de overzichtstabellen
  *    profiel         - zoekvragen en het formulier om er één toe te voegen
  * =============================================================================
  */
@@ -593,23 +592,62 @@ a.regelnaam:hover { text-decoration: underline; }
 
 .regeldetails .prijs { font-size: 1.05rem; }
 
-.handrun {
-    margin: 0 0 20px;
-    padding: 14px 16px;
-    background: var(--wit);
-    border: 1px dashed var(--groen);
-    border-radius: 10px;
-}
+/* =============================================================================
+ *  Beheerpagina
+ * ========================================================================== */
 
-.handrun h2 { color: var(--groen-donker); }
-.handrun p { margin: 0 0 12px; font-size: 0.9rem; color: var(--grijs); }
-.handrun .knoppen { justify-content: flex-start; }
+.runblok .knoppen { justify-content: flex-start; margin-bottom: 18px; }
 
 /* De verversknop is een echte knop en erft het lettertype niet vanzelf. */
-.handrun button.knop {
+.runblok button.knop {
     font-family: inherit;
     font-size: 1rem;
     cursor: pointer;
+}
+
+/* Overzichtstabel: rustig, met de getallen rechts zodat ze te vergelijken zijn. */
+.beheertabel {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+}
+
+.beheertabel th {
+    text-align: left;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--grijs);
+    padding: 0 8px 6px 0;
+    border-bottom: 1px solid var(--lijn);
+}
+
+.beheertabel td {
+    padding: 9px 8px 9px 0;
+    border-bottom: 1px solid var(--lijn);
+    vertical-align: top;
+}
+
+.beheertabel tr:last-child td { border-bottom: none; }
+.beheertabel .getal { text-align: right; white-space: nowrap; }
+.beheertabel th:not(:first-child) { text-align: right; }
+
+/* Een winkel die uitstaat of niets levert: blijft zichtbaar, vraagt geen aandacht. */
+.beheertabel tr.uit td { color: var(--grijs); }
+
+.fout-tekst { color: var(--rood); font-weight: 600; }
+
+/* De storingsmelding hoort bij de regel erboven en krijgt daarom geen eigen lijn. */
+.beheertabel tr.meldingregel td {
+    padding-top: 0;
+    border-bottom: 1px solid var(--lijn);
+}
+
+.storingtekst {
+    color: var(--rood);
+    font-size: 0.85rem;
+    word-break: break-word;
 }
 
 /* -- profiel -------------------------------------------------------------- */

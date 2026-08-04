@@ -2,12 +2,11 @@
  * =============================================================================
  *  Dealbot — verkeer met de database vanuit de website
  *
- *  Versie      : 1.7
- *  Reden       : Een zoekvraag gaat voortaan over onze eigen indeling in plaats
- *                van over de groepsnaam van één winkel. De keuzelijst komt
- *                daarmee uit één bron — 28 afdelingen met hun laden — zodat
- *                "Koffiebonen" in één keer alle winkels dekt.
- *  Datum       : 04-08-2026 10:35
+ *  Versie      : 1.8
+ *  Reden       : De beheerpagina erbij. Die vraagt drie dingen aan de database
+ *                die niemand anders mag zien: ben ik beheerder, hoe ging de
+ *                laatste ronde per winkel, en hoe compleet is de oogst.
+ *  Datum       : 04-08-2026 22:20
  *
  *  Onderdelen:
  *    meldAan()               - maakt een nieuw account met e-mail + pincode
@@ -25,6 +24,9 @@
  *    verwijderZoekvraag()    - wist een zoekvraag
  *    haalPrijsgroepen()      - de groepen op de standaardprijzen-pagina
  *    zoekStandaardprijzen()  - de gewone winkelprijzen binnen groep of zoekterm
+ *    benIkBeheerder()        - mag deze gebruiker de beheerpagina gebruiken?
+ *    haalRunstatus()         - de laatste ophaalronde per winkel (beheer)
+ *    haalKwaliteit()         - hoeveel er per winkel staat en wat ontbreekt
  * =============================================================================
  */
 
@@ -86,6 +88,11 @@ function inGewoneTaal(melding) {
     }
     if (tekst.includes('failed to fetch') || tekst.includes('networkerror')) {
         return 'Geen verbinding met de database. Controleer je internetverbinding.';
+    }
+    // De beheerfuncties weigeren zelf al in gewone taal; die melding is beter
+    // dan wat wij ervan zouden maken.
+    if (tekst.includes('beheerder')) {
+        return melding;
     }
     return `Er ging iets mis: ${melding}`;
 }
@@ -452,4 +459,48 @@ export async function verwijderZoekvraag(id) {
         .from('zoekvragen')
         .delete()
         .eq('id', id));
+}
+
+// -- beheer ------------------------------------------------------------------
+
+/**
+ * Of de ingelogde gebruiker beheerder is.
+ *
+ * Hiermee bepaalt elke pagina of de beheerknop in de balk hoort te staan. Het
+ * antwoord is geen beveiliging maar een beleefdheid: de database weigert de
+ * beheergegevens sowieso aan iedereen die het vlaggetje niet heeft. Lukt de
+ * vraag niet, dan is het antwoord "nee" en blijft de knop weg.
+ */
+export async function benIkBeheerder() {
+    try {
+        const { data, error } = await db.rpc('is_beheerder');
+        if (error) {
+            console.error('Dealbot — beheerderschap opvragen mislukt:', error);
+            return false;
+        }
+        return data === true;
+    } catch (fout) {
+        console.error('Dealbot — beheerderschap opvragen mislukt:', fout);
+        return false;
+    }
+}
+
+/**
+ * De laatste ophaalronde per winkel, met status, aantal en storingsmelding.
+ *
+ * Eén regel per winkel per soort ronde. Een winkel die nog nooit heeft gedraaid
+ * staat er met lege velden in; dat is informatie op zichzelf.
+ */
+export async function haalRunstatus() {
+    const data = await probeer('runstatus ophalen', () => db.rpc('beheer_runstatus'));
+    return data || [];
+}
+
+/**
+ * Per winkel hoeveel aanbiedingen en standaardprijzen er staan, en hoeveel
+ * daarvan geen kiloprijs of geen plek in onze eigen indeling hebben.
+ */
+export async function haalKwaliteit() {
+    const data = await probeer('kwaliteitscijfers ophalen', () => db.rpc('beheer_kwaliteit'));
+    return data || [];
 }

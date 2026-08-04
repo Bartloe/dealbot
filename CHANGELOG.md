@@ -1,5 +1,37 @@
 # Wijzigingen — Dealbot
 
+## 04-08-2026 — Een beheerpagina: hoe ging het ophalen, en wat kwam eruit
+
+Er was tot nu toe geen plek waar te zien is of het ophalen van vanochtend gelukt
+is. Ging een keten stuk, dan zag de site er gewoon uit — alleen met de prijzen
+van gisteren. Daar is een beheerpagina voor gekomen, alleen zichtbaar en
+bruikbaar voor het beheerdersaccount.
+
+- **Beheerder is een eigenschap van het account, niet van de pagina.** Eén account
+  heeft het vlaggetje; alleen dat account krijgt antwoord van de database. Voor
+  alle anderen staat de knop niet in de balk, en wie het adres tóch intikt krijgt
+  te horen dat de pagina niet voor hem is. Een gebruiker kan zichzelf geen
+  beheerder maken: van zijn eigen profiel mag hij vanaf de website alleen nog de
+  weergavenaam wijzigen.
+- **De laatste ronde per winkel**: wanneer, gelukt of mislukt, hoeveel er binnenkwam
+  en bij een storing de melding uit het logboek. Een winkel die nog nooit heeft
+  gedraaid blijft in de lijst staan — dat je van Nettorama niets ziet, is zelf ook
+  een bericht.
+- **Het logboek vermeldt voortaan het soort ronde.** Vomar levert onder één
+  winkelnummer twee dingen: zijn schapprijzen en zijn voorgelezen folder. Die waren
+  niet uit elkaar te houden, waardoor een geslaagde prijzenronde een mislukte folder
+  kon verbergen. Nu staan ze apart in het overzicht.
+- **De kwaliteit van de gegevens**: per winkel hoeveel aanbiedingen en schapprijzen
+  er staan, en hoeveel daarvan geen kiloprijs of geen plek in onze eigen indeling
+  hebben — met het percentage erbij.
+- **De knop om de run met de hand te starten is verhuisd** van de aanbiedingen-pagina
+  naar beheer. Op de aanbiedingen-pagina blijft alleen de regel staan wanneer er
+  voor het laatst is opgehaald.
+
+Database: `database/11_beheer.sql` moet één keer worden uitgevoerd. Dat moet
+gebeuren vóór de eerstvolgende ochtendrun, want het ophaalscript schrijft het
+soort ronde vanaf nu mee in het logboek.
+
 ## 04-08-2026 — De startpagina ordent per afdeling en groep
 
 Nu een zoekvraag over een hele afdeling kan gaan, kwamen er op de startpagina zo

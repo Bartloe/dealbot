@@ -2,19 +2,13 @@
 ===============================================================================
  Dealbot — verkeer met de database (Supabase)
 
- Versie      : 1.7
- Reden       : Dealbot krijgt een eigen productindeling van twee lagen, los van
-               wat de winkels zelf hanteren. Daar hoort verkeer bij: de indeling
-               wegschrijven, het vertaalboekje van winkelgroepen lezen en
-               bijwerken, en de groepsnamen ophalen die nog vertaald moeten
-               worden.
-
-               Bij de eerste grote vertaalronde brak het wegschrijven af nadat
-               er ruim duizend koppelingen in stonden: er zat twee keer dezelfde
-               groepsnaam in één blok, en dan weigert de database het hele blok.
-               Het werk van veertig AI-vragen ging daardoor verloren. Voortaan
-               houdt het wegschrijven per groepsnaam één regel over.
- Datum       : 04-08-2026 01:20
+ Versie      : 1.8
+ Reden       : Het logboek vermeldt voortaan wat voor soort ronde het was —
+               aanbiedingen, assortiment of folder. Vomar levert onder één
+               winkelnummer twee dingen; op de beheerpagina moeten die uit
+               elkaar te houden zijn, anders verbergt een geslaagde prijzenronde
+               een mislukte folder.
+ Datum       : 04-08-2026 22:15
 
  Onderdelen:
    Database.start_ronde()             - logboekregel, en geeft het moment terug
@@ -120,18 +114,30 @@ class Database:
 
     # -- logboek -------------------------------------------------------------
 
-    def start_ronde(self, winkel_id: int) -> tuple[int | None, str]:
+    def start_ronde(
+        self, winkel_id: int, soort: str = "aanbiedingen"
+    ) -> tuple[int | None, str]:
         """
         Zet een regel in het logboek en geeft het startmoment terug.
 
         Dat moment is later nodig om te bepalen welke aanbiedingen niet meer
         voorkomen en dus opgeruimd mogen worden.
+
+        Het soort ('aanbiedingen', 'assortiment' of 'folder') hoort erbij omdat
+        Vomar onder één winkelnummer twee verschillende dingen levert: zijn
+        schapprijzen en zijn voorgelezen folder. Zonder dat onderscheid zou op
+        de beheerpagina een geslaagde prijzenronde een mislukte folder verbergen.
         """
         moment = datetime.now(timezone.utc).isoformat()
         try:
             antwoord = self._rest(
                 "POST", "scan_logs",
-                json={"winkel_id": winkel_id, "gestart_op": moment, "status": "bezig"},
+                json={
+                    "winkel_id": winkel_id,
+                    "gestart_op": moment,
+                    "status": "bezig",
+                    "soort": soort,
+                },
                 headers={"Prefer": "return=representation"},
             )
             return antwoord.json()[0]["id"], moment

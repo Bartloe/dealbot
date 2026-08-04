@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dealbot — beheer</title>
+    <link rel="stylesheet" href="assets/stijl.css">
+</head>
+<body>
+    <header class="balk" data-na-inloggen hidden>
+        <a class="merk" href="index.html">Dealbot</a>
+        <nav>
+            <a href="index.html">Aanbiedingen</a>
+            <a href="winkel.html">Per winkel</a>
+            <a href="standaardprijzen.html">Standaardprijzen</a>
+            <a href="profiel.html">Mijn profiel</a>
+            <a class="huidig" href="beheer.html" id="beheerlink" hidden>Beheer</a>
+            <button type="button" id="uitloggen">Uitloggen</button>
+        </nav>
+    </header>
+
+    <div id="inlogscherm" hidden></div>
+
+    <main data-na-inloggen hidden>
+        <h1>Beheer</h1>
+        <p class="melding" id="melding" role="alert" hidden></p>
+
+        <div id="beheer" hidden>
+            <section class="blok runblok">
+                <h2>Ophalen</h2>
+                <p class="uitleg">Elke ochtend om 07.00 uur haalt Dealbot de aanbiedingen op.
+                    Wil je dat nu laten gebeuren, dan kom je op GitHub terecht; klik daar
+                    rechtsboven op <strong>Run workflow</strong> en nog eens op de groene knop.
+                    Reken op een minuut of twee, ververs daarna dit overzicht.</p>
+                <div class="knoppen">
+                    <a class="knop" target="_blank" rel="noopener"
+                       href="https://github.com/Bartloe/dealbot/actions/workflows/aanbiedingen-ophalen.yml">Nu ophalen</a>
+                    <button type="button" class="knop tweede" id="verversen">Overzicht verversen</button>
+                </div>
+                <div id="runstatus"></div>
+            </section>
+
+            <section class="blok">
+                <h2>Kwaliteit van de gegevens</h2>
+                <p class="uitleg">Wat er nu in de database staat. Zonder kiloprijs valt een
+                    aanbieding niet te vergelijken; zonder plek in onze eigen indeling is hij
+                    via het profiel niet te vinden.</p>
+                <div id="kwaliteit"></div>
+            </section>
+        </div>
+    </main>
+
+    <script type="module" src="assets/beheer.js"></script>
+</body>
+</html>

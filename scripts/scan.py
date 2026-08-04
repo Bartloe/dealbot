@@ -2,11 +2,11 @@
 ===============================================================================
  Dealbot — het dagelijkse ophalen van aanbiedingen
 
- Versie      : 1.8
- Reden       : Lidl komt erbij als vijfde winkel. Zijn aanbiedingen staan met
-               prijs en al op zijn eigen aanbiedingenpagina, dus hij werkt als
-               Albert Heijn, Jumbo en Dirk: gewoon elke ochtend ophalen.
- Datum       : 03-08-2026 13:10
+ Versie      : 1.9
+ Reden       : Elke ronde vermeldt in het logboek wat voor soort het was:
+               aanbiedingen, assortiment of folder. Op de beheerpagina zijn de
+               twee rondes van Vomar daardoor uit elkaar te houden.
+ Datum       : 04-08-2026 22:16
 
  Onderdelen:
    main()               - gaat alle winkels langs en vat het resultaat samen
@@ -108,7 +108,7 @@ def verwerk_winkel(database: Database, winkel_id: int, naam: str, haal_op) -> in
     door met de volgende winkel. Eén kapotte bron mag de rest niet meeslepen.
     """
     log.info("== %s ==", naam)
-    log_id, moment = database.start_ronde(winkel_id)
+    log_id, moment = database.start_ronde(winkel_id, "aanbiedingen")
 
     try:
         oogst = haal_op()
@@ -149,7 +149,7 @@ def verwerk_assortiment(database: Database, winkel_id: int, naam: str, haal_op) 
     zelf terecht, rechtstreeks uit de producten.
     """
     log.info("== %s (assortiment) ==", naam)
-    log_id, moment = database.start_ronde(winkel_id)
+    log_id, moment = database.start_ronde(winkel_id, "assortiment")
 
     try:
         assortiment = haal_op()
@@ -199,7 +199,7 @@ def verwerk_folder(database: Database, winkel_id: int, naam: str, bron) -> int:
         log.info("%s: '%s' staat al in de database; niets te lezen.", naam, folder.titel)
         return -1
 
-    log_id, moment = database.start_ronde(winkel_id)
+    log_id, moment = database.start_ronde(winkel_id, "folder")
 
     try:
         oogst = bron.haal_op(folder=folder)

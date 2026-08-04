@@ -55,7 +55,24 @@ Bijgewerkt: 04-08-2026 11:30
       sleutels als in project subs, en elke sleutel heeft ongeveer twintig vragen
       per dag. Eén folder kost er zo'n veertig, dus de folderlezer eet twee
       sleutels op van wat subs die dag nog kan vertalen
-- [ ] Testknop op de site om het ophalen handmatig te starten (via Supabase, zodat er geen sleutel op de openbare pagina staat) — gaat er na de testfase weer uit
+- [ ] Testknop op de site om het ophalen handmatig te starten (via Supabase, zodat er geen sleutel op de openbare pagina staat) — gaat er na de testfase weer uit.
+      Staat nu op de beheerpagina als omweg via GitHub; met dit stukje wordt het één
+      knop, en kan de Vomar-folder gericht opnieuw worden voorgelezen
+
+## Beheerpagina
+
+- [x] **Beheerpagina, alleen voor het beheerdersaccount** (04-08-2026): hoe de laatste
+      ronde per winkel is gegaan (met storingsmelding) en hoe compleet de oogst is —
+      aantallen zonder kiloprijs en zonder plek in onze eigen indeling
+- [ ] **Gebruikersoverzicht**: naam, e-mail, aangemaakt op, laatst ingelogd, aantal
+      zoekvragen. Per gebruiker: uitzetten, weer aanzetten, herstelmail sturen en
+      verwijderen. Plus een lijst geweerde e-mailadressen, zodat opnieuw aanmelden met
+      hetzelfde adres niet lukt. Aanmelden blijft verder vrij
+- [ ] **Automatisch uitloggen na 8 uur zonder activiteit**
+- [ ] **Pincode vergeten**: de gebruiker vraagt zelf een herstelmail aan en stelt via de
+      link een nieuwe pincode in (mag dezelfde zijn). Let op: de ingebouwde mailer van
+      Supabase stuurt maar een handvol berichten per uur — voor 25 gebruikers genoeg,
+      maar niet om mee te testen
 
 ## Fase 2 — later
 
