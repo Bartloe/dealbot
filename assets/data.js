@@ -2,11 +2,12 @@
  * =============================================================================
  *  Dealbot — verkeer met de database vanuit de website
  *
- *  Versie      : 1.6
- *  Reden       : De winkelpagina is erbij gekomen: alle aanbiedingen van één
- *                winkel in de lopende week. Daar horen twee nieuwe vragen bij —
- *                welke winkels er zijn, en wat er deze week bij één winkel ligt.
- *  Datum       : 03-08-2026 21:10
+ *  Versie      : 1.7
+ *  Reden       : Een zoekvraag gaat voortaan over onze eigen indeling in plaats
+ *                van over de groepsnaam van één winkel. De keuzelijst komt
+ *                daarmee uit één bron — 28 afdelingen met hun laden — zodat
+ *                "Koffiebonen" in één keer alle winkels dekt.
+ *  Datum       : 04-08-2026 10:35
  *
  *  Onderdelen:
  *    meldAan()               - maakt een nieuw account met e-mail + pincode
@@ -14,7 +15,7 @@
  *    logUit()                - beëindigt de sessie
  *    haalGebruiker()         - geeft de ingelogde gebruiker, of niets
  *    haalAanbiedingen()      - de aanbiedingen die bij het profiel passen
- *    haalProductgroepen()    - de groepen waaruit een zoekvraag kan kiezen
+ *    haalEigenIndeling()     - onze afdelingen en laden, met hun aantallen
  *    haalLaatsteRun()        - wanneer er voor het laatst is opgehaald
  *    haalWinkels()           - de winkels waaruit Dealbot ophaalt
  *    telAanbiedingen()       - hoeveel een winkel er deze week heeft liggen
@@ -36,12 +37,6 @@ const db = createClient(SUPABASE_URL, SUPABASE_SLEUTEL);
 export class DealbotFout extends Error {}
 
 export const PINCODE_LENGTE = 4;
-
-// De productgroepen komen in blokken binnen; zie haalProductgroepen(). Het
-// maximum is een noodrem, zodat een fout aan de andere kant nooit tot eindeloos
-// doorvragen leidt.
-const GROEPEN_BLOK = 1000;
-const GROEPEN_MAXIMUM = 20000;
 
 /**
  * Zet de pincode om in een wachtwoord voor de database.
@@ -175,41 +170,17 @@ export async function haalAanbiedingen() {
 }
 
 /**
- * Alle productgroepen die Dealbot ooit bij een winkel heeft gezien, met het
- * aantal aanbiedingen dat er nú in zit. Hiermee vult het profielscherm zijn
- * keuzelijst: ook een groep die deze week leeg is, blijft te kiezen.
+ * Onze eigen indeling: de afdelingen met hun laden, en hoeveel aanbiedingen er
+ * op dit moment onder hangen.
+ *
+ * Hiermee vult het profielscherm zijn keuzelijst. De lijst staat los van wat er
+ * deze week toevallig in de bonus ligt: een lade waar nu niets in zit, blijft
+ * gewoon te kiezen. Een regel zonder subgroep is de afdeling zelf, met het
+ * totaal van alles wat eronder hangt.
  */
-export async function haalProductgroepen() {
-    const groepen = [];
-    const gezien = new Set();
-
-    // De database geeft hooguit duizend regels per keer terug, en de winkels
-    // hebben er samen bijna vierduizend. Dus halen we ze blok voor blok op tot
-    // er niets nieuws meer komt; anders zou de keuzelijst stilletjes
-    // onvolledig zijn. Levert een volgend blok alleen bekende groepen op, dan
-    // houdt de database geen rekening met het blok en stoppen we ermee: liever
-    // een lijst die eerder ophoudt dan dezelfde groepen eindeloos herhaald.
-    for (let begin = 0; begin < GROEPEN_MAXIMUM; begin += GROEPEN_BLOK) {
-        const blok = await probeer('productgroepen ophalen', () => db
-            .rpc('productgroepen')
-            .range(begin, begin + GROEPEN_BLOK - 1));
-
-        let nieuw = 0;
-        for (const groep of blok || []) {
-            const sleutel = `${groep.winkel_id}|${groep.productgroep}`;
-            if (!gezien.has(sleutel)) {
-                gezien.add(sleutel);
-                groepen.push(groep);
-                nieuw += 1;
-            }
-        }
-
-        if (!blok || blok.length < GROEPEN_BLOK || nieuw === 0) {
-            return groepen;
-        }
-    }
-
-    return groepen;
+export async function haalEigenIndeling() {
+    const data = await probeer('onze indeling ophalen', () => db.rpc('eigen_indeling'));
+    return data || [];
 }
 
 /**
@@ -428,7 +399,7 @@ export async function zoekStandaardprijzen({ groep = '', tekst = '' } = {}) {
 export async function haalZoekvragen() {
     const data = await probeer('zoekvragen ophalen', () => db
         .from('zoekvragen')
-        .select('id, merk, productgroep, vrije_tekst, aangemaakt_op')
+        .select('id, merk, hoofdgroep, subgroep, vrije_tekst, aangemaakt_op')
         .order('aangemaakt_op', { ascending: true }));
     return data || [];
 }
@@ -436,12 +407,13 @@ export async function haalZoekvragen() {
 /**
  * Slaat een of meer zoekvragen in één keer op.
  *
- * Meer dan één tegelijk is nodig omdat je bij de productgroepen meerdere
- * groepen kunt aanvinken — ook van verschillende winkels. Elke aangevinkte
- * groep wordt een eigen zoekvraag; ze staan naast elkaar en tellen bij elkaar op.
+ * Meer dan één tegelijk is nodig omdat je in de indeling meerdere afdelingen en
+ * laden tegelijk kunt aanvinken. Elke aangevinkte keuze wordt een eigen
+ * zoekvraag; ze staan naast elkaar en tellen bij elkaar op.
  *
  * Elke zoekvraag moet minstens één gevuld veld hebben, anders zou hij op álle
- * aanbiedingen matchen.
+ * aanbiedingen matchen. Een lade zonder afdeling kan niet: dezelfde ladenaam kan
+ * onder twee afdelingen hangen.
  */
 export async function voegZoekvragenToe(zoekvragen) {
     const schoon = (waarde) => {
@@ -451,12 +423,16 @@ export async function voegZoekvragenToe(zoekvragen) {
 
     const rijen = (zoekvragen || []).map((zoekvraag) => ({
         merk: schoon(zoekvraag.merk),
-        productgroep: schoon(zoekvraag.productgroep),
+        hoofdgroep: schoon(zoekvraag.hoofdgroep),
+        subgroep: schoon(zoekvraag.subgroep),
         vrije_tekst: schoon(zoekvraag.vrije_tekst),
     }));
 
-    if (rijen.length === 0 || rijen.some((r) => !r.merk && !r.productgroep && !r.vrije_tekst)) {
+    if (rijen.length === 0 || rijen.some((r) => !r.merk && !r.hoofdgroep && !r.vrije_tekst)) {
         throw new DealbotFout('Vul minstens één veld in of kies een productgroep.');
+    }
+    if (rijen.some((r) => r.subgroep && !r.hoofdgroep)) {
+        throw new DealbotFout('Er ging iets mis met de gekozen groep. Probeer het opnieuw.');
     }
 
     const gebruiker = await haalGebruiker();

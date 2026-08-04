@@ -1,5 +1,41 @@
 # Wijzigingen — Dealbot
 
+## 04-08-2026 — Eén keer aanvinken, alle winkels tegelijk
+
+Het profielscherm zoekt niet meer in de groepsnamen van de winkels, maar in onze
+eigen indeling. Je vinkt **Koffiebonen** aan en ziet daarmee de koffiebonen van
+alle winkels tegelijk — 32 aanbiedingen bij vijf ketens deze week. Voorheen moest
+je dat bij elke keten apart doen, in de woorden van die keten ("Koffiebonen" bij
+Albert Heijn, "lokaal Koffiebonen" bij Jumbo, "Koffie & cacao" bij Dirk), en bij
+Vomar kon het helemaal niet omdat de folder geen groep meelevert.
+
+### Hoe het scherm er nu uitziet
+
+- **Kiezen gaat door 28 afdelingen die je openklapt**, met daaronder de groepen
+  om aan te vinken. Zoeken kan ook: typ "koffie" en alleen wat past blijft staan,
+  opengeklapt.
+- **Bovenaan elke afdeling staat "Alles uit …"**. Dat is meer dan een gemak: van
+  de ingedeelde aanbiedingen kwam 12% niet verder dan de afdeling (de winkelgroep
+  was te grof). Wie alleen groepen aanvinkt, mist die; wie de afdeling aanvinkt,
+  krijgt ze erbij. Het aantal achter de afdeling telt ze mee.
+- **Achter elke regel staat wat erin zit** ("nu 32 aanbiedingen"), en een groep
+  die nu leeg is blijft gewoon te kiezen: de zoekvraag staat klaar tot er iets van
+  in de bonus komt.
+- **Wat je al volgt, is niet nog eens aan te vinken** — dat zou dezelfde zoekvraag
+  dubbel opslaan.
+- Zoeken op merk of op een woord in de productnaam blijft gewoon bestaan, voor
+  wat niet in een groep te vangen is.
+
+### In de database
+
+`database/10_indeling_in_profiel.sql` moet één keer gedraaid worden. De zoekvraag
+krijgt daarin een afdeling en een groep in plaats van een winkelgroepsnaam, en het
+matchen gaat over onze eigen indeling. **De bestaande zoekvragen worden gewist**:
+ze wijzen naar een zoekingang die verdwijnt, en dit is nog de testfase. De
+groepsnaam van de winkel zelf blijft ongemoeid op de aanbieding staan — die is de
+bron van de vertaling en op de winkelpagina, waar je door één folder bladert,
+juist de logische indeling.
+
 ## 04-08-2026 — De hele winkel onder onze eigen indeling
 
 Het proefstuk met alleen Koffie & thee werkte, dus nu staat het complete

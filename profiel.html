@@ -31,11 +31,37 @@
         </section>
 
         <section class="blok">
-            <h2>Zoekvraag toevoegen</h2>
+            <h2>Kies waar je op wilt letten</h2>
             <p class="uitleg">
-                Twee manieren om te zoeken, die je los of samen kunt gebruiken. Vul je ze
-                allebei in, dan moeten ze allebei kloppen — zo maak je een zoekvraag
-                scherper. Hoofdletters maken niet uit: <em>oro</em> vindt ook <em>Oro</em>.
+                Dealbot heeft een eigen indeling die bij élke winkel hetzelfde is:
+                afdelingen met daaronder groepen. Vink je <em>Koffiebonen</em> aan, dan
+                zie je de koffiebonen van alle winkels tegelijk — je hoeft dus niet meer
+                te weten hoe elke winkel zijn eigen groepen noemt. Wil je breder kijken,
+                kies dan de hele afdeling. Zit er nu niets in, dan kun je hem toch kiezen:
+                zodra er iets van in de bonus komt, staat het vanzelf bij je aanbiedingen.
+            </p>
+
+            <div class="groepkiezer">
+                <input type="search" id="groepzoek" autocomplete="off"
+                       placeholder="Zoek een afdeling of groep, bijvoorbeeld koffie">
+
+                <ul class="gekozen" id="gekozen" hidden></ul>
+                <p class="zoekhulp" id="zoekhulp"></p>
+                <div class="indeling" id="indeling"></div>
+
+                <button type="button" class="knop" id="groepenopslaan" disabled>
+                    Kies eerst een groep
+                </button>
+            </div>
+        </section>
+
+        <section class="blok">
+            <h2>Of zoek op een woord</h2>
+            <p class="uitleg">
+                Voor wat niet in een groep te vangen is: een merk dat je volgt, of een
+                woord dat in de productnaam staat. Vul je ze allebei in, dan moeten ze
+                allebei kloppen — zo maak je een zoekvraag scherper. Hoofdletters maken
+                niet uit: <em>oro</em> vindt ook <em>Oro</em>.
             </p>
 
             <form id="zoekvraagformulier" class="zoekvraagformulier" novalidate>
@@ -53,29 +79,6 @@
 
                 <button type="submit" id="opslaan">Zoekvraag opslaan</button>
             </form>
-        </section>
-
-        <section class="blok">
-            <h2>Of kies productgroepen</h2>
-            <p class="uitleg">
-                Typ waar je op let — bijvoorbeeld <em>koffie</em> — en vink aan wat je wilt
-                volgen. Je zoekt dwars door alle winkels heen; achter elke groep staat bij
-                welke winkel hij hoort. Zit er nu niets in, dan kun je hem toch kiezen:
-                zodra er iets van in de bonus komt, staat het vanzelf bij je aanbiedingen.
-            </p>
-
-            <div class="groepkiezer">
-                <input type="search" id="groepzoek" autocomplete="off"
-                       placeholder="Zoek een productgroep, bijvoorbeeld koffie">
-
-                <ul class="gekozen" id="gekozen" hidden></ul>
-                <p class="zoekhulp" id="zoekhulp"></p>
-                <ul class="groepresultaten" id="groepresultaten"></ul>
-
-                <button type="button" class="knop" id="groepenopslaan" disabled>
-                    Kies eerst een groep
-                </button>
-            </div>
         </section>
     </main>
 

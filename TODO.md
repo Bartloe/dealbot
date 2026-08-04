@@ -1,6 +1,6 @@
 # Dealbot — takenlijst
 
-Bijgewerkt: 03-08-2026 21:45
+Bijgewerkt: 04-08-2026 11:30
 
 ## Fase 1 — de minimale basis (nu)
 
@@ -46,7 +46,7 @@ Bijgewerkt: 03-08-2026 21:45
       indeling binnen, waardoor zijn 153 aanbiedingen op de winkelpagina onder één
       kopje "Overig" staan en op het profielscherm geen productgroep te kiezen is
 - [x] Profielpagina: zoekvragen bekijken, toevoegen en verwijderen
-      (merk, productgroep, vrije tekst)
+      (afdeling/groep uit onze eigen indeling, merk, vrije tekst)
 - [x] Melding als er deze week geen aanbiedingen zijn, met link naar de standaardprijzen-pagina
 - [ ] **De Gemini-sleutels op GitHub zetten**, anders wordt de folder alleen op de
       laptop gelezen en niet in de ochtendrun. Eén instelling volstaat:
@@ -86,10 +86,12 @@ Bijgewerkt: 03-08-2026 21:45
       Reken op zo'n 45 AI-vragen voor alle 2606 winkelgroepen in één keer — dat past
       binnen een dag, maar het eet wel sleutels die de folderlezer die dag niet meer
       heeft. Pas dáárna kan de website over
-- [ ] **De website op de eigen indeling zetten** zodra alle takken er zijn: het
-      zoekveld op het profielscherm (nu 2606 losse namen, straks ~20 hoofdgroepen met
-      hun subgroepen) en de startpagina. De winkelpagina houdt de indeling van de
-      winkel zelf — daar blader je door één folder
+- [x] **Het profielscherm op de eigen indeling gezet** (04-08-2026): 28 afdelingen om
+      open te klappen met hun groepen, in plaats van 3962 groepsnamen per winkel. Eén
+      keer "Koffiebonen" aanvinken dekt alle winkels. De winkelpagina houdt de indeling
+      van de winkel zelf — daar blader je door één folder
+- [ ] **De startpagina de eigen indeling laten gebruiken**: de gevonden aanbiedingen
+      groeperen per afdeling/groep in plaats van alleen per product
 - [ ] **Voorvoegsel "lokaal" bij Jumbo-groepen opschonen.** Een deel van Jumbo's
       groepsnamen begint met "lokaal" ("lokaal Koffiebonen"), waardoor dezelfde
       groep twee keer in de keuzelijst staat en niet meer op één naam matcht met

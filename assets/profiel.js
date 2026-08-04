@@ -2,25 +2,28 @@
  * =============================================================================
  *  Dealbot — de profielpagina met mijn zoekvragen
  *
- *  Versie      : 2.0
- *  Reden       : De keuzelijst met 479 groepen van Albert Heijn was niet meer om
- *                door te scrollen, en wie "koffie" zocht vond niets: die groepen
- *                heten "Douwe Egberts koffiebonen" en staan dus onder de D. Je
- *                zoekt nu op een woord, dwars door alle winkels heen, en kunt in
- *                één keer meerdere groepen aanvinken.
- *  Datum       : 01-08-2026 14:32
+ *  Versie      : 3.0
+ *  Reden       : Je koos tot nu toe de groepsnaam van één winkel. Wie
+ *                koffiebonen wilde volgen moest dat dus bij elke keten apart
+ *                doen, in de woorden van die keten — en bij Vomar kon het
+ *                helemaal niet. Nu staat onze eigen indeling op het scherm:
+ *                afdelingen met daaronder groepen, bij elke winkel hetzelfde.
+ *                Eén keer "Koffiebonen" aanvinken dekt alle winkels.
+ *  Datum       : 04-08-2026 11:05
  *
  *  Onderdelen:
  *    bouwPagina()       - regelt de toegang en haalt de gegevens op
  *    toonZoekvragen()   - zet de zoekvragen op het scherm
  *    koppelFormulier()  - slaat een zoekvraag op merk of vrije tekst op
- *    koppelGroepkiezer()- zoeken, aanvinken en opslaan van productgroepen
+ *    koppelGroepkiezer()- zoeken, aanvinken en opslaan binnen onze indeling
+ *    bouwAfdelingen()   - maakt van de losse regels afdelingen met hun groepen
+ *    toonIndeling()     - tekent de indeling, gefilterd op het zoekwoord
  * =============================================================================
  */
 
 import {
     haalZoekvragen,
-    haalProductgroepen,
+    haalEigenIndeling,
     voegZoekvragenToe,
     verwijderZoekvraag,
     DealbotFout,
@@ -34,20 +37,24 @@ const melding = document.getElementById('melding');
 const adres = document.getElementById('adres');
 
 const zoekveld = document.getElementById('groepzoek');
-const resultaten = document.getElementById('groepresultaten');
+const indelingsvak = document.getElementById('indeling');
 const gekozenlijst = document.getElementById('gekozen');
 const zoekhulp = document.getElementById('zoekhulp');
 const groepenknop = document.getElementById('groepenopslaan');
 
-// Hoeveel treffers we hoogstens tonen. Meer is niet te overzien; typ dan verder.
-const MAX_TREFFERS = 40;
+// Onze indeling: afdelingen met hun groepen, zoals de database ze levert.
+let afdelingen = [];
 
-// Alle bekende groepen, en wat de gebruiker heeft aangevinkt. De sleutel bevat
-// de winkel, want dezelfde groepsnaam kan bij twee winkels voorkomen.
-let allegroepen = [];
+// Wat de gebruiker nu aanvinkt, en wat hij al volgt. Beide op dezelfde sleutel,
+// zodat een groep die al in een zoekvraag zit niet nog eens te kiezen is.
 const gekozen = new Map();
+let alGevolgd = new Set();
 
-const sleutelVan = (groep) => `${groep.winkel_id}|${groep.productgroep}`;
+// Welke afdelingen openstaan. Nodig omdat de lijst opnieuw getekend wordt zodra
+// je iets aanvinkt; zonder dit klapt de afdeling waar je in bezig bent dicht.
+const openstaand = new Set();
+
+const sleutelVan = (hoofdgroep, subgroep) => `${hoofdgroep}||${subgroep || ''}`;
 
 function toonMelding(tekst, soort = 'fout') {
     melding.textContent = tekst;
@@ -97,107 +104,178 @@ function maakZoekvraag(zoekvraag, naVerwijderen) {
  * Zegt achter een groep wat erin zit op dit moment.
  *
  * Nul is nadrukkelijk geen reden om de groep te verbergen: juist dan is een
- * zoekvraag nuttig, want die blijft klaarstaan tot de winkel er weer iets van
- * in de bonus doet.
+ * zoekvraag nuttig, want die blijft klaarstaan tot er weer iets van in de bonus
+ * komt.
  */
 function aantalTekst(aantal) {
-    if (aantal === 0) return 'nu niets in de bonus';
+    if (!aantal) return 'nu niets in de bonus';
     if (aantal === 1) return 'nu 1 aanbieding';
     return `nu ${aantal} aanbiedingen`;
 }
 
 /**
- * De groepen die bij een zoekwoord passen.
+ * Maakt van de losse regels uit de database afdelingen met hun groepen.
  *
- * Zoekt in de naam van de groep, waar het woord ook staat: "koffie" moet ook
- * "Douwe Egberts koffiebonen" vinden — juist dat ging mis toen je nog door een
- * alfabetische lijst moest scrollen. Groepen die met het woord beginnen komen
- * bovenaan, daarna wat er nu in de bonus zit.
+ * De database levert per afdeling eerst de regel van de afdeling zelf (zonder
+ * subgroep, met het totaal) en daarna zijn groepen op volgorde. Die volgorde
+ * blijft hier staan: hij komt uit de indeling en is niet alfabetisch, zodat
+ * verwante groepen bij elkaar blijven.
  */
-function zoekGroepen(woord) {
-    const term = woord.trim().toLowerCase();
-    if (term === '') {
-        return [];
+function bouwAfdelingen(regels) {
+    const perAfdeling = new Map();
+
+    for (const regel of regels) {
+        if (!regel.hoofdgroep) {
+            continue;
+        }
+        if (!perAfdeling.has(regel.hoofdgroep)) {
+            perAfdeling.set(regel.hoofdgroep, {
+                naam: regel.hoofdgroep,
+                aantal: 0,
+                groepen: [],
+            });
+        }
+        const afdeling = perAfdeling.get(regel.hoofdgroep);
+
+        if (regel.subgroep) {
+            afdeling.groepen.push({ naam: regel.subgroep, aantal: Number(regel.aantal) || 0 });
+        } else {
+            afdeling.aantal = Number(regel.aantal) || 0;
+        }
     }
 
-    return allegroepen
-        .filter((groep) => groep.productgroep.toLowerCase().includes(term))
-        .sort((a, b) => {
-            const beginA = a.productgroep.toLowerCase().startsWith(term);
-            const beginB = b.productgroep.toLowerCase().startsWith(term);
-            if (beginA !== beginB) return beginA ? -1 : 1;
-            if ((a.aantal > 0) !== (b.aantal > 0)) return a.aantal > 0 ? -1 : 1;
-            return a.productgroep.localeCompare(b.productgroep, 'nl');
-        });
+    return [...perAfdeling.values()];
 }
 
-/** Eén treffer om aan te vinken, met de winkel erachter. */
-function maakTreffer(groep) {
-    const regel = maak('li', 'treffer');
+/**
+ * De afdelingen die bij het zoekwoord passen, met alleen de passende groepen.
+ *
+ * Past de afdelingsnaam zelf ("koffie" op "Koffie & thee"), dan blijven al zijn
+ * groepen staan: je bent dan waarschijnlijk op zoek naar de hele afdeling en
+ * wilt zien wat erin zit.
+ */
+function zoekInIndeling(woord) {
+    const term = woord.trim().toLowerCase();
+    if (term === '') {
+        return afdelingen;
+    }
+
+    const treffers = [];
+    for (const afdeling of afdelingen) {
+        const afdelingPast = afdeling.naam.toLowerCase().includes(term);
+        const groepen = afdelingPast
+            ? afdeling.groepen
+            : afdeling.groepen.filter((groep) => groep.naam.toLowerCase().includes(term));
+
+        if (afdelingPast || groepen.length > 0) {
+            treffers.push({ ...afdeling, groepen });
+        }
+    }
+    return treffers;
+}
+
+/**
+ * Eén aan te vinken regel: de hele afdeling, of één groep daarbinnen.
+ *
+ * Wat al in een zoekvraag zit, staat er wel bij maar is niet nog eens aan te
+ * vinken — dat zou dezelfde zoekvraag dubbel opslaan.
+ */
+function maakKeuze(hoofdgroep, subgroep, naam, aantal) {
+    const sleutel = sleutelVan(hoofdgroep, subgroep);
+    const gevolgd = alGevolgd.has(sleutel);
+
+    const regel = maak('li', subgroep ? 'keuze' : 'keuze afdelingbreed');
     const label = document.createElement('label');
 
     const vinkje = document.createElement('input');
     vinkje.type = 'checkbox';
-    vinkje.checked = gekozen.has(sleutelVan(groep));
+    vinkje.checked = gekozen.has(sleutel);
+    vinkje.disabled = gevolgd;
     vinkje.addEventListener('change', () => {
         if (vinkje.checked) {
-            gekozen.set(sleutelVan(groep), groep);
+            gekozen.set(sleutel, { hoofdgroep, subgroep });
         } else {
-            gekozen.delete(sleutelVan(groep));
+            gekozen.delete(sleutel);
         }
         toonGekozen();
     });
 
-    const naam = maak('span', 'treffernaam', groep.productgroep);
-    const erbij = maak('span', 'trefferwinkel', `(${groep.winkel})`);
-    const telling = maak('span', groep.aantal > 0 ? 'trefferaantal' : 'trefferaantal leeg',
-        aantalTekst(groep.aantal));
+    label.append(vinkje, maak('span', 'keuzenaam', naam));
+    label.append(maak('span', gevolgd ? 'keuzeaantal gevolgd' : 'keuzeaantal',
+        gevolgd ? 'volg je al' : aantalTekst(aantal)));
 
-    label.append(vinkje, naam, erbij, telling);
     regel.append(label);
     return regel;
 }
 
-/** Zet de treffers van het zoekwoord op het scherm. */
-function toonTreffers(woord) {
-    const gevonden = zoekGroepen(woord);
+/** Tekent de indeling, gefilterd op wat er in het zoekveld staat. */
+function toonIndeling() {
+    const woord = zoekveld.value;
+    const treffers = zoekInIndeling(woord);
+    const zoekt = woord.trim() !== '';
 
-    if (woord.trim() === '') {
-        resultaten.replaceChildren();
-        zoekhulp.textContent = allegroepen.length > 0
-            ? `Typ een woord om te zoeken in ${allegroepen.length} productgroepen.`
-            : 'De productgroepen konden niet worden opgehaald.';
+    if (afdelingen.length === 0) {
+        indelingsvak.replaceChildren();
+        zoekhulp.textContent = 'De productgroepen konden niet worden opgehaald. '
+            + 'Probeer de pagina te verversen.';
         return;
     }
 
-    if (gevonden.length === 0) {
-        resultaten.replaceChildren();
-        zoekhulp.textContent = `Geen productgroep gevonden met "${woord.trim()}". `
-            + 'Probeer een korter woord, of gebruik hierboven het veld Vrije tekst.';
+    if (treffers.length === 0) {
+        indelingsvak.replaceChildren();
+        zoekhulp.textContent = `Geen afdeling of groep gevonden met "${woord.trim()}". `
+            + 'Probeer een korter woord, of gebruik hieronder het veld Vrije tekst.';
         return;
     }
 
-    const tonen = gevonden.slice(0, MAX_TREFFERS);
-    zoekhulp.textContent = gevonden.length > tonen.length
-        ? `${gevonden.length} groepen gevonden; de eerste ${tonen.length} staan hieronder. Typ verder om te verfijnen.`
-        : `${gevonden.length} ${gevonden.length === 1 ? 'groep' : 'groepen'} gevonden.`;
+    zoekhulp.textContent = zoekt
+        ? `${treffers.length} ${treffers.length === 1 ? 'afdeling' : 'afdelingen'} met een treffer.`
+        : `${afdelingen.length} afdelingen. Klik een afdeling open, of typ een woord om te zoeken.`;
 
-    resultaten.replaceChildren(...tonen.map(maakTreffer));
+    indelingsvak.replaceChildren(...treffers.map((afdeling) => {
+        const vak = maak('details', 'afdeling');
+        // Bij zoeken staat alles open: je wilt de treffer meteen zien.
+        vak.open = zoekt || openstaand.has(afdeling.naam);
+        vak.addEventListener('toggle', () => {
+            if (vak.open) {
+                openstaand.add(afdeling.naam);
+            } else {
+                openstaand.delete(afdeling.naam);
+            }
+        });
+
+        const kop = document.createElement('summary');
+        kop.append(maak('span', 'afdelingnaam', afdeling.naam));
+        kop.append(maak('span', 'keuzeaantal', aantalTekst(afdeling.aantal)));
+        vak.append(kop);
+
+        const keuzes = maak('ul', 'keuzes');
+        keuzes.append(maakKeuze(afdeling.naam, null,
+            `Alles uit ${afdeling.naam}`, afdeling.aantal));
+        for (const groep of afdeling.groepen) {
+            keuzes.append(maakKeuze(afdeling.naam, groep.naam, groep.naam, groep.aantal));
+        }
+        vak.append(keuzes);
+
+        return vak;
+    }));
 }
 
 /** De aangevinkte groepen boven het zoekveld, zodat je ze niet kwijtraakt. */
 function toonGekozen() {
-    const regels = [...gekozen.values()].map((groep) => {
+    const regels = [...gekozen.entries()].map(([sleutel, keuze]) => {
         const regel = maak('li', 'gekozen-groep');
-        regel.append(maak('span', null, `${groep.productgroep} (${groep.winkel})`));
+        regel.append(maak('span', null, keuze.subgroep
+            ? `${keuze.hoofdgroep} › ${keuze.subgroep}`
+            : `${keuze.hoofdgroep} (hele afdeling)`));
 
         const weg = maak('button', 'weg', '×');
         weg.type = 'button';
         weg.title = 'Deze keuze weghalen';
         weg.addEventListener('click', () => {
-            gekozen.delete(sleutelVan(groep));
+            gekozen.delete(sleutel);
             toonGekozen();
-            toonTreffers(zoekveld.value);
+            toonIndeling();
         });
 
         regel.append(weg);
@@ -213,22 +291,29 @@ function toonGekozen() {
         : `${regels.length} ${regels.length === 1 ? 'zoekvraag' : 'zoekvragen'} opslaan`;
 }
 
-/** Haalt de groepen op; een storing hier mag de pagina niet blokkeren. */
-async function laadProductgroepen() {
+/** Haalt de indeling op; een storing hier mag de pagina niet blokkeren. */
+async function laadIndeling() {
     try {
-        allegroepen = await haalProductgroepen();
-        console.info(`Dealbot — profiel: ${allegroepen.length} productgroepen geladen.`);
+        const regels = await haalEigenIndeling();
+        afdelingen = bouwAfdelingen(regels);
+        console.info(`Dealbot — profiel: ${afdelingen.length} afdelingen geladen `
+            + `met samen ${afdelingen.reduce((som, a) => som + a.groepen.length, 0)} groepen.`);
     } catch (fout) {
-        allegroepen = [];
-        console.error('Dealbot — productgroepen laden mislukt:', fout);
+        afdelingen = [];
+        console.error('Dealbot — indeling laden mislukt:', fout);
     }
-    toonTreffers(zoekveld.value);
+    toonIndeling();
 }
 
 function toonZoekvragen(zoekvragen, herlaad) {
+    // Wat al gevolgd wordt, mag niet nog eens aan te vinken zijn.
+    alGevolgd = new Set(zoekvragen
+        .filter((zoekvraag) => zoekvraag.hoofdgroep)
+        .map((zoekvraag) => sleutelVan(zoekvraag.hoofdgroep, zoekvraag.subgroep)));
+
     if (zoekvragen.length === 0) {
         lijst.replaceChildren(maak('li', 'leeg-regel',
-            'Je hebt nog geen zoekvragen. Voeg er hieronder één toe.'));
+            'Je hebt nog geen zoekvragen. Kies er hieronder één.'));
         return;
     }
     lijst.replaceChildren(...zoekvragen.map((z) => maakZoekvraag(z, herlaad)));
@@ -249,6 +334,9 @@ async function ververs() {
             console.error('Dealbot — zoekvragen laden mislukt:', fout);
         }
     }
+    // De indeling moet mee: een groep die je net bent gaan volgen of hebt
+    // weggehaald, hoort meteen als zodanig op het scherm te staan.
+    toonIndeling();
 }
 
 function koppelFormulier() {
@@ -283,13 +371,14 @@ function koppelFormulier() {
 }
 
 /**
- * Het zoeken en aanvinken van productgroepen.
+ * Het zoeken en aanvinken binnen onze eigen indeling.
  *
- * Elke aangevinkte groep wordt een eigen zoekvraag. Ze staan los van elkaar, dus
- * je kunt in één handeling dezelfde soort bij drie winkels in de gaten houden.
+ * Elke aangevinkte afdeling of groep wordt een eigen zoekvraag. Ze staan los van
+ * elkaar en tellen bij elkaar op, dus je kunt in één handeling drie soorten
+ * tegelijk in de gaten laten houden — bij alle winkels.
  */
 function koppelGroepkiezer() {
-    zoekveld.addEventListener('input', () => toonTreffers(zoekveld.value));
+    zoekveld.addEventListener('input', toonIndeling);
 
     // Enter in een zoekveld mag de pagina niet herladen.
     zoekveld.addEventListener('keydown', (gebeurtenis) => {
@@ -305,8 +394,9 @@ function koppelGroepkiezer() {
         toonMelding('');
         groepenknop.disabled = true;
 
-        const nieuwe = [...gekozen.values()].map((groep) => ({
-            productgroep: groep.productgroep,
+        const nieuwe = [...gekozen.values()].map((keuze) => ({
+            hoofdgroep: keuze.hoofdgroep,
+            subgroep: keuze.subgroep,
         }));
 
         try {
@@ -314,7 +404,6 @@ function koppelGroepkiezer() {
             gekozen.clear();
             zoekveld.value = '';
             toonGekozen();
-            toonTreffers('');
             toonMelding(opgeslagen.length === 1
                 ? 'De zoekvraag is opgeslagen.'
                 : `${opgeslagen.length} zoekvragen zijn opgeslagen.`, 'goed');
@@ -342,7 +431,11 @@ async function bouwPagina() {
     koppelFormulier();
     koppelGroepkiezer();
     toonGekozen();
-    await Promise.all([ververs(), laadProductgroepen()]);
+
+    // Eerst de zoekvragen, dan de indeling: pas als bekend is wat er al gevolgd
+    // wordt, kan de indeling dat erbij zetten.
+    await ververs();
+    await laadIndeling();
 }
 
 bouwPagina();

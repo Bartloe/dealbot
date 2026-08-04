@@ -2,11 +2,12 @@
  * =============================================================================
  *  Dealbot — aanbiedingen leesbaar maken
  *
- *  Versie      : 1.2
- *  Reden       : Op de startpagina staat voortaan wanneer de aanbiedingen voor
- *                het laatst zijn opgehaald. Daar hoort een korte notatie bij:
- *                dag-maand en de klok, in Nederlandse tijd.
- *  Datum       : 01-08-2026 13:18
+ *  Versie      : 1.3
+ *  Reden       : Een zoekvraag gaat niet meer over de groepsnaam van één winkel
+ *                maar over onze eigen indeling. In de regel op het profiel staat
+ *                nu de afdeling met de lade erachter, of "hele afdeling" als de
+ *                keuze breed is.
+ *  Datum       : 04-08-2026 10:40
  *
  *  Onderdelen:
  *    euro()               - bedrag als € 1,29
@@ -161,15 +162,23 @@ function isVergelijkbaar(regels) {
 
 /**
  * Een zoekvraag als één regel, bijvoorbeeld:
- * Merk: Lavazza · Productgroep: Koffiebonen · Tekst: oro
+ * Merk: Lavazza én Groep: Koffie & thee › Koffiebonen
  *
  * Staan er meerdere delen, dan komt er "en" tussen: binnen één zoekvraag
  * moeten ze namelijk allemaal kloppen, en dat moet je aan de regel kunnen zien.
+ *
+ * Bij een afdeling zonder lade staat er nadrukkelijk "hele afdeling" bij: dat is
+ * een veel bredere zoekvraag dan één lade, en dat hoor je te zien zonder te
+ * moeten weten hoe de indeling in elkaar zit.
  */
 export function zoekvraagTekst(zoekvraag) {
     const delen = [];
     if (zoekvraag.merk) delen.push(`Merk: ${zoekvraag.merk}`);
-    if (zoekvraag.productgroep) delen.push(`Productgroep: ${zoekvraag.productgroep}`);
+    if (zoekvraag.hoofdgroep) {
+        delen.push(zoekvraag.subgroep
+            ? `Groep: ${zoekvraag.hoofdgroep} › ${zoekvraag.subgroep}`
+            : `Groep: ${zoekvraag.hoofdgroep} (hele afdeling)`);
+    }
     if (zoekvraag.vrije_tekst) delen.push(`Tekst: ${zoekvraag.vrije_tekst}`);
     return delen.join(' én ');
 }

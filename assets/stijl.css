@@ -2,16 +2,16 @@
  * =============================================================================
  *  Dealbot — vormgeving van de website
  *
- *  Versie      : 1.5
- *  Reden       : De winkelpagina is erbij gekomen: een strook met winkellogo's
- *                om uit te kiezen, en daaronder de aanbiedingen in inklapbare
- *                blokken per productgroep.
- *  Datum       : 03-08-2026 21:25
+ *  Versie      : 1.6
+ *  Reden       : Het profielscherm kiest niet langer uit een lange lijst
+ *                groepsnamen per winkel, maar uit onze eigen indeling: te
+ *                openen afdelingen met daaronder de groepen om aan te vinken.
+ *  Datum       : 04-08-2026 11:15
  *
  *  Onderdelen:
  *    basis           - kleuren, lettertype en de indeling van de pagina
  *    laatste-run     - de regel met het moment van de laatste ophaalronde
- *    groepkiezer     - productgroepen zoeken en aanvinken
+ *    groepkiezer     - onze indeling doorzoeken en aanvinken
  *    bovenbalk       - naam en navigatie
  *    inlogscherm     - het scherm vóór het inloggen
  *    productkaart    - een product met zijn aanbiedingen
@@ -601,7 +601,7 @@ a.regelnaam:hover { text-decoration: underline; }
     .zoekvraagformulier button[type="submit"] { grid-column: 1 / -1; justify-self: start; }
 }
 
-/* -- productgroepen zoeken en aanvinken ----------------------------------- */
+/* -- onze indeling doorzoeken en aanvinken -------------------------------- */
 
 .groepkiezer input[type="search"] { margin-bottom: 12px; }
 
@@ -640,38 +640,60 @@ a.regelnaam:hover { text-decoration: underline; }
 
 .gekozen-groep .weg:hover { color: var(--rood); }
 
-/* De treffers. Een vaste hoogte met eigen schuifbalk: de lijst mag lang zijn
-   zonder dat de knop eronder van het scherm af raakt. */
-.groepresultaten {
-    list-style: none;
+/* Onze indeling. Een vaste hoogte met eigen schuifbalk: achtentwintig
+   afdelingen zijn te veel om de opslaanknop van het scherm af te duwen. */
+.indeling {
     margin: 0 0 14px;
-    padding: 0;
-    max-height: 340px;
+    max-height: 420px;
     overflow-y: auto;
 }
 
-.groepresultaten:not(:empty) {
+.indeling:not(:empty) {
     border: 1px solid var(--lijn);
     border-radius: 8px;
 }
 
-.treffer { border-top: 1px solid var(--lijn); }
-.treffer:first-child { border-top: none; }
+.afdeling { border-top: 1px solid var(--lijn); }
+.afdeling:first-child { border-top: none; }
 
-.treffer label {
+.afdeling > summary {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.afdeling > summary:hover { background: #f2f7f4; }
+.afdeling[open] > summary { background: #f2f7f4; }
+
+.keuzes {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 6px;
+}
+
+.keuze label {
     display: flex;
     flex-wrap: wrap;
     gap: 4px 10px;
     align-items: baseline;
     margin: 0;
-    padding: 10px 12px;
+    /* Inspringen, zodat je ziet dat een groep onder de afdeling hangt. */
+    padding: 8px 12px 8px 30px;
     font-weight: 400;
     cursor: pointer;
 }
 
-.treffer label:hover { background: #f2f7f4; }
+.keuze label:hover { background: #f7f9f8; }
 
-.treffer input[type="checkbox"] {
+/* De regel "Alles uit deze afdeling" is een bredere keuze dan de groepen
+   eronder, en hoort er dus ook anders uit te zien. */
+.keuze.afdelingbreed label { font-weight: 600; }
+
+.keuze input[type="checkbox"] {
     display: inline;
     width: auto;
     margin: 0;
@@ -681,10 +703,12 @@ a.regelnaam:hover { text-decoration: underline; }
     min-height: 20px;
 }
 
-.treffernaam { font-weight: 600; }
-.trefferwinkel { color: var(--grijs); }
-.trefferaantal { margin-left: auto; font-size: 0.85rem; color: var(--groen-donker); }
-.trefferaantal.leeg { color: var(--grijs); font-style: italic; }
+.keuze input[type="checkbox"]:disabled { cursor: default; }
+.keuze input[type="checkbox"]:disabled + .keuzenaam { color: var(--grijs); }
+
+.keuzenaam { flex: 1 1 auto; }
+.keuzeaantal { margin-left: auto; font-size: 0.85rem; font-weight: 400; color: var(--grijs); }
+.keuzeaantal.gevolgd { color: var(--groen-donker); font-style: italic; }
 
 .groepkiezer .knop { border: none; font-family: inherit; font-size: 1rem; cursor: pointer; }
 .groepkiezer .knop:disabled { opacity: 0.6; cursor: default; }
