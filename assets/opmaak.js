@@ -2,12 +2,11 @@
  * =============================================================================
  *  Dealbot — aanbiedingen leesbaar maken
  *
- *  Versie      : 1.3
- *  Reden       : Een zoekvraag gaat niet meer over de groepsnaam van één winkel
- *                maar over onze eigen indeling. In de regel op het profiel staat
- *                nu de afdeling met de lade erachter, of "hele afdeling" als de
- *                keuze breed is.
- *  Datum       : 04-08-2026 10:40
+ *  Versie      : 1.4
+ *  Reden       : De startpagina zet de gevonden producten voortaan onder de
+ *                afdeling en de lade waar ze in onze eigen indeling thuishoren,
+ *                zodat een lange lijst leesbaar blijft.
+ *  Datum       : 04-08-2026 12:05
  *
  *  Onderdelen:
  *    euro()               - bedrag als € 1,29
@@ -16,6 +15,7 @@
  *    momentTekst()        - een tijdstip als "01-08  07:12"
  *    productTitel()       - merk en productnaam netjes achter elkaar
  *    groepeerPerProduct() - aanbiedingen van hetzelfde product bij elkaar
+ *    bundelPerIndeling()  - die producten onder hun afdeling en lade
  *    zoekvraagTekst()     - een zoekvraag in één leesbare regel
  * =============================================================================
  */
@@ -158,6 +158,101 @@ function isVergelijkbaar(regels) {
         regel.eenheid_norm === eenheid
         && Number(regel.prijs_per_eenheid) > 0
     ));
+}
+
+// Waar een product terechtkomt als de afdeling of de lade onbekend is gebleven.
+const OVERIG = 'Overig';
+
+/**
+ * Zoekt de meest voorkomende naam in een rijtje; lege namen tellen niet mee.
+ * Bij een gelijke stand wint de naam die het eerst voorbijkwam.
+ */
+function vaakste(namen) {
+    const telling = new Map();
+    for (const naam of namen) {
+        const schoon = (naam || '').trim();
+        if (schoon) {
+            telling.set(schoon, (telling.get(schoon) || 0) + 1);
+        }
+    }
+
+    let beste = '';
+    let hoogste = 0;
+    for (const [naam, aantal] of telling) {
+        if (aantal > hoogste) {
+            beste = naam;
+            hoogste = aantal;
+        }
+    }
+    return beste;
+}
+
+/**
+ * Bepaalt onder welke afdeling en lade een product komt te staan.
+ *
+ * Hetzelfde product kan bij twee winkels net anders zijn ingedeeld — de ene
+ * folder noemt het koffiebonen, de andere houdt het bij koffie. Het product mag
+ * maar op één plek in de lijst staan, dus wint de indeling die het vaakst
+ * voorkomt. Weet één winkel de lade wel en de andere niet, dan telt die ene:
+ * een bekende lade zegt meer dan een lege.
+ */
+function plaatsVan(regels) {
+    const hoofdgroep = vaakste(regels.map((regel) => regel.hoofdgroep));
+    if (!hoofdgroep) {
+        return { hoofdgroep: OVERIG, subgroep: OVERIG, onbekend: true };
+    }
+
+    const subgroep = vaakste(regels
+        .filter((regel) => (regel.hoofdgroep || '').trim() === hoofdgroep)
+        .map((regel) => regel.subgroep));
+
+    return {
+        hoofdgroep,
+        subgroep: subgroep || OVERIG,
+        onbekend: !subgroep,
+    };
+}
+
+/** Alfabetisch, maar "Overig" zakt altijd naar onderen: dat is een restje. */
+function opNaam(a, b) {
+    if (a.naam === OVERIG) return 1;
+    if (b.naam === OVERIG) return -1;
+    return a.naam.localeCompare(b.naam, 'nl');
+}
+
+/**
+ * Zet de producten onder de afdeling en de lade van onze eigen indeling.
+ *
+ * Zonder deze bundeling is een treffer op een hele afdeling één lange rij
+ * kaarten; met de indeling erboven zie je in één oogopslag waar iets ligt.
+ *
+ * Wat de vertaling niet heeft kunnen plaatsen komt onder "Overig" terecht, altijd
+ * onderaan — het verdwijnt dus niet uit beeld.
+ */
+export function bundelPerIndeling(producten) {
+    const afdelingen = new Map();
+
+    for (const product of producten) {
+        const plaats = plaatsVan(product.regels);
+
+        if (!afdelingen.has(plaats.hoofdgroep)) {
+            afdelingen.set(plaats.hoofdgroep, new Map());
+        }
+        const laden = afdelingen.get(plaats.hoofdgroep);
+
+        if (!laden.has(plaats.subgroep)) {
+            laden.set(plaats.subgroep, { naam: plaats.subgroep, onbekend: plaats.onbekend, producten: [] });
+        }
+        laden.get(plaats.subgroep).producten.push(product);
+    }
+
+    return [...afdelingen.entries()]
+        .map(([naam, laden]) => ({
+            naam,
+            aantal: [...laden.values()].reduce((som, lade) => som + lade.producten.length, 0),
+            laden: [...laden.values()].sort(opNaam),
+        }))
+        .sort(opNaam);
 }
 
 /**

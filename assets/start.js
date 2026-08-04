@@ -2,15 +2,18 @@
  * =============================================================================
  *  Dealbot — de startpagina met mijn aanbiedingen
  *
- *  Versie      : 1.2
- *  Reden       : Onder de kop staat nu wanneer de aanbiedingen voor het laatst
- *                zijn opgehaald. Zonder dat is niet te zien of de lijst van
- *                vanochtend is of van eergisteren.
- *  Datum       : 01-08-2026 13:18
+ *  Versie      : 1.3
+ *  Reden       : De gevonden producten staan nu gebundeld onder de afdeling en
+ *                de lade van onze eigen indeling. Sinds een zoekvraag over een
+ *                hele afdeling kan gaan, werd de lijst anders één lange rij
+ *                kaarten waarin niets meer te vinden was.
+ *  Datum       : 04-08-2026 12:10
  *
  *  Onderdelen:
  *    bouwPagina()      - regelt de toegang en haalt de gegevens op
- *    toonAanbiedingen()- zet de gevonden aanbiedingen op het scherm
+ *    toonAanbiedingen()- zet de gevonden aanbiedingen per afdeling op het scherm
+ *    maakAfdeling()    - één afdeling als blok, met zijn laden erin
+ *    maakProduct()     - één product met alle aanbiedingen die erbij horen
  *    toonLaatsteRun()  - meldt wanneer er voor het laatst is opgehaald
  *    toonGeenResultaat() - melding als er niets te halen valt
  * =============================================================================
@@ -24,7 +27,13 @@ import {
     geldigheidTekst,
     momentTekst,
     groepeerPerProduct,
+    bundelPerIndeling,
 } from './opmaak.js';
+
+// Tot en met dit aantal afdelingen staat alles meteen open. Daarboven zijn de
+// blokken dicht, zodat je eerst ziet in welke afdelingen iets ligt in plaats van
+// meteen door tientallen kaarten te moeten scrollen.
+const AFDELINGEN_OPEN_TOT = 6;
 
 const lijst = document.getElementById('lijst');
 const samenvatting = document.getElementById('samenvatting');
@@ -119,15 +128,55 @@ function maakProduct(groep) {
     return kaart;
 }
 
-function toonAanbiedingen(aanbiedingen) {
-    const groepen = groepeerPerProduct(aanbiedingen);
+/**
+ * Eén afdeling als blok om in en uit te klappen, met de laden erbinnen.
+ *
+ * De naam van de lade staat als tussenkopje boven zijn producten. Heeft een
+ * afdeling maar één lade en is die onbekend gebleven, dan blijft dat kopje weg:
+ * "Overig" boven de hele afdeling zegt niets.
+ */
+function maakAfdeling(afdeling, openVanzelf) {
+    const blok = document.createElement('details');
+    blok.className = 'afdelingblok';
+    blok.open = openVanzelf;
 
-    samenvatting.textContent = groepen.length === 1
-        ? '1 product met een aanbieding voor jou.'
-        : `${groepen.length} producten met een aanbieding voor jou.`;
+    const kop = document.createElement('summary');
+    kop.append(maak('span', 'afdelingnaam', afdeling.naam));
+    kop.append(maak('span', 'afdelingaantal', String(afdeling.aantal)));
+    blok.append(kop);
+
+    const inhoud = maak('div', 'afdelinginhoud');
+    const kopjesTonen = !(afdeling.laden.length === 1 && afdeling.laden[0].onbekend);
+
+    for (const lade of afdeling.laden) {
+        if (kopjesTonen) {
+            const ladekop = maak('p', 'ladekop', lade.naam);
+            ladekop.append(maak('span', 'ladeaantal', String(lade.producten.length)));
+            inhoud.append(ladekop);
+        }
+        inhoud.append(...lade.producten.map(maakProduct));
+    }
+
+    blok.append(inhoud);
+    return blok;
+}
+
+function toonAanbiedingen(aanbiedingen) {
+    const producten = groepeerPerProduct(aanbiedingen);
+    const afdelingen = bundelPerIndeling(producten);
+
+    const aantalTekst = producten.length === 1
+        ? '1 product met een aanbieding voor jou'
+        : `${producten.length} producten met een aanbieding voor jou`;
+    const afdelingTekst = afdelingen.length === 1
+        ? 'in 1 afdeling.'
+        : `in ${afdelingen.length} afdelingen.`;
+
+    samenvatting.textContent = `${aantalTekst}, ${afdelingTekst}`;
     samenvatting.hidden = false;
 
-    lijst.replaceChildren(...groepen.map(maakProduct));
+    const openVanzelf = afdelingen.length <= AFDELINGEN_OPEN_TOT;
+    lijst.replaceChildren(...afdelingen.map((afdeling) => maakAfdeling(afdeling, openVanzelf)));
 }
 
 /**

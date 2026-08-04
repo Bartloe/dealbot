@@ -1,5 +1,27 @@
 # Wijzigingen — Dealbot
 
+## 04-08-2026 — De startpagina ordent per afdeling en groep
+
+Nu een zoekvraag over een hele afdeling kan gaan, kwamen er op de startpagina zo
+veel producten onder elkaar te staan dat je erin verdwaalde. De gevonden
+producten staan daarom voortaan in blokken per afdeling, met de groep als
+tussenkopje erbinnen.
+
+- **Elke afdeling is een blok dat je open- en dichtklapt**, met het aantal
+  producten erachter. Tot en met zes afdelingen staat alles meteen open; heb je er
+  meer, dan zijn de blokken dicht en zie je eerst waar iets ligt.
+- **De groep staat als tussenkopje boven zijn producten**, zodat binnen een grote
+  afdeling nog steeds te zien is wat waar hoort.
+- **Producten waarvan de plek niet bekend is, komen onder "Overig"** — helemaal
+  onderaan, maar ze verdwijnen niet uit beeld.
+- **Hetzelfde product bij twee winkels blijft één kaart.** Deelt de ene winkel het
+  fijner in dan de andere, dan telt de indeling die het vaakst voorkomt; kent maar
+  één winkel de groep, dan wint die — een bekende groep zegt meer dan een lege.
+- De samenvatting bovenaan noemt er de afdelingen bij: "12 producten met een
+  aanbieding voor jou, in 3 afdelingen."
+
+Alleen de website; aan de database verandert niets.
+
 ## 04-08-2026 — Eén keer aanvinken, alle winkels tegelijk
 
 Het profielscherm zoekt niet meer in de groepsnamen van de winkels, maar in onze
