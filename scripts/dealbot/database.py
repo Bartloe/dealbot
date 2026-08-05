@@ -2,13 +2,13 @@
 ===============================================================================
  Dealbot — verkeer met de database (Supabase)
 
- Versie      : 1.10
- Reden       : Een afgebroken verbinding gooide de hele ronde van een winkel om.
-               Op 05-08-2026 kostte dat bijna vijfduizend aanbiedingen van
-               Albert Heijn, terwijl de vier andere winkels in diezelfde ronde
-               gewoon doorliepen. Elke vraag aan de database krijgt nu drie
-               herkansingen bij een hapering of een tijdelijke storing.
- Datum       : 05-08-2026 13:30
+ Versie      : 1.11
+ Reden       : Het kenmerk gaat mee in het verkeer met de database. Dat is de
+               derde laag onder de lade — "vochtig" binnen het toiletpapier —
+               en die hangt zowel aan het vertaalboekje als aan elk product.
+               Het wegschrijven gaat per combinatie van lade én kenmerk, zodat
+               duizenden producten nog steeds in één opdracht bijgewerkt worden.
+ Datum       : 05-08-2026 15:05
 
  Onderdelen:
    Database._rest()                   - één vraag, met herkansing bij hapering
@@ -27,7 +27,7 @@
    Database.koppelingen()             - het vertaalboekje, per winkel
    Database.bewaar_koppelingen()      - vertalingen toevoegen of bijwerken
    Database.producten_ruw()           - een hele tabel om opnieuw in te delen
-   Database.zet_eigen_groepen()       - onze hoofd- en subgroep wegschrijven
+   Database.zet_eigen_groepen()       - hoofdgroep, subgroep en kenmerk wegschrijven
 ===============================================================================
 """
 
@@ -445,7 +445,8 @@ class Database:
 
     def koppelingen(self, winkel_id: int | None = None) -> list[dict[str, Any]]:
         """Het vertaalboekje: welke winkelgroep hangt onder welke eigen groep."""
-        params = {"select": "winkel_id,productgroep,hoofdgroep,subgroep,gemengd,herkomst"}
+        params = {"select": "winkel_id,productgroep,hoofdgroep,subgroep,kenmerk,"
+                            "gemengd,herkomst"}
         if winkel_id is not None:
             params["winkel_id"] = f"eq.{winkel_id}"
         return self._alles("groep_koppelingen", params)
@@ -497,7 +498,7 @@ class Database:
     def producten_ruw(
         self,
         tabel: str = "aanbiedingen",
-        velden: str = "id,winkel_id,product_naam,productgroep,hoofdgroep,subgroep",
+        velden: str = "id,winkel_id,product_naam,productgroep,hoofdgroep,subgroep,kenmerk",
     ) -> list[dict[str, Any]]:
         """
         Alles wat er nu in een tabel staat, om het opnieuw in te kunnen delen.
@@ -510,7 +511,7 @@ class Database:
 
     def aanbiedingen_ruw(
         self,
-        velden: str = "id,winkel_id,product_naam,productgroep,hoofdgroep,subgroep",
+        velden: str = "id,winkel_id,product_naam,productgroep,hoofdgroep,subgroep,kenmerk",
     ) -> list[dict[str, Any]]:
         """Alle aanbiedingen die er nu staan, om ze opnieuw in te kunnen delen."""
         return self.producten_ruw("aanbiedingen", velden)
@@ -519,39 +520,42 @@ class Database:
         self, regels: list[dict[str, Any]], tabel: str = "aanbiedingen"
     ) -> int:
         """
-        Zet bij bestaande regels onze hoofd- en subgroep.
+        Zet bij bestaande regels onze hoofdgroep, subgroep en kenmerk.
 
         Wordt gebruikt om in één keer alles opnieuw in te delen nadat het
         vertaalboekje is bijgewerkt, zonder eerst een hele ophaalronde te hoeven
         draaien.
 
         Het bijwerken gaat per groep en niet per regel. Dat scheelt enorm:
-        duizenden producten krijgen dezelfde twee waarden, dus één opdracht met
+        duizenden producten krijgen dezelfde drie waarden, dus één opdracht met
         een lijst nummers volstaat. Die lijst gaat in stukken, want een webadres
         mag niet eindeloos lang worden.
         """
         self._controleer_tabel(tabel)
 
-        per_groep: dict[tuple[str | None, str | None], list[int]] = {}
+        per_groep: dict[tuple[str | None, str | None, str | None], list[int]] = {}
         for regel in regels:
-            sleutel = (regel.get("hoofdgroep"), regel.get("subgroep"))
+            sleutel = (regel.get("hoofdgroep"), regel.get("subgroep"),
+                       regel.get("kenmerk"))
             per_groep.setdefault(sleutel, []).append(regel["id"])
 
         bijgewerkt = 0
-        for (hoofdgroep, subgroep), nummers in per_groep.items():
+        for (hoofdgroep, subgroep, kenmerk), nummers in per_groep.items():
             for start in range(0, len(nummers), _BLOKGROOTTE):
                 blok = nummers[start:start + _BLOKGROOTTE]
                 self._rest(
                     "PATCH", tabel,
                     params={"id": f"in.({','.join(str(n) for n in blok)})"},
-                    json={"hoofdgroep": hoofdgroep, "subgroep": subgroep},
+                    json={"hoofdgroep": hoofdgroep, "subgroep": subgroep,
+                          "kenmerk": kenmerk},
                     headers={"Prefer": "return=minimal"},
                 )
                 bijgewerkt += len(blok)
 
-            log.info("  %s / %s: %s regels.",
+            log.info("  %s / %s%s: %s regels.",
                      hoofdgroep or "(uit de indeling gehaald)",
-                     subgroep or "(alleen de afdeling)", len(nummers))
+                     subgroep or "(alleen de afdeling)",
+                     f" / {kenmerk}" if kenmerk else "", len(nummers))
 
         return bijgewerkt
 

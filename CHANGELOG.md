@@ -1,5 +1,80 @@
 # Wijzigingen — Dealbot
 
+## 05-08-2026 — Kenmerken: alleen het vochtige toiletpapier volgen
+
+Onze indeling heeft één lade *Huishouden › Toiletpapier*, met het droge en het
+vochtige door elkaar. Wie alleen het vochtige wilde volgen, kon dat nergens
+kiezen. Datzelfde speelt bij koffie (bonen, pads, capsules), bij melk (vol,
+halfvol, lactosevrij) en bij tientallen andere laden.
+
+De laden fijner maken lost dat niet op: dan groeit de indeling eindeloos en moet
+iemand hem met de hand blijven bijhouden. **Maar de winkels hebben die fijne
+indeling allang gemaakt.** Vomar zegt "Toiletpapier Vochtig", Albert Heijn
+"Toiletpapier - vochtig". Wij gooiden dat detail weg zodra de winkelgroep onder
+onze lade werd gehangen.
+
+Vanaf nu wordt het bewaard als **kenmerk**: één woord in onze eigen taal, dat bij
+elke winkel hetzelfde is. Een derde, optionele laag dus — afdeling › lade ›
+kenmerk.
+
+### Wat je ervan merkt
+
+- **In je profiel** staan onder een lade knopjes met de kenmerken die erin
+  voorkomen: *vochtig* onder Toiletpapier, *pads* en *capsules* onder de koffie.
+  Klik je er een aan, dan volg je alleen dat — bij alle winkels tegelijk. Vink je
+  de lade zelf aan, dan krijg je gewoon alles wat erin ligt, precies zoals
+  voorheen. Bestaande zoekvragen veranderen dus niet.
+- **Zoeken op "vochtig"** in het profielscherm vindt nu de lade Toiletpapier, met
+  het knopje er al onder. Je hoeft dus niet te weten in welke lade iets ligt.
+- **Op de standaardprijzen-pagina** staan de verfijningsknopjes voortaan op het
+  kenmerk in plaats van op de groepsnaam van de winkel. Waar eerst drie knopjes
+  stonden voor hetzelfde vochtige toiletpapier — elk met alleen de producten van
+  één keten — staat er nu één. Wat geen kenmerk heeft, komt onder *overig* te
+  staan en verdwijnt dus niet.
+- **De knopjes op beide pagina's zijn dezelfde.** Wat je bij het vergelijken van
+  prijzen ziet, kun je in je profiel gaan volgen.
+
+### Waarom dit zichzelf onderhoudt
+
+Er staat nergens een lijstje met kenmerken dat iemand moet bijhouden. Het rolt
+uit het vertaalwerk dat we voor alle 2606 winkelgroepen toch al doen: de AI die
+"Toiletpapier Vochtig" onder onze lade hangt, houdt daarbij het woord *vochtig*
+over. Komt er een winkel of een productsoort bij, dan groeien de kenmerken
+vanzelf mee.
+
+Twee dingen houden dat bij elkaar:
+
+- **Eén woord per ding.** De vertaler krijgt de kenmerken die de lade al kent mee
+  in zijn opdracht, met de instructie er één te hergebruiken als het over
+  hetzelfde gaat. Vragen is geen garantie, dus daarna wordt het nog afgedwongen:
+  "vochtige" valt terug op "vochtig" en "halfvolle" op "halfvol". Een ladenaam
+  die per ongeluk in het kenmerk terechtkomt gaat eraf — bij "Toiletpapier
+  Vochtig" blijft alleen "vochtig" over.
+- **Alleen kenmerken die iets splitsen.** Een kenmerk dat maar bij één product
+  voorkomt is ruis en blijft van het scherm weg.
+
+Voor winkels die het onderscheid niet in hun groepsnaam maken — bij Dirk heet
+alles gewoon "Toiletpapier" — wordt het kenmerk uit de productnaam gevist, met
+de woorden die de lade van de ándere winkels heeft geleerd. Dat gebeurt op hele
+woorden: "vol" slaat niet aan op "volkoren", en "halfvolle melk" landt bij
+*halfvol* en niet bij *vol*.
+
+Eerlijk over de zwakke plek: benoemt een winkel het vochtige nergens — niet in de
+groep, niet op het pak — dan blijft het daar onvindbaar. Dat is geen fout maar
+het eerlijke antwoord; die informatie bestaat daar simpelweg niet.
+
+### Onder de motorkap
+
+- `database/16_kenmerken.sql` — kenmerk erbij op het vertaalboekje, op de
+  aanbiedingen, op de standaardprijzen en op de zoekvragen. Plus de functie
+  `kenmerken()`, die per lade teruggeeft wat erin zit. Een kenmerk zonder lade
+  kan niet: "vochtig" bestaat bij het toiletpapier én bij de doekjes.
+- `scripts/dealbot/kenmerken.py` — nieuw. Het opschonen, het samenvallen van
+  schrijfwijzen en het vissen uit de productnaam.
+- `scripts/tests/test_kenmerken.py` — nieuw, 48 controles en allemaal goed. Met
+  nadruk op de randen: leeg antwoord, ladenaam herhaald, woord middenin een
+  ander woord, twee schrijfwijzen van hetzelfde.
+
 ## 05-08-2026 — Verwijderen en weren in één handeling
 
 Een account verwijderen en het e-mailadres weren zijn twee dingen die je bijna

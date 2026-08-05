@@ -2,7 +2,7 @@
 ===============================================================================
  Dealbot — alles onder onze eigen productindeling hangen
 
- Versie      : 1.2
+ Versie      : 2.0
  Reden       : De ketens spreken elk hun eigen taal: samen ruim tweeduizend
                groepsnamen waarmee je met één zoekvraag nooit alle winkels vond.
                Dit script legt het vertaalboekje aan (winkelgroep -> onze eigen
@@ -12,11 +12,17 @@
                Een groepsnaam verandert immers niet elke week, en zo kost een
                gewone ophaalronde 's ochtends geen enkele AI-vraag.
 
-               Nu ook de standaardprijzen. Die bleven tot nu toe buiten de
-               indeling hangen, waardoor de standaardprijzen-pagina alleen de
-               groepsnamen van de winkel zelf kon tonen — bij Vomar heet vochtig
-               toiletpapier "Toiletpapier Vochtig" en dat is niet onze taal.
- Datum       : 05-08-2026 12:00
+               Nieuw is het kenmerk: de derde laag onder de lade. Onze lade
+               Toiletpapier bevat het droge en het vochtige door elkaar, terwijl
+               de winkels dat onderscheid in hun eigen groepsnaam allang maken.
+               Dat woord wordt nu bewaard in onze taal, zodat je in je profiel
+               alleen het vochtige kunt volgen — bij alle winkels tegelijk.
+
+               Voor winkels die het onderscheid niet in hun groepsnaam maken,
+               wordt het kenmerk uit de productnaam gevist, met de woorden die
+               de lade van de ándere winkels heeft geleerd. Er wordt dus nergens
+               een lijstje met de hand bijgehouden.
+ Datum       : 05-08-2026 15:15
 
  Onderdelen:
    main()              - de drie stappen achter elkaar, met een samenvatting
@@ -26,7 +32,9 @@
    _lees_boekje()      - het vertaalboekje in de vorm die het indelen nodig heeft
    _deel_tabel_in()    - één tabel indelen; beide gaan langs dezelfde weg
    _plek_van()         - de plek van één product: winkelgroep, dan productnaam
+   _kenmerk_van()      - de verbijzondering: winkelgroep, dan productnaam
    _verslag()          - wat het opgeleverd heeft, per tabel, winkel en groep
+   _verslag_kenmerken()- welke kenmerken er onder de laden zijn komen hangen
 
  Uitvoeren:
    python scripts/indeel.py                alles: vertalen en toepassen
@@ -45,6 +53,7 @@ import os
 import sys
 from collections import Counter
 from pathlib import Path
+from typing import NamedTuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -52,6 +61,7 @@ from dealbot import indeling as eigen  # noqa: E402
 from dealbot.ai import Vraagbaak  # noqa: E402
 from dealbot.database import Database, DatabaseFout  # noqa: E402
 from dealbot.groepvertaler import Koppeling, vertaal  # noqa: E402
+from dealbot.kenmerken import Woordenlijst, tel_per_lade  # noqa: E402
 
 log = logging.getLogger("indeel")
 
@@ -154,21 +164,29 @@ def stap_vertalen(
     def bewaar(koppelingen: list[Koppeling]) -> None:
         db.bewaar_koppelingen([k.als_rij() for k in koppelingen])
 
+    # Eén woordenlijst voor álle winkels, gevuld met wat er al bekend is. Zo
+    # krijgt de tweede keten de kenmerken van de eerste te zien en levert
+    # "Toiletpapier - vochtig" hetzelfde woord op als "vochtig toiletpapier".
+    woordenlijst = Woordenlijst.van_koppelingen(bestaand)
+
     alles: list[Koppeling] = []
     klachten: list[str] = []
     for winkel_id, lijst in sorted(te_doen.items()):
         naam = winkels.get(winkel_id, str(winkel_id))
         log.info("%s: %s groepsnamen.", naam, len(lijst))
         koppelingen, fouten = vertaal(
-            vraagbaak, winkel_id, lijst, naam, bewaar=None if proef else bewaar
+            vraagbaak, winkel_id, lijst, naam, bewaar=None if proef else bewaar,
+            woordenlijst=woordenlijst,
         )
         alles.extend(koppelingen)
         klachten.extend(fouten)
 
     raak = sum(1 for k in alles if k.hoofdgroep)
+    met_kenmerk = sum(1 for k in alles if k.kenmerk)
     log.info("%s van de %s bekeken groepsnamen vallen onder onze indeling "
-             "(de rest gaat over andere boodschappen). %s AI-vragen, %s tokens.",
-             raak, len(alles), vraagbaak.aanroepen, vraagbaak.tokens)
+             "(de rest gaat over andere boodschappen), %s met een kenmerk. "
+             "%s AI-vragen, %s tokens.",
+             raak, len(alles), met_kenmerk, vraagbaak.aanroepen, vraagbaak.tokens)
 
     return alles, klachten
 
@@ -176,9 +194,18 @@ def stap_vertalen(
 # -----------------------------------------------------------------------------
 # Stap 3 — alle aanbiedingen indelen.
 # -----------------------------------------------------------------------------
+class Boekjeregel(NamedTuple):
+    """Wat het vertaalboekje over één winkelgroep zegt."""
+
+    hoofdgroep: str
+    subgroep: str | None
+    gemengd: bool
+    kenmerk: str | None
+
+
 def _plek_van(
     regel: dict,
-    boekje: dict[tuple[int, str], tuple[str, str | None, bool]],
+    boekje: dict[tuple[int, str], Boekjeregel],
 ) -> eigen.Plek | None:
     """
     Waar hoort dit product? Eerst het vertaalboekje, dan de productnaam.
@@ -196,42 +223,88 @@ def _plek_van(
 
     uit_winkelgroep = None
     if uit_boekje:
-        uit_winkelgroep = eigen.Plek(uit_boekje[0], uit_boekje[1], herkomst="winkelgroep")
+        uit_winkelgroep = eigen.Plek(uit_boekje.hoofdgroep, uit_boekje.subgroep,
+                                     herkomst="winkelgroep")
 
     return eigen.plaats(
         regel.get("product_naam"),
         uit_winkelgroep,
         winkel_heeft_groep=bool(winkelgroep),
-        gemengd=bool(uit_boekje and uit_boekje[2]),
+        gemengd=bool(uit_boekje and uit_boekje.gemengd),
     )
 
 
-def _lees_boekje(db: Database) -> dict[tuple[int, str], tuple[str, str | None, bool]]:
+def _kenmerk_van(
+    regel: dict,
+    plek: eigen.Plek | None,
+    uit_boekje: Boekjeregel | None,
+    woordenlijst: Woordenlijst,
+) -> str | None:
+    """
+    Wat verbijzondert dit product binnen zijn lade?
+
+    Twee wegen, in deze volgorde. Eerst de winkelgroep: heeft de winkel het
+    onderscheid zelf gemaakt ("Toiletpapier Vochtig"), dan staat het kenmerk al
+    in het vertaalboekje en is dat het zekerste antwoord.
+
+    Zo niet, dan de productnaam. Dat is het vangnet voor de winkels die alles
+    "Toiletpapier" noemen terwijl op het pak wel degelijk "vochtig" staat. Er
+    wordt daarbij uitsluitend gezocht naar kenmerken die deze lade al kent van
+    een andere winkel — nooit naar iets zelfbedachts.
+
+    Zonder lade geen kenmerk. "Vochtig" bestaat bij het toiletpapier én bij de
+    doekjes, dus zonder te weten in welke lade het product ligt zegt het niets.
+    """
+    if plek is None or not plek.subgroep:
+        return None
+
+    # Het kenmerk uit het boekje geldt alleen als het product ook werkelijk in
+    # de lade beland is waar dat kenmerk bij hoort. Bij een grove winkelgroep
+    # heeft de productnaam de lade bepaald en kan dat een andere zijn.
+    if uit_boekje and uit_boekje.kenmerk and uit_boekje.subgroep == plek.subgroep:
+        return uit_boekje.kenmerk
+
+    return woordenlijst.uit_naam(plek.hoofdgroep, plek.subgroep,
+                                 regel.get("product_naam"))
+
+
+def _lees_boekje(db: Database) -> tuple[dict[tuple[int, str], Boekjeregel], Woordenlijst]:
     """
     Het vertaalboekje in de vorm waarin het indelen het nodig heeft.
 
     Regels zonder hoofdgroep horen bewust niet in het boekje: die zeggen "deze
     winkelgroep hoort nergens bij ons". Ze staan er alleen zodat de AI er niet
     nog eens naar gevraagd wordt.
+
+    De woordenlijst komt uit datzelfde boekje: alle kenmerken die de winkels
+    samen hebben opgeleverd, gesorteerd per lade. Dat is de woordenschat waarmee
+    straks de productnamen worden afgezocht.
     """
     alle_regels = db.koppelingen()
     boekje = {
         (rij["winkel_id"], eigen.schoon(rij["productgroep"])):
-            (rij["hoofdgroep"], rij.get("subgroep"), bool(rij.get("gemengd")))
+            Boekjeregel(rij["hoofdgroep"], rij.get("subgroep"),
+                        bool(rij.get("gemengd")), rij.get("kenmerk"))
         for rij in alle_regels if rij.get("hoofdgroep")
     }
     afgevallen = sum(1 for rij in alle_regels if not rij.get("hoofdgroep"))
     log.info("Vertaalboekje: %s winkelgroepen onder onze indeling, "
              "%s bekeken en afgevallen.",
              len(alle_regels) - afgevallen, afgevallen)
-    return boekje
+
+    woordenlijst = Woordenlijst.van_koppelingen(alle_regels)
+    laden = woordenlijst.laden()
+    log.info("Kenmerken: %s laden hebben er samen %s.",
+             len(laden), sum(len(woordenlijst.bekend(h, s)) for h, s in laden))
+    return boekje, woordenlijst
 
 
 def _deel_tabel_in(
     db: Database,
     tabel: str,
     naam: str,
-    boekje: dict[tuple[int, str], tuple[str, str | None, bool]],
+    boekje: dict[tuple[int, str], Boekjeregel],
+    woordenlijst: Woordenlijst,
     proef: bool,
 ) -> tuple[list[dict], Counter, Counter]:
     """
@@ -250,26 +323,32 @@ def _deel_tabel_in(
     per_groep: Counter = Counter()
 
     for product in producten:
+        winkelgroep = eigen.schoon(product.get("productgroep"))
+        uit_boekje = boekje.get((product["winkel_id"], winkelgroep)) if winkelgroep else None
+
         plek = _plek_van(product, boekje)
         hoofdgroep = plek.hoofdgroep if plek else None
         subgroep = plek.subgroep if plek else None
+        kenmerk = _kenmerk_van(product, plek, uit_boekje, woordenlijst)
 
         # Alleen wegschrijven wat werkelijk verandert. Een verbeterd
         # vertaalboekje raakt meestal een handvol groepen; dan hoeven er geen
         # duizenden ongewijzigde regels langs de database.
-        if (hoofdgroep, subgroep) != (product.get("hoofdgroep"),
-                                      product.get("subgroep")):
+        if (hoofdgroep, subgroep, kenmerk) != (product.get("hoofdgroep"),
+                                               product.get("subgroep"),
+                                               product.get("kenmerk")):
             bijwerken.append({
                 "id": product["id"],
                 "hoofdgroep": hoofdgroep,
                 "subgroep": subgroep,
+                "kenmerk": kenmerk,
             })
 
         if plek is None:
             continue
 
         ingedeeld.append({"id": product["id"], "hoofdgroep": hoofdgroep,
-                          "subgroep": subgroep})
+                          "subgroep": subgroep, "kenmerk": kenmerk})
         per_winkel[product["winkel_id"]] += 1
         per_groep[(plek.hoofdgroep, plek.subgroep or "(alleen de afdeling)")] += 1
 
@@ -300,12 +379,14 @@ def stap_toepassen(
     Het gebeurt hier in één keer voor alles, zodat een verbeterd vertaalboekje
     meteen doorwerkt zonder op de ophaalronde van morgenochtend te wachten.
     """
-    boekje = _lees_boekje(db)
+    boekje, woordenlijst = _lees_boekje(db)
 
     return {
-        "aanbiedingen": _deel_tabel_in(db, "aanbiedingen", "aanbiedingen", boekje, proef),
+        "aanbiedingen": _deel_tabel_in(
+            db, "aanbiedingen", "aanbiedingen", boekje, woordenlijst, proef
+        ),
         "standaardprijzen": _deel_tabel_in(
-            db, "standaardprijzen", "standaardprijzen", boekje, proef
+            db, "standaardprijzen", "standaardprijzen", boekje, woordenlijst, proef
         ),
     }
 
@@ -364,6 +445,47 @@ def _verslag(db: Database, uitkomst: dict[str, tuple[list[dict], Counter, Counte
     print("\n  Per groep (alles bij elkaar):")
     for (hoofd, sub), aantal in sorted(alles.items()):
         print(f"    {hoofd} / {sub:<32} {aantal:>6}")
+
+    _verslag_kenmerken(uitkomst)
+
+
+def _verslag_kenmerken(
+    uitkomst: dict[str, tuple[list[dict], Counter, Counter]]
+) -> None:
+    """
+    Welke kenmerken zijn er onder de laden komen hangen?
+
+    Dit is het deel om na een ronde even langs te lopen. Een lade met twee of
+    drie kenmerken is precies de bedoeling; ziet u er tien, dan heeft de AI de
+    groepsnamen zitten overschrijven in plaats van er iets uit te halen.
+
+    De ruis staat er nadrukkelijk bij: kenmerken die maar bij één product
+    voorkomen worden op de website niet getoond, maar hier wel geteld — anders
+    is niet te zien dat ze bestaan.
+    """
+    teller: dict[tuple[str, str, str], int] = {}
+    for ingedeeld, _, _ in uitkomst.values():
+        for sleutel, aantal in tel_per_lade(ingedeeld).items():
+            teller[sleutel] = teller.get(sleutel, 0) + aantal
+
+    if not teller:
+        print("\n  Nog geen kenmerken. Draai het vertalen om ze op te halen.")
+        return
+
+    getoond = {s: a for s, a in teller.items() if a >= 2}
+    ruis = len(teller) - len(getoond)
+    laden = {(hoofd, sub) for hoofd, sub, _ in getoond}
+
+    print(f"\n  Kenmerken: {len(getoond)} verdeeld over {len(laden)} laden"
+          + (f", plus {ruis} die maar bij één product voorkomen." if ruis else "."))
+
+    vorige = None
+    for (hoofd, sub, kenmerk), aantal in sorted(getoond.items(),
+                                                key=lambda p: (p[0][0], p[0][1], -p[1])):
+        if (hoofd, sub) != vorige:
+            print(f"\n    {hoofd} / {sub}")
+            vorige = (hoofd, sub)
+        print(f"      {kenmerk:<26} {aantal:>6}")
 
 
 def main() -> int:

@@ -130,6 +130,19 @@ Bijgewerkt: 04-08-2026 11:30
       open te klappen met hun groepen, in plaats van 3962 groepsnamen per winkel. Eén
       keer "Koffiebonen" aanvinken dekt alle winkels. De winkelpagina houdt de indeling
       van de winkel zelf — daar blader je door één folder
+- [x] **Kenmerken: de derde laag onder de lade** (05-08-2026). Onze lade
+      Toiletpapier bevat het droge en het vochtige door elkaar; het kenmerk
+      "vochtig" maakt dat onderscheid alsnog, in onze eigen woorden en bij alle
+      winkels tegelijk. Afgeleid uit de groepsnamen van de winkels zelf, dus er
+      wordt nergens een lijstje met de hand bijgehouden
+- [ ] **De kenmerken ophalen bij de winkelgroepen die er al staan.** De code
+      staat klaar, maar de bestaande 2606 vertalingen hebben nog geen kenmerk:
+      dat veld bestond niet toen ze werden gemaakt. Eerst
+      `database/16_kenmerken.sql` in Supabase draaien, dan een proefronde op één
+      lade (`python scripts/indeel.py --opnieuw --woorden toilet`) om te zien dat
+      het knopje "vochtig" verschijnt, en pas daarna alles
+      (`python scripts/indeel.py --opnieuw`). Reken op zo'n 45 AI-vragen — dat
+      eet sleutels die de folderlezer die dag niet meer heeft
 - [ ] **De startpagina de eigen indeling laten gebruiken**: de gevonden aanbiedingen
       groeperen per afdeling/groep in plaats van alleen per product
 - [ ] **Voorvoegsel "lokaal" bij Jumbo-groepen opschonen.** Een deel van Jumbo's

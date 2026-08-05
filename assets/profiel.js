@@ -2,14 +2,18 @@
  * =============================================================================
  *  Dealbot — de profielpagina met mijn zoekvragen
  *
- *  Versie      : 3.0
- *  Reden       : Je koos tot nu toe de groepsnaam van één winkel. Wie
- *                koffiebonen wilde volgen moest dat dus bij elke keten apart
- *                doen, in de woorden van die keten — en bij Vomar kon het
- *                helemaal niet. Nu staat onze eigen indeling op het scherm:
- *                afdelingen met daaronder groepen, bij elke winkel hetzelfde.
- *                Eén keer "Koffiebonen" aanvinken dekt alle winkels.
- *  Datum       : 04-08-2026 11:05
+ *  Versie      : 4.0
+ *  Reden       : Onze lade Toiletpapier bevat het droge en het vochtige door
+ *                elkaar, dus wie alleen het vochtige wilde volgen kon dat
+ *                nergens kiezen. Datzelfde speelde bij koffie (bonen, pads,
+ *                capsules) en bij melk (vol, halfvol, lactosevrij).
+ *
+ *                Onder elke lade staan nu knopjes met de kenmerken die erin
+ *                voorkomen. Ze zijn niet met de hand bedacht maar afgeleid uit
+ *                de groepsnamen van de winkels zelf, en ze staan in onze eigen
+ *                woorden — dus één knopje "vochtig" dekt alle ketens. Wie geen
+ *                knopje kiest, volgt de hele lade zoals voorheen.
+ *  Datum       : 05-08-2026 15:45
  *
  *  Onderdelen:
  *    bouwPagina()       - regelt de toegang en haalt de gegevens op
@@ -18,12 +22,15 @@
  *    koppelGroepkiezer()- zoeken, aanvinken en opslaan binnen onze indeling
  *    bouwAfdelingen()   - maakt van de losse regels afdelingen met hun groepen
  *    toonIndeling()     - tekent de indeling, gefilterd op het zoekwoord
+ *    maakKenmerken()    - de knopjes onder één lade
+ *    laadKenmerken()    - haalt op welke kenmerken er in welke lade zitten
  * =============================================================================
  */
 
 import {
     haalZoekvragen,
     haalEigenIndeling,
+    haalKenmerken,
     voegZoekvragenToe,
     verwijderZoekvraag,
     DealbotFout,
@@ -45,6 +52,11 @@ const groepenknop = document.getElementById('groepenopslaan');
 // Onze indeling: afdelingen met hun groepen, zoals de database ze levert.
 let afdelingen = [];
 
+// De kenmerken per lade: de derde laag. Sleutel is afdeling + lade, waarde is
+// een rij knopjes. Laden die niets te verbijzonderen hebben staan er niet in —
+// dat is het normale geval.
+let kenmerkenPerLade = new Map();
+
 // Wat de gebruiker nu aanvinkt, en wat hij al volgt. Beide op dezelfde sleutel,
 // zodat een groep die al in een zoekvraag zit niet nog eens te kiezen is.
 const gekozen = new Map();
@@ -54,7 +66,13 @@ let alGevolgd = new Set();
 // je iets aanvinkt; zonder dit klapt de afdeling waar je in bezig bent dicht.
 const openstaand = new Set();
 
-const sleutelVan = (hoofdgroep, subgroep) => `${hoofdgroep}||${subgroep || ''}`;
+// De sleutel van één keuze. Het kenmerk hoort erbij: "Toiletpapier" en
+// "Toiletpapier › vochtig" zijn twee verschillende zoekvragen, en die moeten
+// naast elkaar kunnen bestaan zonder elkaar te overschrijven.
+const sleutelVan = (hoofdgroep, subgroep, kenmerk) =>
+    `${hoofdgroep}||${subgroep || ''}||${kenmerk || ''}`;
+
+const ladeSleutel = (hoofdgroep, subgroep) => `${hoofdgroep}||${subgroep}`;
 
 function toonMelding(tekst, soort = 'fout') {
     melding.textContent = tekst;
@@ -153,6 +171,10 @@ function bouwAfdelingen(regels) {
  * Past de afdelingsnaam zelf ("koffie" op "Koffie & thee"), dan blijven al zijn
  * groepen staan: je bent dan waarschijnlijk op zoek naar de hele afdeling en
  * wilt zien wat erin zit.
+ *
+ * Er wordt ook in de kenmerken gezocht. Wie "vochtig" typt, denkt niet aan de
+ * lade Toiletpapier maar aan wat hij zoekt — en die lade hoort dan tevoorschijn
+ * te komen, met het knopje "vochtig" er al onder.
  */
 function zoekInIndeling(woord) {
     const term = woord.trim().toLowerCase();
@@ -160,12 +182,17 @@ function zoekInIndeling(woord) {
         return afdelingen;
     }
 
+    const kenmerkPast = (hoofdgroep, subgroep) =>
+        (kenmerkenPerLade.get(ladeSleutel(hoofdgroep, subgroep)) || [])
+            .some(({ kenmerk }) => kenmerk.toLowerCase().includes(term));
+
     const treffers = [];
     for (const afdeling of afdelingen) {
         const afdelingPast = afdeling.naam.toLowerCase().includes(term);
         const groepen = afdelingPast
             ? afdeling.groepen
-            : afdeling.groepen.filter((groep) => groep.naam.toLowerCase().includes(term));
+            : afdeling.groepen.filter((groep) => groep.naam.toLowerCase().includes(term)
+                || kenmerkPast(afdeling.naam, groep.naam));
 
         if (afdelingPast || groepen.length > 0) {
             treffers.push({ ...afdeling, groepen });
@@ -193,11 +220,17 @@ function maakKeuze(hoofdgroep, subgroep, naam, aantal) {
     vinkje.disabled = gevolgd;
     vinkje.addEventListener('change', () => {
         if (vinkje.checked) {
-            gekozen.set(sleutel, { hoofdgroep, subgroep });
+            gekozen.set(sleutel, { hoofdgroep, subgroep, kenmerk: null });
         } else {
             gekozen.delete(sleutel);
         }
         toonGekozen();
+        // Alleen opnieuw tekenen als er knopjes onder deze lade hangen: die
+        // moeten uit zodra je de hele lade volgt. Zonder knopjes is opnieuw
+        // tekenen alleen maar onrustig — de lijst springt dan onder je muis weg.
+        if (kenmerkenPerLade.has(ladeSleutel(hoofdgroep, subgroep))) {
+            toonIndeling();
+        }
     });
 
     label.append(vinkje, maak('span', 'keuzenaam', naam));
@@ -205,7 +238,73 @@ function maakKeuze(hoofdgroep, subgroep, naam, aantal) {
         gevolgd ? 'volg je al' : aantalTekst(aantal)));
 
     regel.append(label);
+
+    const knopjes = maakKenmerken(hoofdgroep, subgroep, vinkje.checked || gevolgd);
+    if (knopjes) {
+        regel.append(knopjes);
+    }
     return regel;
+}
+
+/**
+ * De knopjes onder één lade: de kenmerken die erin voorkomen.
+ *
+ * Dit is de derde laag. De lade zelf blijft gewoon aan te vinken — dan volg je
+ * alles — maar wie het preciezer wil, kiest hier "vochtig" of "pads". Elk
+ * knopje wordt een eigen zoekvraag, dus je kunt er ook twee tegelijk kiezen.
+ *
+ * De knopjes gaan uit zodra de hele lade gevolgd wordt: die dekt ze dan al, en
+ * een tweede zoekvraag zou dezelfde aanbiedingen nog eens binnenhalen.
+ *
+ * Laden zonder kenmerken krijgen niets. Dat is verreweg de meeste: alleen waar
+ * de winkels zelf een onderscheid maken, valt er iets te kiezen.
+ */
+function maakKenmerken(hoofdgroep, subgroep, ladeGedekt) {
+    if (!subgroep) {
+        return null;
+    }
+    const beschikbaar = kenmerkenPerLade.get(ladeSleutel(hoofdgroep, subgroep));
+    if (!beschikbaar || beschikbaar.length === 0) {
+        return null;
+    }
+
+    const rij = maak('ul', 'kenmerken');
+
+    for (const { kenmerk, aantal } of beschikbaar) {
+        const sleutel = sleutelVan(hoofdgroep, subgroep, kenmerk);
+        const gevolgd = alGevolgd.has(sleutel);
+        const actief = gekozen.has(sleutel);
+
+        const vak = maak('li', null);
+        const knop = maak('button', `kenmerk${actief ? ' actief' : ''}`);
+        knop.type = 'button';
+        knop.disabled = gevolgd || ladeGedekt;
+        knop.setAttribute('aria-pressed', String(actief));
+        knop.title = gevolgd
+            ? `Je volgt ${subgroep} › ${kenmerk} al.`
+            : `Alleen ${kenmerk} uit ${subgroep} volgen — bij alle winkels. `
+              + `${aantalTekst(aantal)}.`;
+
+        knop.append(maak('span', 'kenmerknaam', kenmerk));
+        if (aantal > 0) {
+            knop.append(maak('span', 'kenmerkaantal', String(aantal)));
+        }
+
+        knop.addEventListener('click', () => {
+            if (actief) {
+                gekozen.delete(sleutel);
+            } else {
+                gekozen.set(sleutel, { hoofdgroep, subgroep, kenmerk });
+            }
+            toonGekozen();
+            toonIndeling();
+        });
+
+        vak.append(knop);
+        rij.append(vak);
+    }
+
+    return rij;
 }
 
 /** Tekent de indeling, gefilterd op wat er in het zoekveld staat. */
@@ -265,8 +364,11 @@ function toonIndeling() {
 function toonGekozen() {
     const regels = [...gekozen.entries()].map(([sleutel, keuze]) => {
         const regel = maak('li', 'gekozen-groep');
-        regel.append(maak('span', null, keuze.subgroep
-            ? `${keuze.hoofdgroep} › ${keuze.subgroep}`
+        const lade = keuze.kenmerk
+            ? `${keuze.subgroep} › ${keuze.kenmerk}`
+            : keuze.subgroep;
+        regel.append(maak('span', null, lade
+            ? `${keuze.hoofdgroep} › ${lade}`
             : `${keuze.hoofdgroep} (hele afdeling)`));
 
         const weg = maak('button', 'weg', '×');
@@ -291,6 +393,38 @@ function toonGekozen() {
         : `${regels.length} ${regels.length === 1 ? 'zoekvraag' : 'zoekvragen'} opslaan`;
 }
 
+/**
+ * Haalt op welke kenmerken er in welke lade zitten.
+ *
+ * Mislukt dit, dan blijven de knopjes gewoon weg en werkt de rest van de pagina
+ * onveranderd: het kenmerk is een verfijning, geen voorwaarde. Een lade
+ * aanvinken kan dan nog steeds.
+ */
+async function laadKenmerken() {
+    try {
+        const regels = await haalKenmerken();
+        const perLade = new Map();
+        for (const regel of regels) {
+            if (!regel.hoofdgroep || !regel.subgroep || !regel.kenmerk) {
+                continue;
+            }
+            const sleutel = ladeSleutel(regel.hoofdgroep, regel.subgroep);
+            if (!perLade.has(sleutel)) {
+                perLade.set(sleutel, []);
+            }
+            perLade.get(sleutel).push({
+                kenmerk: regel.kenmerk,
+                aantal: Number(regel.aantal) || 0,
+            });
+        }
+        kenmerkenPerLade = perLade;
+        console.info(`Dealbot — profiel: kenmerken geladen voor ${perLade.size} laden.`);
+    } catch (fout) {
+        kenmerkenPerLade = new Map();
+        console.error('Dealbot — kenmerken laden mislukt:', fout);
+    }
+}
+
 /** Haalt de indeling op; een storing hier mag de pagina niet blokkeren. */
 async function laadIndeling() {
     try {
@@ -302,6 +436,10 @@ async function laadIndeling() {
         afdelingen = [];
         console.error('Dealbot — indeling laden mislukt:', fout);
     }
+
+    // De kenmerken horen bij de indeling en worden in dezelfde beweging
+    // opgehaald: zonder indeling valt er niets om ze onder te hangen.
+    await laadKenmerken();
     toonIndeling();
 }
 
@@ -309,7 +447,8 @@ function toonZoekvragen(zoekvragen, herlaad) {
     // Wat al gevolgd wordt, mag niet nog eens aan te vinken zijn.
     alGevolgd = new Set(zoekvragen
         .filter((zoekvraag) => zoekvraag.hoofdgroep)
-        .map((zoekvraag) => sleutelVan(zoekvraag.hoofdgroep, zoekvraag.subgroep)));
+        .map((zoekvraag) => sleutelVan(zoekvraag.hoofdgroep, zoekvraag.subgroep,
+            zoekvraag.kenmerk)));
 
     if (zoekvragen.length === 0) {
         lijst.replaceChildren(maak('li', 'leeg-regel',
@@ -397,6 +536,7 @@ function koppelGroepkiezer() {
         const nieuwe = [...gekozen.values()].map((keuze) => ({
             hoofdgroep: keuze.hoofdgroep,
             subgroep: keuze.subgroep,
+            kenmerk: keuze.kenmerk,
         }));
 
         try {

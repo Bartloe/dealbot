@@ -2,19 +2,20 @@
  * =============================================================================
  *  Dealbot — de standaardprijzen-pagina
  *
- *  Versie      : 2.0
- *  Reden       : De keuzelijst toonde de groepsnamen van de winkel zelf. Daardoor
- *                stond "Toiletpapier Vochtig" als losse groep náást
- *                "Toiletpapier", terwijl het bij ons in dezelfde lade hoort — en
- *                leverde de lade Toiletpapier dus niet alles op wat erin ligt.
- *                De lijst put nu uit onze eigen indeling: dezelfde afdelingen en
- *                laden als op de rest van de site.
+ *  Versie      : 3.0
+ *  Reden       : De verfijningsknopjes stonden op de groepsnaam van de winkel
+ *                zelf. Voor hetzelfde vochtige toiletpapier kreeg je er daardoor
+ *                drie naast elkaar — "Toiletpapier Vochtig", "Toiletpapier -
+ *                vochtig" en "vochtig toiletpapier" — en elk knopje verborg de
+ *                producten van de andere twee ketens.
  *
- *                De groep van de winkel is niet weggegooid maar gedegradeerd tot
- *                verfijning: binnen een lade staan knopjes waarmee je alsnog het
- *                vochtige toiletpapier eruit kunt pikken. Filteren gebeurt in het
- *                scherm zelf, zonder nieuwe vraag aan de database.
- *  Datum       : 05-08-2026 12:35
+ *                Ze staan nu op het kenmerk: één woord in onze eigen taal, dat
+ *                bij het indelen uit die winkelnamen is overgehouden. Eén knopje
+ *                "vochtig" laat dus alle winkels tegelijk zien, precies zoals de
+ *                keuzelijst erboven dat al deed. Het is bovendien hetzelfde
+ *                knopje als op het profielscherm: wat je hier ziet, kun je daar
+ *                gaan volgen.
+ *  Datum       : 05-08-2026 16:00
  *
  *  Er staan ruim zesduizend producten in de database. Die worden bewust niet in
  *  één keer opgehaald: de pagina vraagt eerst om een zoekterm of een lade, en
@@ -25,7 +26,7 @@
  *    vulIndeling()     - zet onze afdelingen en laden in de keuzelijst
  *    zoek()            - haalt op wat bij de invoer past
  *    toonUitkomst()    - tekent de verfijningsknopjes en de lijst
- *    telWinkelgroepen()- welke winkelgroepen zitten er in de uitkomst
+ *    telKenmerken()    - welke kenmerken zitten er in de uitkomst
  *    maakVerfijning()  - de knopjes waarmee je binnen een lade verfijnt
  *    maakProduct()     - één product als kaart op het scherm
  *    toonLeeg()        - wat je ziet vóór het zoeken en bij nul treffers
@@ -66,7 +67,9 @@ let keuzes = [];
 let gevonden = [];
 let verfijndOp = null;
 
-const ZONDER_GROEP = '(zonder groep)';
+// Producten waarvan het kenmerk niet bekend is, vallen onder dit knopje. Ze
+// horen wél in de lade — er is alleen niets naders over te zeggen.
+const ZONDER_KENMERK = 'overig';
 
 function toonMelding(tekst, soort = 'fout') {
     melding.textContent = tekst;
@@ -172,27 +175,30 @@ function toonLeeg(heeftGezocht) {
 }
 
 /**
- * Welke groepen van de winkel zelf zitten er in deze uitkomst, en hoeveel?
+ * Welke kenmerken zitten er in deze uitkomst, en hoeveel producten hebben ze?
  *
- * Dit is de bron van de verfijningsknopjes. De namen zijn de taal van de winkel
- * en niet die van ons — bij Vomar "Toiletpapier Vochtig", bij Jumbo "Vochtig
- * toiletpapier". Dat is de prijs van deze aanpak: geen extra vertaalslag nodig,
- * maar de knopjes lezen net zoals de winkel het opschrijft.
+ * Dit is de bron van de verfijningsknopjes. Het kenmerk is de derde laag onder
+ * onze indeling: één woord in onze eigen taal, dat bij het indelen is
+ * overgehouden uit de groepsnamen van de winkels. Daardoor staat er één knopje
+ * "vochtig" in plaats van drie winkelvarianten van hetzelfde.
+ *
+ * Wat geen kenmerk heeft, komt onder "overig" te staan en verdwijnt dus niet:
+ * het ligt gewoon in de lade, we weten er alleen niets naders van.
  *
  * De grootste groep staat voorop; bij gelijk aantal op alfabet, zodat de volgorde
  * niet verspringt tussen twee zoekopdrachten.
  */
-function telWinkelgroepen(producten) {
+function telKenmerken(producten) {
     const teller = new Map();
     for (const product of producten) {
-        const naam = (product.productgroep || '').trim() || ZONDER_GROEP;
+        const naam = (product.kenmerk || '').trim() || ZONDER_KENMERK;
         teller.set(naam, (teller.get(naam) || 0) + 1);
     }
     return [...teller.entries()]
         .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'nl'));
 }
 
-/** Eén knopje, dat de lijst verfijnt op één winkelgroep. */
+/** Eén knopje, dat de lijst verfijnt op één kenmerk. */
 function maakKnopje(naam, aantal, actief) {
     const knop = maak('button', `chip${actief ? ' actief' : ''}`);
     knop.type = 'button';
@@ -212,7 +218,7 @@ function maakKnopje(naam, aantal, actief) {
 /**
  * De rij knopjes boven de lijst.
  *
- * Blijft weg als er maar één winkelgroep in de uitkomst zit: dan valt er niets te
+ * Blijft weg als er maar één kenmerk in de uitkomst zit: dan valt er niets te
  * verfijnen en zou de rij alleen maar afleiden.
  */
 function maakVerfijning(groepen) {
@@ -256,12 +262,12 @@ function toonUitkomst() {
         return;
     }
 
-    maakVerfijning(telWinkelgroepen(gevonden));
+    maakVerfijning(telKenmerken(gevonden));
 
     const tonen = verfijndOp === null
         ? gevonden
         : gevonden.filter(
-            (p) => ((p.productgroep || '').trim() || ZONDER_GROEP) === verfijndOp,
+            (p) => ((p.kenmerk || '').trim() || ZONDER_KENMERK) === verfijndOp,
         );
 
     const aantalTekst = tonen.length === 1

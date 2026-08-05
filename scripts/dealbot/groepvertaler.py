@@ -2,21 +2,21 @@
 ===============================================================================
  Dealbot — winkelgroepen onder onze eigen indeling hangen
 
- Versie      : 1.1
- Reden       : De vijf ketens hebben samen 2606 groepsnamen, elk in hun eigen
-               taal. Ze stuk voor stuk met de hand vertalen is geen doen, en per
-               product beslissen is verspilling: een groep vertalen dekt in één
-               klap duizenden producten en blijft volgende week gewoon gelden.
-               Daarom vraagt dit onderdeel het één keer aan de AI en bewaart het
-               antwoord.
+ Versie      : 2.0
+ Reden       : Een winkelgroep leverde tot nu toe alleen een afdeling en een
+               lade op. Het detail dat de winkel er zelf bij zette ging verloren:
+               "Toiletpapier Vochtig" werd Huishouden / Toiletpapier, en het
+               woord "vochtig" verdween. Daardoor kon je in je profiel wel het
+               toiletpapier volgen maar niet alleen het vochtige.
 
-               Bijgewerkt nu de indeling het hele assortiment dekt. De opdracht
-               vertelde de AI nog dat "hoort er niet bij" het meest voorkomende
-               antwoord was — dat gold toen alleen koffie en thee in de indeling
-               stonden en zou nu duizenden groepen ten onrechte afwijzen. Ook
-               staan de twee regels erbij die dwars door alle takken lopen:
-               diepvries wint, en glutenvrij is een eigenschap en geen afdeling.
- Datum       : 04-08-2026 00:05
+               Dat woord wordt nu bewaard als kenmerk. Het is niet zomaar het
+               restje van de groepsnaam: de AI zet het in ónze taal, en krijgt
+               de kenmerken die de lade al kent mee met de opdracht om er een
+               te hergebruiken als het hetzelfde ding is. Zo levert "Toiletpapier
+               - vochtig" bij Albert Heijn hetzelfde kenmerk op als "vochtig
+               toiletpapier" bij Jumbo, en krijg je één knopje in plaats van
+               drie.
+ Datum       : 05-08-2026 14:55
 
  Onderdelen:
    Koppeling         - één winkelgroep met de plek waar hij onder valt
@@ -27,7 +27,9 @@
 
  De AI mag nooit iets verzinnen: elk antwoord wordt getoetst aan de indeling in
  indeling.py. Een hoofd- of subgroep die daar niet in staat wordt weggegooid,
- niet stilzwijgend overgenomen.
+ niet stilzwijgend overgenomen. Voor het kenmerk geldt hetzelfde langs een
+ andere weg: dat wordt door kenmerken.py opgeschoond en op een al bestaand woord
+ van die lade laten vallen.
 ===============================================================================
 """
 
@@ -40,6 +42,7 @@ from typing import Any, Callable
 
 from .ai import Vraagbaak
 from .indeling import INDELING, TOELICHTING, bestaat, hoofdgroep_van
+from .kenmerken import Woordenlijst
 
 log = logging.getLogger(__name__)
 
@@ -71,12 +74,19 @@ class Koppeling:
     gemengd: bool = False
     herkomst: str = "ai"
 
+    # Wat deze winkelgroep binnen de lade verbijzondert, in onze eigen woorden.
+    # Meestal leeg: een groep die precies één lade dekt heeft niets te
+    # verbijzonderen. Alleen zinvol naast een subgroep, want zonder lade is
+    # "vochtig" niet te plaatsen.
+    kenmerk: str | None = None
+
     def als_rij(self) -> dict[str, Any]:
         return {
             "winkel_id": self.winkel_id,
             "productgroep": self.productgroep,
             "hoofdgroep": self.hoofdgroep,
             "subgroep": self.subgroep,
+            "kenmerk": self.kenmerk,
             "gemengd": self.gemengd,
             "herkomst": self.herkomst,
         }
@@ -113,6 +123,27 @@ D. De groepsnaam heeft niets met onze indeling te maken.
    het hele supermarktassortiment. Gebruik het alleen voor wat echt geen
    boodschap is — een dienst, een spaaractie, statiegeld, een afhaalpunt.
 
+HET KENMERK:
+
+Onze subgroepen zijn soms grover dan de groepsnaam van de winkel. "Toiletpapier
+Vochtig" valt onder onze subgroep Toiletpapier, maar het woord "vochtig" zegt
+iets wat wij anders kwijtraken. Zet dat woord in het veld "kenmerk".
+
+- Eén woord, hooguit twee. In het Nederlands, kleine letters, enkelvoud waar dat
+  kan: "vochtig", "pads", "capsules", "halfvol", "lactosevrij", "gerookt".
+- Laat het leeg als de groepsnaam niets toevoegt aan onze subgroep. Dat is het
+  normale geval. "Koffiebonen" onder Koffiebonen heeft geen kenmerk nodig.
+- Herhaal de subgroep niet. Bij "Toiletpapier Vochtig" is het kenmerk "vochtig",
+  niet "toiletpapier vochtig".
+- Kies géén kenmerk bij antwoord B, C of D: zonder vaste subgroep is er niets om
+  het onder te hangen.
+- Woorden als "overig", "diversen" en "algemeen" zijn geen kenmerk. Laat leeg.
+
+BELANGRIJK — deze kenmerken kennen we al. Gaat jouw groepsnaam over hetzelfde
+ding, gebruik dan exact het woord dat er al staat en verzin geen synoniem:
+
+{kenmerken}
+
 REGELS:
 - Kies uitsluitend namen die letterlijk in onze indeling staan. Verzin niets.
 - Twijfel je tussen B en C, kies dan C. Bij een gemengde groep kijken we daarna
@@ -147,9 +178,11 @@ def _vorm() -> dict[str, Any]:
                         "groepsnaam": {"type": "string"},
                         "hoofdgroep": {"type": "string"},
                         "subgroep": {"type": "string"},
+                        "kenmerk": {"type": "string"},
                         "gemengd": {"type": "boolean"},
                     },
-                    "required": ["groepsnaam", "hoofdgroep", "subgroep", "gemengd"],
+                    "required": ["groepsnaam", "hoofdgroep", "subgroep",
+                                 "kenmerk", "gemengd"],
                 },
             }
         },
@@ -175,7 +208,7 @@ def _indeling_als_tekst() -> str:
 
 
 def _lees_antwoord(
-    inhoud: Any, winkel_id: int, gevraagd: dict[str, str]
+    inhoud: Any, winkel_id: int, gevraagd: dict[str, str], woordenlijst: Woordenlijst
 ) -> tuple[list[Koppeling], int]:
     """
     Zet het antwoord van de AI om in koppelingen, en gooit weg wat niet klopt.
@@ -184,6 +217,11 @@ def _lees_antwoord(
     gevraagd hebben, bestaat de hoofdgroep in onze indeling, en hangt de subgroep
     werkelijk onder die hoofdgroep. Zo kan een verzonnen naam nooit in de
     database belanden.
+
+    Het kenmerk gaat langs de woordenlijst. Die schoont het op en laat het vallen
+    op een woord dat de lade al kent, zodat er geen twee knopjes voor hetzelfde
+    ding ontstaan. Een kenmerk dat niets toevoegt verdwijnt daar stilletjes —
+    dat is geen fout maar het normale geval.
 
     "Hoort nergens bij" komt als volwaardige koppeling terug, met een lege
     hoofdgroep. Dat is een antwoord dat bewaard hoort te worden — anders wordt
@@ -240,7 +278,14 @@ def _lees_antwoord(
         if gemengd:
             sub = None
 
-        koppelingen.append(Koppeling(winkel_id, origineel, hoofd, sub, gemengd))
+        # Het kenmerk hangt onder de lade, dus zonder vaste lade vervalt het.
+        # Bij een gemengde groep geldt dat dubbel: daar moet de subgroep nog uit
+        # de productnaam komen, en een kenmerk zou dan bij de verkeerde lade
+        # kunnen belanden.
+        kenmerk = None if gemengd else woordenlijst.pas_in(hoofd, sub, regel.get("kenmerk"))
+
+        koppelingen.append(Koppeling(winkel_id, origineel, hoofd, sub, gemengd,
+                                     kenmerk=kenmerk))
 
     return koppelingen, afgekeurd
 
@@ -251,6 +296,7 @@ def vertaal(
     groepen: list[str],
     winkelnaam: str = "",
     bewaar: Callable[[list[Koppeling]], None] | None = None,
+    woordenlijst: Woordenlijst | None = None,
 ) -> tuple[list[Koppeling], list[str]]:
     """
     Hangt de groepsnamen van één winkel onder onze indeling.
@@ -264,9 +310,17 @@ def vertaal(
     is. Dat is er niet voor niets: bij de eerste grote ronde liep het opslaan aan
     het eind vast en waren veertig AI-vragen in één klap kwijt, terwijl de
     dagvoorraad vragen beperkt is. Wat vertaald is, hoort vertaald te blijven.
+
+    De woordenlijst gaat over alle winkels heen en groeit tijdens het vertalen
+    door: wat blok 1 aan kenmerken oplevert, krijgt blok 2 mee in zijn opdracht.
+    Daarom staat de opdracht binnen de lus en niet erbuiten — bij de eerste ronde
+    is de lijst nog leeg en moet hij zich juist tijdens het werk vullen.
     """
     if not groepen:
         return [], []
+
+    if woordenlijst is None:
+        woordenlijst = Woordenlijst()
 
     alles: list[Koppeling] = []
     klachten: list[str] = []
@@ -278,8 +332,10 @@ def vertaal(
         gevraagd = {naam.lower(): naam for naam in blok}
         nummer = start // BLOKGROOTTE + 1
 
+        bekend = woordenlijst.als_tekst()
         opdracht = OPDRACHT.format(
             indeling=indeling,
+            kenmerken=bekend or "(nog geen; je bent de eerste die ze benoemt)",
             groepen="\n".join(f"- {naam}" for naam in blok),
         )
 
@@ -292,16 +348,20 @@ def vertaal(
             klachten.append(klacht)
             continue
 
-        koppelingen, afgekeurd = _lees_antwoord(antwoord.inhoud, winkel_id, gevraagd)
+        koppelingen, afgekeurd = _lees_antwoord(
+            antwoord.inhoud, winkel_id, gevraagd, woordenlijst
+        )
         alles.extend(koppelingen)
 
         if bewaar and koppelingen:
             bewaar(koppelingen)
 
         raak = sum(1 for k in koppelingen if k.hoofdgroep)
+        met_kenmerk = sum(1 for k in koppelingen if k.kenmerk)
         log.info(
-            "  %s blok %s: %s van de %s groepen vallen onder onze indeling%s.",
+            "  %s blok %s: %s van de %s groepen vallen onder onze indeling%s%s.",
             winkelnaam or winkel_id, nummer, raak, len(blok),
+            f", {met_kenmerk} met een kenmerk" if met_kenmerk else "",
             f", {afgekeurd} antwoord(en) afgekeurd" if afgekeurd else "",
         )
 

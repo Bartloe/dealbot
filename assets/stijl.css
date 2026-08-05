@@ -2,11 +2,12 @@
  * =============================================================================
  *  Dealbot — vormgeving van de website
  *
- *  Versie      : 1.8
- *  Reden       : De beheerpagina erbij, met twee overzichtstabellen. Het
- *                tijdelijke blokje om de run met de hand te starten is daarheen
- *                verhuisd en heet nu gewoon "Ophalen".
- *  Datum       : 04-08-2026 22:40
+ *  Versie      : 1.9
+ *  Reden       : Onder een lade in de groepkiezer staan nu knopjes met de
+ *                kenmerken die erin voorkomen — "vochtig" onder Toiletpapier.
+ *                Ze springen verder in dan de lade zelf en gaan uit zodra je de
+ *                hele lade al volgt.
+ *  Datum       : 05-08-2026 16:10
  *
  *  Onderdelen:
  *    basis           - kleuren, lettertype en de indeling van de pagina
@@ -441,10 +442,11 @@ button:disabled { opacity: 0.6; cursor: default; }
 
 /* -- verfijnen binnen een lade -------------------------------------------- */
 
-/* Een rij knopjes met de groepsnamen van de winkel zelf. In de lade
-   Toiletpapier staat er zo eentje voor "Toiletpapier Vochtig": onze indeling
-   gooit die bij elkaar — terecht, het is allemaal toiletpapier — maar wie
-   gericht zoekt wil ze alsnog uit elkaar kunnen halen. */
+/* Een rij knopjes met de kenmerken die in de gekozen lade voorkomen. Onze lade
+   Toiletpapier bevat het droge en het vochtige door elkaar — terecht, het is
+   allemaal toiletpapier — maar wie gericht zoekt wil ze alsnog uit elkaar
+   kunnen halen. Het knopje heet "vochtig" en niet "Toiletpapier Vochtig": het
+   staat in onze eigen woorden en dekt daarmee alle winkels tegelijk. */
 .verfijning {
     display: flex;
     flex-wrap: wrap;
@@ -953,6 +955,58 @@ a.regelnaam:hover { text-decoration: underline; }
 .keuzenaam { flex: 1 1 auto; }
 .keuzeaantal { margin-left: auto; font-size: 0.85rem; font-weight: 400; color: var(--grijs); }
 .keuzeaantal.gevolgd { color: var(--groen-donker); font-style: italic; }
+
+/* De kenmerken onder een lade: de derde laag. Ze springen verder in dan de lade
+   zelf, zodat je ziet dat ze eronder hangen en niet ernaast staan. Kleiner dan
+   de knopjes op de prijzenpagina, want hier staan ze midden in een lijst. */
+.kenmerken {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    list-style: none;
+    margin: 0;
+    padding: 0 12px 10px 52px;
+}
+
+.kenmerk {
+    display: inline-flex;
+    gap: 5px;
+    align-items: baseline;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-family: inherit;
+    color: var(--tekst);
+    background: var(--wit);
+    border: 1px solid var(--lijn);
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.kenmerk:hover:not(:disabled) { border-color: var(--groen); }
+
+.kenmerk:focus-visible {
+    outline: 2px solid var(--groen);
+    outline-offset: 1px;
+}
+
+/* Gekozen is niet alleen aan de kleur te zien maar ook aan het dikkere schrift,
+   zodat het knopje herkenbaar blijft als kleuren wegvallen. */
+.kenmerk.actief {
+    color: var(--wit);
+    background: var(--groen);
+    border-color: var(--groen-donker);
+    font-weight: 600;
+}
+
+/* Uit, omdat de hele lade al gevolgd wordt: het knopje blijft staan zodat je
+   ziet wat er te kiezen valt, maar het valt niets meer toe te voegen. */
+.kenmerk:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.kenmerknaam { white-space: nowrap; }
+.kenmerkaantal { font-size: 0.75rem; opacity: 0.75; }
 
 .groepkiezer .knop { border: none; font-family: inherit; font-size: 1rem; cursor: pointer; }
 .groepkiezer .knop:disabled { opacity: 0.6; cursor: default; }

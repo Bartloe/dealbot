@@ -2,11 +2,12 @@
  * =============================================================================
  *  Dealbot — aanbiedingen leesbaar maken
  *
- *  Versie      : 1.4
- *  Reden       : De startpagina zet de gevonden producten voortaan onder de
- *                afdeling en de lade waar ze in onze eigen indeling thuishoren,
- *                zodat een lange lijst leesbaar blijft.
- *  Datum       : 04-08-2026 12:05
+ *  Versie      : 1.5
+ *  Reden       : Een zoekvraag kan nu op een kenmerk binnen een lade staan. Die
+ *                verschijnt achter de lade in dezelfde regel — "Toiletpapier ›
+ *                vochtig" — want het is een verfijning van die lade en geen
+ *                losse voorwaarde.
+ *  Datum       : 05-08-2026 15:35
  *
  *  Onderdelen:
  *    euro()               - bedrag als € 1,29
@@ -270,8 +271,13 @@ export function zoekvraagTekst(zoekvraag) {
     const delen = [];
     if (zoekvraag.merk) delen.push(`Merk: ${zoekvraag.merk}`);
     if (zoekvraag.hoofdgroep) {
-        delen.push(zoekvraag.subgroep
-            ? `Groep: ${zoekvraag.hoofdgroep} › ${zoekvraag.subgroep}`
+        // Het kenmerk hoort altijd bij een lade, dus het staat achter de lade en
+        // niet als los onderdeel: "Toiletpapier › vochtig" leest als één keuze.
+        const lade = zoekvraag.subgroep && zoekvraag.kenmerk
+            ? `${zoekvraag.subgroep} › ${zoekvraag.kenmerk}`
+            : zoekvraag.subgroep;
+        delen.push(lade
+            ? `Groep: ${zoekvraag.hoofdgroep} › ${lade}`
             : `Groep: ${zoekvraag.hoofdgroep} (hele afdeling)`);
     }
     if (zoekvraag.vrije_tekst) delen.push(`Tekst: ${zoekvraag.vrije_tekst}`);

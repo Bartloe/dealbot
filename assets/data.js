@@ -2,12 +2,13 @@
  * =============================================================================
  *  Dealbot — verkeer met de database vanuit de website
  *
- *  Versie      : 2.0
- *  Reden       : De standaardprijzen-pagina zoekt niet langer op de groepsnamen
- *                van de winkel zelf maar op onze eigen afdelingen en laden. Die
- *                groepsnamen komen nog wel mee met elk product: de pagina
- *                gebruikt ze als verfijning binnen een lade.
- *  Datum       : 05-08-2026 12:40
+ *  Versie      : 2.1
+ *  Reden       : Er is een derde laag bij gekomen onder de lade: het kenmerk.
+ *                Onze lade Toiletpapier bevat het droge en het vochtige door
+ *                elkaar; het kenmerk "vochtig" maakt dat onderscheid alsnog, in
+ *                onze eigen woorden en bij elke winkel hetzelfde. Een zoekvraag
+ *                mag er nu op staan, en beide pagina's halen het op.
+ *  Datum       : 05-08-2026 15:30
  *
  *  Onderdelen:
  *    meldAan()               - maakt een nieuw account met e-mail + pincode
@@ -16,6 +17,7 @@
  *    haalGebruiker()         - geeft de ingelogde gebruiker, of niets
  *    haalAanbiedingen()      - de aanbiedingen die bij het profiel passen
  *    haalEigenIndeling()     - onze afdelingen en laden, met hun aantallen
+ *    haalKenmerken()         - de verbijzonderingen die in een lade voorkomen
  *    haalLaatsteRun()        - wanneer er voor het laatst is opgehaald
  *    haalWinkels()           - de winkels waaruit Dealbot ophaalt
  *    telAanbiedingen()       - hoeveel een winkel er deze week heeft liggen
@@ -302,6 +304,22 @@ export async function haalEigenIndeling() {
 }
 
 /**
+ * De kenmerken die binnen een lade voorkomen: de derde laag.
+ *
+ * Onze lade Toiletpapier bevat het droge en het vochtige door elkaar. Het
+ * kenmerk maakt dat onderscheid alsnog, met één woord dat bij elke winkel
+ * hetzelfde is. Ze zijn niet met de hand bedacht maar afgeleid uit de
+ * groepsnamen van de winkels zelf.
+ *
+ * Er komen er hooguit een paar honderd terug — één regel per lade per kenmerk —
+ * dus dit gaat in één keer, anders dan de producten zelf.
+ */
+export async function haalKenmerken() {
+    const data = await probeer('de kenmerken ophalen', () => db.rpc('kenmerken'));
+    return data || [];
+}
+
+/**
  * Wanneer er voor het laatst met succes is opgehaald, en of de poging daarna
  * is mislukt.
  *
@@ -482,9 +500,10 @@ export async function haalPrijsindeling() {
  * niet allemaal op. Zonder keuze én zonder zoekterm komt er dus niets terug —
  * de pagina vraagt dan eerst om een keuze.
  *
- * De groep van de winkel zelf ("Toiletpapier Vochtig") komt wel mee, maar wordt
- * niet gebruikt om te zoeken: hij dient als verfijning ín een lade, zodat je
- * binnen het toiletpapier alsnog het vochtige eruit kunt pikken.
+ * Het kenmerk komt mee met elk product en dient als verfijning ín een lade:
+ * daarmee pik je binnen het toiletpapier alsnog het vochtige eruit. Het is
+ * bewust geen zoekingang — je kiest eerst een lade, en pas daarbinnen valt er
+ * iets te verfijnen.
  *
  * Sorteren gebeurt op kiloprijs, want daar gaat het om bij vergelijken. Wat
  * geen kiloprijs heeft, zakt naar onderen in plaats van te verdwijnen.
@@ -503,9 +522,9 @@ export async function zoekStandaardprijzen({
     const data = await probeer('standaardprijzen ophalen', () => {
         let vraag = db
             .from('standaardprijzen')
-            .select('id, product_naam, merk, productgroep, hoofdgroep, subgroep, prijs, '
-                + 'inhoud_waarde, inhoud_eenheid, prijs_per_eenheid, eenheid_norm, '
-                + 'product_url, afbeelding_url');
+            .select('id, product_naam, merk, productgroep, hoofdgroep, subgroep, '
+                + 'kenmerk, prijs, inhoud_waarde, inhoud_eenheid, prijs_per_eenheid, '
+                + 'eenheid_norm, product_url, afbeelding_url');
 
         if (zonderIndeling) {
             vraag = vraag.is('hoofdgroep', null);
@@ -536,7 +555,7 @@ export async function zoekStandaardprijzen({
 export async function haalZoekvragen() {
     const data = await probeer('zoekvragen ophalen', () => db
         .from('zoekvragen')
-        .select('id, merk, hoofdgroep, subgroep, vrije_tekst, aangemaakt_op')
+        .select('id, merk, hoofdgroep, subgroep, kenmerk, vrije_tekst, aangemaakt_op')
         .order('aangemaakt_op', { ascending: true }));
     return data || [];
 }
@@ -550,7 +569,8 @@ export async function haalZoekvragen() {
  *
  * Elke zoekvraag moet minstens één gevuld veld hebben, anders zou hij op álle
  * aanbiedingen matchen. Een lade zonder afdeling kan niet: dezelfde ladenaam kan
- * onder twee afdelingen hangen.
+ * onder twee afdelingen hangen. Een kenmerk zonder lade kan om dezelfde reden
+ * niet: "vochtig" bestaat bij het toiletpapier én bij de doekjes.
  */
 export async function voegZoekvragenToe(zoekvragen) {
     const schoon = (waarde) => {
@@ -562,6 +582,7 @@ export async function voegZoekvragenToe(zoekvragen) {
         merk: schoon(zoekvraag.merk),
         hoofdgroep: schoon(zoekvraag.hoofdgroep),
         subgroep: schoon(zoekvraag.subgroep),
+        kenmerk: schoon(zoekvraag.kenmerk),
         vrije_tekst: schoon(zoekvraag.vrije_tekst),
     }));
 
@@ -570,6 +591,9 @@ export async function voegZoekvragenToe(zoekvragen) {
     }
     if (rijen.some((r) => r.subgroep && !r.hoofdgroep)) {
         throw new DealbotFout('Er ging iets mis met de gekozen groep. Probeer het opnieuw.');
+    }
+    if (rijen.some((r) => r.kenmerk && !r.subgroep)) {
+        throw new DealbotFout('Er ging iets mis met de gekozen soort. Probeer het opnieuw.');
     }
 
     const gebruiker = await haalGebruiker();
