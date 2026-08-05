@@ -39,6 +39,7 @@ const LOGOS = {
     dirk: 'assets/logos/dirk.png',
     vomar: 'assets/logos/vomar.png',
     lidl: 'assets/logos/lidl.svg',
+    picnic: 'assets/logos/picnic.png',
 };
 
 // Tot en met dit aantal groepen staat alles meteen open. Daarboven — Albert
