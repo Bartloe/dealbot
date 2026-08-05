@@ -399,10 +399,12 @@ def vertaal(
             bewaar(koppelingen)
 
         raak = sum(1 for k in koppelingen if k.hoofdgroep)
+        eigenschap = sum(1 for k in koppelingen if k.eigenschapgroep)
         met_kenmerk = sum(1 for k in koppelingen if k.kenmerk)
         log.info(
-            "  %s blok %s: %s van de %s groepen vallen onder onze indeling%s%s.",
+            "  %s blok %s: %s van de %s groepen vallen onder onze indeling%s%s%s.",
             winkelnaam or winkel_id, nummer, raak, len(blok),
+            f", {eigenschap} eigenschapgroep(en)" if eigenschap else "",
             f", {met_kenmerk} met een kenmerk" if met_kenmerk else "",
             f", {afgekeurd} antwoord(en) afgekeurd" if afgekeurd else "",
         )

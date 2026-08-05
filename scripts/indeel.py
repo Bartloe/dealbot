@@ -268,11 +268,14 @@ def stap_vertalen(
         klachten.extend(fouten)
 
     raak = sum(1 for k in alles if k.hoofdgroep)
+    eigenschap = sum(1 for k in alles if k.eigenschapgroep)
     met_kenmerk = sum(1 for k in alles if k.kenmerk)
-    log.info("%s van de %s bekeken groepsnamen vallen onder onze indeling "
-             "(de rest gaat over andere boodschappen), %s met een kenmerk. "
+    log.info("%s van de %s bekeken groepsnamen kregen een afdeling, %s met een "
+             "kenmerk. %s zijn eigenschapgroepen zonder afdeling (daar beslist de "
+             "productnaam) en %s gaan over andere boodschappen. "
              "%s AI-vragen, %s tokens.",
-             raak, len(alles), met_kenmerk, vraagbaak.aanroepen, vraagbaak.tokens)
+             raak, len(alles), met_kenmerk, eigenschap,
+             len(alles) - raak - eigenschap, vraagbaak.aanroepen, vraagbaak.tokens)
 
     return alles, klachten
 
