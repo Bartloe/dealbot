@@ -25,7 +25,7 @@
         <h1>Standaardprijzen</h1>
         <p class="uitleg">
             Wat kost iets als er even geen aanbieding is? Hier staan de gewone
-            winkelprijzen. Zoek op een merk of productnaam, of kies een productgroep.
+            winkelprijzen. Zoek op een merk of productnaam, of kies een afdeling of lade.
         </p>
         <p class="melding" id="melding" role="alert" hidden></p>
 
@@ -38,15 +38,19 @@
             </label>
 
             <label>
-                Of kies een productgroep
+                Of kies een afdeling of lade
                 <select id="groep">
-                    <option value="">— kies een groep —</option>
+                    <option value="">— kies een afdeling of lade —</option>
                 </select>
-                <small>De indeling van de winkel zelf, met het aantal producten erin.</small>
+                <small>Onze eigen indeling, met het aantal producten erin.</small>
             </label>
         </section>
 
         <p class="samenvatting" id="samenvatting" hidden></p>
+
+        <div class="verfijning" id="verfijning" role="group"
+             aria-label="Verfijnen op de groep van de winkel" hidden></div>
+
         <div id="lijst"></div>
     </main>
 

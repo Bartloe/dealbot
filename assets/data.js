@@ -2,13 +2,12 @@
  * =============================================================================
  *  Dealbot — verkeer met de database vanuit de website
  *
- *  Versie      : 1.9
- *  Reden       : Gebruikersbeheer erbij: het overzicht van accounts, een account
- *                op slot zetten of verwijderen, en de lijst met e-mailadressen
- *                die geen nieuw account mogen maken. De vraag "ben ik
- *                beheerder" is opgegaan in één vraag die ook meldt of het
- *                account op slot staat.
- *  Datum       : 04-08-2026 23:25
+ *  Versie      : 2.0
+ *  Reden       : De standaardprijzen-pagina zoekt niet langer op de groepsnamen
+ *                van de winkel zelf maar op onze eigen afdelingen en laden. Die
+ *                groepsnamen komen nog wel mee met elk product: de pagina
+ *                gebruikt ze als verfijning binnen een lade.
+ *  Datum       : 05-08-2026 12:40
  *
  *  Onderdelen:
  *    meldAan()               - maakt een nieuw account met e-mail + pincode
@@ -24,8 +23,8 @@
  *    haalZoekvragen()        - de zoekvragen van de ingelogde gebruiker
  *    voegZoekvragenToe()     - slaat een of meer nieuwe zoekvragen op
  *    verwijderZoekvraag()    - wist een zoekvraag
- *    haalPrijsgroepen()      - de groepen op de standaardprijzen-pagina
- *    zoekStandaardprijzen()  - de gewone winkelprijzen binnen groep of zoekterm
+ *    haalPrijsindeling()     - onze afdelingen en laden op de prijzenpagina
+ *    zoekStandaardprijzen()  - de gewone winkelprijzen binnen lade of zoekterm
  *    haalToegang()           - ben ik beheerder, en staat mijn account op slot?
  *    haalRunstatus()         - de laatste ophaalronde per winkel (beheer)
  *    haalKwaliteit()         - hoeveel er per winkel staat en wat ontbreekt
@@ -452,50 +451,69 @@ export async function haalWinkelAanbiedingen(winkelId) {
 
 // -- standaardprijzen --------------------------------------------------------
 
-// Hooguit zoveel producten per zoekopdracht op het scherm. De grootste groep
-// telt er een paar honderd; deze grens is er voor het geval iemand op "a" zoekt.
-const PRIJZEN_MAXIMUM = 300;
+// Hooguit zoveel producten per zoekopdracht op het scherm. De database geeft er
+// zelf niet meer dan duizend terug, en de volste afdeling telt er ruim
+// achthonderd — dus met deze grens komt een hele afdeling er nog net helemaal
+// uit. De pagina zegt het als de grens geraakt wordt.
+export const PRIJZEN_MAXIMUM = 1000;
 
 /**
- * De productgroepen op de standaardprijzen-pagina, met hun afdeling en aantal.
+ * Onze eigen afdelingen en laden, met het aantal producten dat er nu in ligt.
  *
- * Anders dan de groepenlijst van het profielscherm komt deze rechtstreeks uit
- * de producten die er nú zijn: hier valt niets te wachten op een aanbieding, dus
- * een lege groep heeft geen zin.
+ * Anders dan de keuzelijst van het profielscherm blijven lege laden hier weg:
+ * op deze pagina valt niets te wachten op een aanbieding, dus een lade zonder
+ * producten is alleen maar ruis.
+ *
+ * Een regel zonder subgroep is de afdeling zelf, met het totaal van alles wat
+ * eronder hangt. Een regel zonder hoofdgroep is de restbak: producten die nog
+ * nergens onder hangen, en die vindbaar horen te blijven.
  */
-export async function haalPrijsgroepen() {
-    const data = await probeer('productgroepen van de standaardprijzen ophalen',
-        () => db.rpc('standaardprijs_groepen'));
+export async function haalPrijsindeling() {
+    const data = await probeer('de indeling van de standaardprijzen ophalen',
+        () => db.rpc('standaardprijs_indeling'));
     return data || [];
 }
 
 /**
- * De gewone winkelprijzen binnen één productgroep, of die op een zoekterm passen.
+ * De gewone winkelprijzen binnen één afdeling of lade, of die op een zoekterm
+ * passen.
  *
  * Er staan ruim zesduizend producten in de database; die haalt de pagina bewust
- * niet allemaal op. Zonder groep én zonder zoekterm komt er dus niets terug —
+ * niet allemaal op. Zonder keuze én zonder zoekterm komt er dus niets terug —
  * de pagina vraagt dan eerst om een keuze.
+ *
+ * De groep van de winkel zelf ("Toiletpapier Vochtig") komt wel mee, maar wordt
+ * niet gebruikt om te zoeken: hij dient als verfijning ín een lade, zodat je
+ * binnen het toiletpapier alsnog het vochtige eruit kunt pikken.
  *
  * Sorteren gebeurt op kiloprijs, want daar gaat het om bij vergelijken. Wat
  * geen kiloprijs heeft, zakt naar onderen in plaats van te verdwijnen.
  */
-export async function zoekStandaardprijzen({ groep = '', tekst = '' } = {}) {
-    const groepsnaam = (groep || '').trim();
+export async function zoekStandaardprijzen({
+    hoofdgroep = '', subgroep = '', zonderIndeling = false, tekst = '',
+} = {}) {
+    const afdeling = (hoofdgroep || '').trim();
+    const lade = (subgroep || '').trim();
     const zoekterm = (tekst || '').trim();
 
-    if (!groepsnaam && !zoekterm) {
+    if (!afdeling && !zonderIndeling && !zoekterm) {
         return [];
     }
 
     const data = await probeer('standaardprijzen ophalen', () => {
         let vraag = db
             .from('standaardprijzen')
-            .select('id, product_naam, merk, productgroep, prijs, '
+            .select('id, product_naam, merk, productgroep, hoofdgroep, subgroep, prijs, '
                 + 'inhoud_waarde, inhoud_eenheid, prijs_per_eenheid, eenheid_norm, '
                 + 'product_url, afbeelding_url');
 
-        if (groepsnaam) {
-            vraag = vraag.eq('productgroep', groepsnaam);
+        if (zonderIndeling) {
+            vraag = vraag.is('hoofdgroep', null);
+        } else if (afdeling) {
+            vraag = vraag.eq('hoofdgroep', afdeling);
+            if (lade) {
+                vraag = vraag.eq('subgroep', lade);
+            }
         }
         if (zoekterm) {
             // De zoektekst bevat merk en productnaam in kleine letters. Procent-

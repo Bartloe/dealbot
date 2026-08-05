@@ -1,5 +1,40 @@
 # Wijzigingen — Dealbot
 
+## 05-08-2026 — Vochtig toiletpapier ligt nu gewoon bij het toiletpapier
+
+Op de standaardprijzen-pagina stond "Toiletpapier Vochtig" als losse groep náást
+"Toiletpapier". Wie op toiletpapier zocht, kreeg dus niet alles te zien wat er in
+dat schap ligt. Daar zat een groter gat achter.
+
+- **Vomar hing helemaal buiten onze indeling.** Alle andere winkels waren vertaald
+  naar onze eigen afdelingen en laden, Vomar als enige niet: zijn ruim zesduizend
+  producten hadden geen afdeling en geen lade. De oorzaak was een afspraak die
+  ooit klopte — de indeling van een winkel die alleen zijn schap publiceert ging
+  expres niet naar de groepenlijst, want een zoekvraag daarop zou nooit een
+  aanbieding opleveren. Sinds diezelfde lijst het vertaalboekje voedt, betekende
+  die afspraak dat Vomar nooit vertaald werd. Dat is rechtgezet; zijn 320
+  groepsnamen zijn nu vertaald.
+- **De standaardprijzen worden voortaan ook ingedeeld**, niet alleen de
+  aanbiedingen. Dat gebeurt in dezelfde ronde en met hetzelfde vertaalboekje.
+- **De keuzelijst op de standaardprijzen-pagina toont onze eigen indeling**:
+  dezelfde afdelingen en laden als op de rest van de site, met per lade het aantal
+  producten erin. Lege laden blijven weg — op deze pagina valt niets te wachten op
+  een aanbieding. Onderaan staat "Nog niet ingedeeld" voor wat nergens onder valt,
+  zodat er niets stilletjes uit beeld verdwijnt.
+- **Knopjes om binnen een lade te verfijnen.** In de lade Toiletpapier staat nu
+  `alles`, `Toiletpapier` en `Toiletpapier Vochtig`; klikken filtert de lijst.
+  Die knopjes zijn de groepsnamen van de winkel zelf, dus ze lezen zoals de winkel
+  het opschrijft. Filteren gebeurt in het scherm, zonder nieuwe vraag aan de
+  database.
+
+Bewuste keuze: de indeling krijgt **geen derde laag**. Elke keten noemt hetzelfde
+anders — "Toiletpapier - vochtig", "Vochtig toiletpapier", "Toiletpapier Vochtig"
+— dus zo'n laag zou opnieuw vertaald moeten worden, met duizenden namen in plaats
+van 28 afdelingen. "Vochtig" is een eigenschap van toiletpapier, geen eigen plek
+in de winkel; net zoals glutenvrij brood gewoon brood is.
+
+Uit te voeren in Supabase: `database/15_standaardprijzen_indeling.sql`.
+
 ## 05-08-2026 — De groepenlijst in het profiel doet het weer
 
 Wie in zijn profiel een zoekvraag wilde toevoegen, kreeg bij het eerste zoekveld

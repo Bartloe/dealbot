@@ -439,6 +439,51 @@ button:disabled { opacity: 0.6; cursor: default; }
     color: var(--grijs);
 }
 
+/* -- verfijnen binnen een lade -------------------------------------------- */
+
+/* Een rij knopjes met de groepsnamen van de winkel zelf. In de lade
+   Toiletpapier staat er zo eentje voor "Toiletpapier Vochtig": onze indeling
+   gooit die bij elkaar — terecht, het is allemaal toiletpapier — maar wie
+   gericht zoekt wil ze alsnog uit elkaar kunnen halen. */
+.verfijning {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 16px;
+}
+
+.chip {
+    display: inline-flex;
+    gap: 6px;
+    align-items: baseline;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    color: var(--tekst);
+    background: var(--wit);
+    border: 1px solid var(--lijn);
+    border-radius: 999px;
+    cursor: pointer;
+}
+
+.chip:hover { border-color: var(--groen); }
+
+.chip:focus-visible {
+    outline: 2px solid var(--groen);
+    outline-offset: 1px;
+}
+
+/* Het gekozen knopje is niet alleen aan de kleur te herkennen: de rand wordt
+   ook dikker, zodat het ook zichtbaar blijft als kleuren wegvallen. */
+.chip.actief {
+    color: var(--wit);
+    background: var(--groen);
+    border-color: var(--groen-donker);
+    font-weight: 600;
+}
+
+.chipaantal { font-size: 0.8rem; opacity: 0.75; }
+
 /* Eén regel met de vaste prijs; geen rijtje aanbiedingen zoals op de startpagina. */
 .prijsregel {
     display: flex;

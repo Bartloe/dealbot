@@ -2,16 +2,16 @@
 ===============================================================================
  Dealbot — verkeer met de database (Supabase)
 
- Versie      : 1.9
- Reden       : Niet alleen de aanbiedingen maar ook de standaardprijzen hangen
-               voortaan onder onze eigen indeling. Beide tabellen zien er voor
-               het indelen hetzelfde uit, dus ophalen en bijwerken doen ze nu
-               langs dezelfde weg, met de tabelnaam als keuze. Welke tabellen
-               dat mogen zijn ligt vast, zodat een tikfout nooit een andere
-               tabel raakt.
- Datum       : 05-08-2026 11:56
+ Versie      : 1.10
+ Reden       : Een afgebroken verbinding gooide de hele ronde van een winkel om.
+               Op 05-08-2026 kostte dat bijna vijfduizend aanbiedingen van
+               Albert Heijn, terwijl de vier andere winkels in diezelfde ronde
+               gewoon doorliepen. Elke vraag aan de database krijgt nu drie
+               herkansingen bij een hapering of een tijdelijke storing.
+ Datum       : 05-08-2026 13:30
 
  Onderdelen:
+   Database._rest()                   - één vraag, met herkansing bij hapering
    Database.start_ronde()             - logboekregel, en geeft het moment terug
    Database.schrijf()                 - schrijft de aanbiedingen weg in blokken
    Database.ruim_oude_op()            - wist wat niet in deze ronde is ververst
@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -67,6 +68,16 @@ def _ontdubbel(koppelingen: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 _BLOKGROOTTE = 200          # zoveel aanbiedingen per keer wegschrijven
 _TIJDSLIMIET = 60
+
+# Pauzes tussen de pogingen: eerst meteen, daarna na een halve seconde, na twee
+# en na vijf. Een hapering duurt zelden langer dan dat, en langer wachten houdt
+# de ochtendronde onnodig op.
+_WACHTTIJDEN = (0.5, 2, 5)
+
+# Foutcodes waarbij een tweede poging zin heeft: de database heeft het even te
+# druk (429) of staat kort in de kreukels (5xx). Alle andere codes zijn een
+# echte fout in wat wij sturen; die horen meteen zichtbaar te worden.
+_TIJDELIJKE_CODES = frozenset({429, 500, 502, 503, 504})
 
 
 class DatabaseFout(RuntimeError):
@@ -102,18 +113,55 @@ class Database:
     # -- hulpmiddelen --------------------------------------------------------
 
     def _rest(self, methode: str, pad: str, **opties: Any) -> requests.Response:
-        adres = f"{self.url}/rest/v1/{pad}"
-        try:
-            antwoord = self.sessie.request(methode, adres, timeout=_TIJDSLIMIET, **opties)
-        except requests.RequestException as fout:
-            raise DatabaseFout(f"Database niet bereikbaar ({pad}): {fout}") from fout
+        """
+        Eén vraag aan de database, met herkansing bij een hapering.
 
-        if not antwoord.ok:
-            raise DatabaseFout(
-                f"Database gaf foutcode {antwoord.status_code} bij {methode} {pad}: "
-                f"{antwoord.text[:300]}"
+        Op 05-08-2026 sneuvelde de hele ronde van Albert Heijn — bijna vijfduizend
+        aanbiedingen — op één afgebroken verbinding, terwijl de vier andere
+        winkels in diezelfde ronde gewoon doorliepen. Een tweede poging was
+        vrijwel zeker meteen gelukt, dus die zit er nu in.
+
+        Opnieuw sturen is hier veilig: wegschrijven gebeurt als "bijwerken op
+        sleutel", en opruimen kijkt naar het ophaalmoment. Dezelfde vraag twee
+        keer stellen levert dus hetzelfde resultaat, geen dubbele regels.
+        """
+        adres = f"{self.url}/rest/v1/{pad}"
+        laatste = ""
+
+        for poging, pauze in enumerate((*_WACHTTIJDEN, None), start=1):
+            try:
+                antwoord = self.sessie.request(
+                    methode, adres, timeout=_TIJDSLIMIET, **opties
+                )
+            except (requests.ConnectionError, requests.Timeout,
+                    requests.exceptions.ChunkedEncodingError) as fout:
+                laatste = f"Database niet bereikbaar ({pad}): {fout}"
+            except requests.RequestException as fout:
+                # Geen hapering maar een fout in de vraag zelf; herkansen helpt niet.
+                raise DatabaseFout(f"Database niet bereikbaar ({pad}): {fout}") from fout
+            else:
+                if antwoord.ok:
+                    if poging > 1:
+                        log.info("  Gelukt bij poging %s.", poging)
+                    return antwoord
+
+                laatste = (
+                    f"Database gaf foutcode {antwoord.status_code} bij {methode} {pad}: "
+                    f"{antwoord.text[:300]}"
+                )
+                if antwoord.status_code not in _TIJDELIJKE_CODES:
+                    raise DatabaseFout(laatste)
+
+            if pauze is None:
+                break
+
+            log.warning(
+                "  Hapering bij %s %s (poging %s): %s Nieuwe poging over %s seconden.",
+                methode, pad, poging, laatste, pauze,
             )
-        return antwoord
+            time.sleep(pauze)
+
+        raise DatabaseFout(f"{laatste} — ook na {len(_WACHTTIJDEN) + 1} pogingen.")
 
     # -- logboek -------------------------------------------------------------
 
