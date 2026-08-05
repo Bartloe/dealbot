@@ -645,11 +645,18 @@ a.regelnaam:hover { text-decoration: underline; }
 
 .runblok .knoppen { justify-content: flex-start; margin-bottom: 18px; }
 
-/* De verversknop is een echte knop en erft het lettertype niet vanzelf. */
+/* De knoppen in dit blok zijn echte knoppen en erven het lettertype niet vanzelf. */
 .runblok button.knop {
     font-family: inherit;
     font-size: 1rem;
     cursor: pointer;
+}
+
+/* Hoe het laatste startsein is aangekomen: een terzijde boven de tabel. */
+.startsein {
+    margin: -6px 0 16px;
+    font-size: 0.9rem;
+    color: var(--grijs);
 }
 
 /* Overzichtstabel: rustig, met de getallen rechts zodat ze te vergelijken zijn. */

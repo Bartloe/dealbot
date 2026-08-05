@@ -2,17 +2,19 @@
  * =============================================================================
  *  Dealbot — de beheerpagina
  *
- *  Versie      : 1.2
- *  Reden       : Verwijderen en weren zaten los van elkaar, terwijl je ze bijna
- *                altijd achter elkaar doet — en zodra het account weg is, staat
- *                het e-mailadres nergens meer op het scherm. Het verwijderen
- *                vraagt nu in één keer of het adres ook geweerd moet worden.
- *                Verder komen de knoppen na een klik weer terug, en is te zien
- *                welk account de beheerder is.
- *  Datum       : 05-08-2026 13:58
+ *  Versie      : 1.3
+ *  Reden       : Het ophalen was alleen op GitHub te starten: de knop bracht je
+ *                daarheen en daar moest je nog twee keer klikken. Nu staat de
+ *                knop hier en geeft de database het startsein door. Er is een
+ *                tweede knop bij voor de folder van Vomar: die wordt maar één
+ *                keer per week gelezen, en ging het voorlezen mis, dan is hij
+ *                anders een week lang niet over te doen.
+ *  Datum       : 05-08-2026 23:53
  *
  *  Onderdelen:
  *    bouwPagina()      - regelt de toegang en haalt de overzichten op
+ *    koppelOphalen()   - de twee knoppen die het ophalen starten
+ *    toonStartsein()   - of het laatste startsein is aangekomen
  *    toonRunstatus()   - de laatste ronde per winkel als tabel
  *    toonKwaliteit()   - aantallen per winkel, met wat er ontbreekt
  *    toonGebruikers()  - de accounts, met de knoppen om in te grijpen
@@ -25,6 +27,8 @@
 
 import {
     haalToegang,
+    startOphalen,
+    haalOphaalOpdrachten,
     haalRunstatus,
     haalKwaliteit,
     haalGebruikers,
@@ -53,8 +57,20 @@ const RESULTAAT = {
     bezig: 'nog bezig',
 };
 
+// Wat er met de hand gestart kan worden, in gewone taal.
+const OPDRACHTEN = {
+    alles: 'alles',
+    winkels: 'alleen de winkels',
+    folder: 'alleen de folder',
+};
+
+// Het antwoord van GitHub op het startsein komt een tel later binnen. Daarom
+// wordt er na een klik nog twee keer gekeken hoe het afliep.
+const NAKIJKEN = [3000, 10000];
+
 const melding = document.getElementById('melding');
 const beheer = document.getElementById('beheer');
+const startsein = document.getElementById('startsein');
 const runstatus = document.getElementById('runstatus');
 const kwaliteit = document.getElementById('kwaliteit');
 const gebruikers = document.getElementById('gebruikers');
@@ -129,6 +145,89 @@ function metAandeel(aantal, totaal) {
 /** De naam van de winkel, met een aantekening als hij uitstaat. */
 function winkelnaam(regel) {
     return regel.actief ? regel.winkel : `${regel.winkel} (staat uit)`;
+}
+
+/**
+ * Of het laatste startsein bij GitHub is aangekomen.
+ *
+ * Dit gaat níét over hoe het ophalen zelf ging — dat staat in de tabel
+ * eronder — maar over de vraag of het sein überhaupt is aangenomen. Een
+ * verlopen sleutel is anders nergens aan te zien: er gebeurt dan gewoon niets.
+ */
+function toonStartsein(regels) {
+    const laatste = (regels || [])[0];
+    if (!laatste) {
+        startsein.hidden = true;
+        return;
+    }
+
+    const wat = OPDRACHTEN[laatste.wat] || laatste.wat;
+    const erbij = laatste.opnieuw ? ', opnieuw gelezen' : '';
+    startsein.textContent = `Met de hand gestart op ${momentTekst(laatste.gestart_op)} `
+        + `(${wat}${erbij}): ${laatste.melding}`;
+    startsein.className = laatste.uitkomst === 'mislukt' ? 'startsein fout-tekst' : 'startsein';
+    startsein.hidden = false;
+}
+
+/**
+ * Haalt op hoe het laatste startsein is aangekomen.
+ *
+ * Staat apart van de overzichten: gaat dit mis, dan is dat geen reden om de
+ * hele pagina leeg te laten. Zolang het bijbehorende stuk database er nog niet
+ * is, blijft de regel gewoon weg.
+ */
+async function laadStartsein() {
+    try {
+        toonStartsein(await haalOphaalOpdrachten());
+    } catch (fout) {
+        console.error('Dealbot — de laatste startseinen konden niet worden opgehaald:', fout);
+        startsein.hidden = true;
+    }
+}
+
+/**
+ * Koppelt de twee knoppen die het ophalen starten.
+ *
+ * Het werk zelf gebeurt niet hier maar op GitHub en duurt minuten; deze knop
+ * geeft alleen het sein. De folderknop vraagt eerst om een bevestiging: elke
+ * folder kost tientallen AI-vragen, en die zijn per dag beperkt.
+ */
+function koppelOphalen() {
+    const start = async (knop, wat, opnieuw) => {
+        knop.disabled = true;
+        try {
+            await startOphalen(wat, opnieuw);
+            toonMelding('Het startsein is verstuurd. Het ophalen duurt een paar minuten; '
+                + 'ververs daarna het overzicht.', 'goed');
+            await laadStartsein();
+            for (const wachttijd of NAKIJKEN) {
+                window.setTimeout(laadStartsein, wachttijd);
+            }
+        } catch (fout) {
+            if (fout instanceof DealbotFout) {
+                toonMelding(fout.message);
+            } else {
+                console.error('Dealbot — het ophalen starten mislukte:', fout);
+                toonMelding('Het ophalen kon niet gestart worden. Probeer het nog eens.');
+            }
+        } finally {
+            knop.disabled = false;
+        }
+    };
+
+    const alles = document.getElementById('nuophalen');
+    alles.addEventListener('click', () => start(alles, 'alles', false));
+
+    const folder = document.getElementById('folderopnieuw');
+    folder.addEventListener('click', () => {
+        const akkoord = window.confirm(
+            'De folder van Vomar wordt opnieuw voorgelezen, ook als hij al gelezen is. '
+            + 'Dat kost tientallen AI-vragen van de dagvoorraad. Doorgaan?'
+        );
+        if (akkoord) {
+            start(folder, 'folder', true);
+        }
+    });
 }
 
 /**
@@ -446,6 +545,7 @@ async function laadOverzichten() {
         toonGebruikers(accounts);
         toonGeweerd(adressen);
         toonMelding('');
+        await laadStartsein();
     } catch (fout) {
         runstatus.replaceChildren();
         kwaliteit.replaceChildren();
@@ -478,6 +578,7 @@ async function bouwPagina() {
 
     beheer.hidden = false;
     document.getElementById('verversen').addEventListener('click', laadOverzichten);
+    koppelOphalen();
     koppelWeerformulier();
     await laadOverzichten();
 }

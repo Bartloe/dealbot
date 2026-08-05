@@ -1,5 +1,37 @@
 # Wijzigingen — Dealbot
 
+## 06-08-2026 — Een afgebroken vertaalronde hervatten
+
+De ronde die alle 2606 winkelgroepen langs de AI stuurt om er de kenmerken uit
+te halen, kost ongeveer 45 vragen. Loopt de dagvoorraad leeg, dan valt hij stil —
+en dan was er geen goede manier om de volgende ochtend verder te gaan:
+
+- **opnieuw beginnen** met `--opnieuw` stelde alle vragen van gisteravond nog
+  eens, en juist die vragen zijn schaars: ze komen uit dezelfde voorraad als het
+  voorlezen van de Vomar-folder;
+- **gewoon doorstarten** zonder die instelling deed helemaal niets, want élke
+  groep staat al in het vertaalboekje. Hij zag dus alles als "al gedaan".
+
+Wat al vertaald was ging overigens nooit verloren: elk blok van zestig
+groepsnamen gaat meteen naar de database zodra het antwoord binnen is.
+
+Vanaf nu is er `python scripts/indeel.py --verder`. Die slaat over wat er in deze
+ronde al is bijgewerkt en vraagt de rest. Vóór er ook maar één AI-vraag uitgaat,
+meldt hij hoeveel groepen hij overslaat en hoeveel er nog aan de beurt komen —
+klopt dat niet met wat je verwacht, dan kun je hem stoppen.
+
+Waar de ronde begon wordt afgeleid uit het moment waarop de regels in het boekje
+zijn bijgewerkt: een etmaal terug vanaf de laatste. Dat is bewust géén kalenderdag.
+Een ronde die om kwart voor twaalf 's avonds begint en na middernacht doorloopt,
+is één ronde en geen twee — op een kalenderdag afgaan zou het werk van vóór
+twaalven alsnog overdoen. Duurde het langer dan een etmaal, dan geef je de
+begindatum zelf mee: `--verder 05-08-2026`.
+
+`scripts/tests/test_hervatten.py` legt dat vast, met de randen: het geval rond
+middernacht, een regel uit een oudere ronde die wél opnieuw moet, een tijdstip
+zonder tijdzone (dat is altijd UTC — anders schuift alles twee uur op en valt de
+grens midden in de ronde) en een datum die niet te lezen is.
+
 ## 05-08-2026 — Kenmerken: alleen het vochtige toiletpapier volgen
 
 Onze indeling heeft één lade *Huishouden › Toiletpapier*, met het droge en het

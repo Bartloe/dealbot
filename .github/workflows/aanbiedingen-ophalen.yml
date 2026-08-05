@@ -1,14 +1,16 @@
 # =============================================================================
 #  Dealbot — dagelijks de aanbiedingen ophalen
 #
-#  Versie : 1.4
-#  Reden  : Picnic is erbij. Zijn hele winkel wordt lade voor lade afgelopen,
-#           wat een minuut of vijf kost, en dat kan alleen met een ingelogde
-#           sleutel — vandaar de extra instelling en de ruimere tijd.
-#  Datum  : 05-08-2026 14:10
+#  Versie : 1.5
+#  Reden  : Het ophalen is voortaan ook met één knop op de beheerpagina te
+#           starten. Die knop moet kunnen kiezen wát er opgehaald wordt — de
+#           hele ronde, alleen de winkels, of alleen de folder van Vomar — en
+#           moet een al gelezen folder opnieuw kunnen laten voorlezen.
+#  Datum  : 05-08-2026 23:52
 #
-#  Draait elke ochtend om 07:00 Nederlandse tijd (05:00 UTC) en is daarnaast
-#  handmatig te starten via het tabblad Actions op GitHub.
+#  Draait elke ochtend om 07:00 Nederlandse tijd (05:00 UTC). Daarnaast met de
+#  hand te starten: vanaf de beheerpagina van Dealbot, of hier op GitHub via
+#  het tabblad Actions.
 # =============================================================================
 
 name: Aanbiedingen ophalen
@@ -17,6 +19,19 @@ on:
   schedule:
     - cron: "0 5 * * *"
   workflow_dispatch:
+    inputs:
+      wat:
+        description: "Wat moet er opgehaald worden?"
+        type: choice
+        default: alles
+        options:
+          - alles
+          - winkels
+          - folder
+      opnieuw:
+        description: "De folder ook lezen als hij al gelezen is (kost AI-vragen)"
+        type: boolean
+        default: false
 
 jobs:
   ophalen:
@@ -50,4 +65,8 @@ jobs:
           # ingelogd en gebruiken we die sleutel. Zonder deze instelling gaat de
           # ronde gewoon door, maar blijft Picnic buiten de lijst.
           PICNIC_TOKEN: ${{ secrets.PICNIC_TOKEN }}
-        run: python scripts/scan.py
+        # Bij de ochtendronde zijn de keuzes leeg; dan wordt het gewoon alles.
+        run: >
+          python scripts/scan.py
+          --wat "${{ inputs.wat || 'alles' }}"
+          ${{ (inputs.opnieuw == true || inputs.opnieuw == 'true') && '--opnieuw' || '' }}

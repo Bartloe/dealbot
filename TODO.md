@@ -55,9 +55,11 @@ Bijgewerkt: 04-08-2026 11:30
       sleutels als in project subs, en elke sleutel heeft ongeveer twintig vragen
       per dag. Eén folder kost er zo'n veertig, dus de folderlezer eet twee
       sleutels op van wat subs die dag nog kan vertalen
-- [ ] Testknop op de site om het ophalen handmatig te starten (via Supabase, zodat er geen sleutel op de openbare pagina staat) — gaat er na de testfase weer uit.
-      Staat nu op de beheerpagina als omweg via GitHub; met dit stukje wordt het één
-      knop, en kan de Vomar-folder gericht opnieuw worden voorgelezen
+- [x] **Testknop op de site om het ophalen handmatig te starten** (05-08-2026): twee
+      knoppen op de beheerpagina — *Nu ophalen* en *Folder opnieuw lezen*. De database
+      geeft het startsein door aan GitHub met een sleutel uit zijn eigen kluis, dus er
+      staat geen sleutel op de openbare pagina. Hooguit eens per vijf minuten, en de
+      pagina laat zien of het sein is aangenomen. Gaat er na de testfase weer uit
 
 ## Beheerpagina
 
@@ -142,7 +144,10 @@ Bijgewerkt: 04-08-2026 11:30
       lade (`python scripts/indeel.py --opnieuw --woorden toilet`) om te zien dat
       het knopje "vochtig" verschijnt, en pas daarna alles
       (`python scripts/indeel.py --opnieuw`). Reken op zo'n 45 AI-vragen — dat
-      eet sleutels die de folderlezer die dag niet meer heeft
+      eet sleutels die de folderlezer die dag niet meer heeft.
+      Valt de ronde stil omdat de dagvoorraad op is, ga dan de volgende dag
+      verder met `python scripts/indeel.py --verder` — níet met `--opnieuw`,
+      want dan begint hij van voren af aan
 - [ ] **De startpagina de eigen indeling laten gebruiken**: de gevonden aanbiedingen
       groeperen per afdeling/groep in plaats van alleen per product
 - [ ] **Voorvoegsel "lokaal" bij Jumbo-groepen opschonen.** Een deel van Jumbo's

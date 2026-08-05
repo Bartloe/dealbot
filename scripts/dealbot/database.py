@@ -445,8 +445,11 @@ class Database:
 
     def koppelingen(self, winkel_id: int | None = None) -> list[dict[str, Any]]:
         """Het vertaalboekje: welke winkelgroep hangt onder welke eigen groep."""
+        # "gewijzigd_op" gaat mee omdat een afgebroken vertaalronde eraan te zien
+        # is hoe ver hij gekomen was. Zonder dat moment kan een volgende ronde
+        # alleen kiezen tussen alles overslaan of alles opnieuw vragen.
         params = {"select": "winkel_id,productgroep,hoofdgroep,subgroep,kenmerk,"
-                            "gemengd,herkomst"}
+                            "gemengd,herkomst,gewijzigd_op"}
         if winkel_id is not None:
             params["winkel_id"] = f"eq.{winkel_id}"
         return self._alles("groep_koppelingen", params)

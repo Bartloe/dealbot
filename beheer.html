@@ -29,14 +29,17 @@
             <section class="blok runblok">
                 <h2>Ophalen</h2>
                 <p class="uitleg">Elke ochtend om 07.00 uur haalt Dealbot de aanbiedingen op.
-                    Wil je dat nu laten gebeuren, dan kom je op GitHub terecht; klik daar
-                    rechtsboven op <strong>Run workflow</strong> en nog eens op de groene knop.
-                    Reken op een minuut of twee, ververs daarna dit overzicht.</p>
+                    Met <strong>Nu ophalen</strong> gebeurt dat meteen; reken op een minuut of
+                    vijf en ververs daarna het overzicht. <strong>Folder opnieuw lezen</strong>
+                    laat de folder van Vomar nog een keer voorlezen, ook als hij al gelezen is —
+                    handig als het voorlezen misging, maar het kost tientallen AI-vragen, dus
+                    niet zomaar doen.</p>
                 <div class="knoppen">
-                    <a class="knop" target="_blank" rel="noopener"
-                       href="https://github.com/Bartloe/dealbot/actions/workflows/aanbiedingen-ophalen.yml">Nu ophalen</a>
+                    <button type="button" class="knop" id="nuophalen">Nu ophalen</button>
+                    <button type="button" class="knop tweede" id="folderopnieuw">Folder opnieuw lezen</button>
                     <button type="button" class="knop tweede" id="verversen">Overzicht verversen</button>
                 </div>
+                <p class="startsein" id="startsein" hidden></p>
                 <div id="runstatus"></div>
             </section>
 

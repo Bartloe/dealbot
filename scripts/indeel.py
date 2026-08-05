@@ -2,8 +2,17 @@
 ===============================================================================
  Dealbot — alles onder onze eigen productindeling hangen
 
- Versie      : 2.0
- Reden       : De ketens spreken elk hun eigen taal: samen ruim tweeduizend
+ Versie      : 2.1
+ Reden       : Een vertaalronde die halverwege stilviel — de dagvoorraad
+               AI-vragen is op — kon alleen nog helemaal opnieuw of helemaal
+               niet. Alles opnieuw gooit het werk van de vorige avond weg;
+               zonder --opnieuw slaat hij alles over, want élke groep staat al
+               in het boekje. Met --verder wordt de ronde hervat: overgeslagen
+               wordt wat er in deze ronde al is bijgewerkt, gevraagd wordt de
+               rest.
+ Datum       : 06-08-2026 00:30
+
+ Vorige      : De ketens spreken elk hun eigen taal: samen ruim tweeduizend
                groepsnamen waarmee je met één zoekvraag nooit alle winkels vond.
                Dit script legt het vertaalboekje aan (winkelgroep -> onze eigen
                groep) en deelt daarmee alles in.
@@ -35,11 +44,16 @@
    _kenmerk_van()      - de verbijzondering: winkelgroep, dan productnaam
    _verslag()          - wat het opgeleverd heeft, per tabel, winkel en groep
    _verslag_kenmerken()- welke kenmerken er onder de laden zijn komen hangen
+   _grens_van()        - vanaf welk moment deze ronde al gedaan is
+   _moment()           - het moment waarop een regel is bijgewerkt
 
  Uitvoeren:
    python scripts/indeel.py                alles: vertalen en toepassen
    python scripts/indeel.py --proef        niets wegschrijven, alleen laten zien
    python scripts/indeel.py --opnieuw      ook al vertaalde groepen opnieuw vragen
+   python scripts/indeel.py --verder       een afgebroken ronde hervatten
+   python scripts/indeel.py --verder 05-08-2026
+                                           idem, maar de ronde begon op die dag
    python scripts/indeel.py --woorden koffie,thee
                                            alleen groepsnamen met die woorden erin
 ===============================================================================
@@ -52,8 +66,10 @@ import logging
 import os
 import sys
 from collections import Counter
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import NamedTuple
+from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -105,11 +121,53 @@ def stap_indeling(db: Database, proef: bool) -> int:
 # -----------------------------------------------------------------------------
 # Stap 2 — de winkelgroepen vertalen.
 # -----------------------------------------------------------------------------
+def _moment(waarde) -> datetime | None:
+    """Leest het moment waarop een regel voor het laatst is bijgewerkt."""
+    if not waarde:
+        return None
+    try:
+        gelezen = datetime.fromisoformat(str(waarde).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    # Een moment zonder tijdzone komt uit de database en is daar altijd UTC.
+    return gelezen if gelezen.tzinfo else gelezen.replace(tzinfo=timezone.utc)
+
+
+def _grens_van(bestaand: list[dict], verder: str) -> datetime | None:
+    """
+    Vanaf welk moment is het boekje al in deze ronde bijgewerkt?
+
+    Nodig om een afgebroken vertaalronde te kunnen hervatten. Wat na dit moment
+    is bijgewerkt, is al gevraagd en wordt overgeslagen; de rest gaat alsnog
+    langs de AI.
+
+    Zonder eigen datum wordt het moment afgeleid: een etmaal terug vanaf de
+    laatst bijgewerkte regel. Dat is bewust geen kalenderdag — een ronde die om
+    kwart voor twaalf 's avonds begint en na middernacht doorloopt, hoort één
+    ronde te zijn en geen twee. Duurde het langer dan een etmaal, geef dan zelf
+    een datum mee.
+    """
+    if verder and verder != "auto":
+        for vorm in ("%d-%m-%Y", "%Y-%m-%d"):
+            try:
+                dag = datetime.strptime(verder, vorm)
+            except ValueError:
+                continue
+            return dag.replace(tzinfo=ZoneInfo("Europe/Amsterdam"))
+        raise ValueError(f"'{verder}' is geen datum. Schrijf hem als 05-08-2026.")
+
+    momenten = [m for m in (_moment(rij.get("gewijzigd_op")) for rij in bestaand) if m]
+    if not momenten:
+        return None
+    return max(momenten) - timedelta(hours=24)
+
+
 def stap_vertalen(
     db: Database,
     proef: bool,
     opnieuw: bool,
     woorden: list[str],
+    verder: str = "",
 ) -> tuple[list[Koppeling], list[str]]:
     """
     Hangt de nog onbekende groepsnamen van de winkels onder onze indeling.
@@ -122,6 +180,11 @@ def stap_vertalen(
     Wat met de hand is verbeterd blijft altijd staan, ook bij --opnieuw. Een mens
     die de moeite neemt een koppeling recht te zetten, hoort niet de volgende dag
     door de AI overruled te worden.
+
+    Met "verder" wordt een afgebroken ronde hervat. Dan telt niet of een groep al
+    in het boekje staat — dat doen ze allemaal — maar of hij in déze ronde al is
+    bijgewerkt. Zo hoeven de vragen van gisteren niet nog eens gesteld te worden,
+    terwijl de rest wel aan de beurt komt.
     """
     winkels = db.winkels()
     bestaand = db.koppelingen()
@@ -131,6 +194,19 @@ def stap_vertalen(
     }
     al_bekend = {(rij["winkel_id"], rij["productgroep"].lower()) for rij in bestaand}
 
+    grens = _grens_van(bestaand, verder) if verder else None
+    al_gedaan: set[tuple[int, str]] = set()
+    if grens:
+        al_gedaan = {
+            (rij["winkel_id"], rij["productgroep"].lower())
+            for rij in bestaand
+            if (moment := _moment(rij.get("gewijzigd_op"))) and moment >= grens
+        }
+        log.info("Verder waar de vorige ronde bleef: %s van de %s groepen zijn "
+                 "sinds %s bijgewerkt en worden overgeslagen.",
+                 len(al_gedaan), len(bestaand),
+                 grens.astimezone(ZoneInfo("Europe/Amsterdam")).strftime("%d-%m-%Y %H:%M"))
+
     te_doen: dict[int, list[str]] = {}
     for rij in db.winkelgroepen():
         winkel_id, naam = rij["winkel_id"], rij["productgroep"]
@@ -138,7 +214,10 @@ def stap_vertalen(
 
         if sleutel in met_de_hand:
             continue
-        if sleutel in al_bekend and not opnieuw:
+        if grens:
+            if sleutel in al_gedaan:
+                continue
+        elif sleutel in al_bekend and not opnieuw:
             continue
         if woorden and not any(woord in eigen.schoon(naam) for woord in woorden):
             continue
@@ -498,6 +577,11 @@ def main() -> int:
                             help="ook groepen opnieuw vragen die al vertaald zijn")
     argumenten.add_argument("--woorden", default="",
                             help="alleen groepsnamen waar een van deze woorden in zit")
+    argumenten.add_argument("--verder", nargs="?", const="auto", default="",
+                            metavar="DATUM",
+                            help="een afgebroken ronde hervatten: overslaan wat al "
+                                 "bijgewerkt is. Duurde de ronde langer dan een "
+                                 "etmaal, geef dan de begindatum mee (05-08-2026)")
     keuze = argumenten.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -516,8 +600,12 @@ def main() -> int:
 
     try:
         stap_indeling(db, keuze.proef)
-        _, klachten = stap_vertalen(db, keuze.proef, keuze.opnieuw, woorden)
+        _, klachten = stap_vertalen(db, keuze.proef, keuze.opnieuw, woorden,
+                                    keuze.verder)
         uitkomst = stap_toepassen(db, keuze.proef)
+    except ValueError as fout:
+        log.error("%s", fout)
+        return 1
     except DatabaseFout as fout:
         log.error("Het ging mis met de database: %s", fout)
         return 1

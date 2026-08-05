@@ -2,13 +2,11 @@
  * =============================================================================
  *  Dealbot — verkeer met de database vanuit de website
  *
- *  Versie      : 2.1
- *  Reden       : Er is een derde laag bij gekomen onder de lade: het kenmerk.
- *                Onze lade Toiletpapier bevat het droge en het vochtige door
- *                elkaar; het kenmerk "vochtig" maakt dat onderscheid alsnog, in
- *                onze eigen woorden en bij elke winkel hetzelfde. Een zoekvraag
- *                mag er nu op staan, en beide pagina's halen het op.
- *  Datum       : 05-08-2026 15:30
+ *  Versie      : 2.2
+ *  Reden       : Het ophalen is voortaan met één knop op de beheerpagina te
+ *                starten. De database geeft het startsein door aan GitHub; de
+ *                website vraagt er alleen om en kijkt daarna hoe het afliep.
+ *  Datum       : 05-08-2026 23:53
  *
  *  Onderdelen:
  *    meldAan()               - maakt een nieuw account met e-mail + pincode
@@ -29,6 +27,8 @@
  *    zoekStandaardprijzen()  - de gewone winkelprijzen binnen lade of zoekterm
  *    haalToegang()           - ben ik beheerder, en staat mijn account op slot?
  *    haalRunstatus()         - de laatste ophaalronde per winkel (beheer)
+ *    startOphalen()          - het ophalen nu laten beginnen
+ *    haalOphaalOpdrachten()  - hoe de laatste startseinen zijn aangekomen
  *    haalKwaliteit()         - hoeveel er per winkel staat en wat ontbreekt
  *    haalGebruikers()        - het overzicht van accounts (beheer)
  *    blokkeerGebruiker()     - een account op slot zetten of weer openen
@@ -118,8 +118,11 @@ function inGewoneTaal(melding) {
         return 'Dit adres staat al op de lijst.';
     }
     // De beheerfuncties en de blokkade weigeren zelf al in gewone taal; die
-    // melding is beter dan wat wij ervan zouden maken.
-    if (tekst.includes('beheerder') || tekst.includes('geblokkeerd')) {
+    // melding is beter dan wat wij ervan zouden maken. Dat geldt ook voor het
+    // startsein: te snel achter elkaar, of de sleutel van GitHub ontbreekt.
+    if (tekst.includes('beheerder') || tekst.includes('geblokkeerd')
+        || tekst.includes('ronde gestart') || tekst.includes('kluis')
+        || tekst.includes('github')) {
         return melding;
     }
     return `Er ging iets mis: ${melding}`;
@@ -652,6 +655,36 @@ export async function haalToegang() {
  */
 export async function haalRunstatus() {
     const data = await probeer('runstatus ophalen', () => db.rpc('beheer_runstatus'));
+    return data || [];
+}
+
+/**
+ * Laat het ophalen nu beginnen.
+ *
+ * Het werk zelf draait niet in de database maar op GitHub: winkels aflopen en
+ * een folder laten voorlezen duurt minuten. De database geeft alleen het
+ * startsein door, want daar ligt de sleutel van GitHub — op deze pagina hoort
+ * die niet te staan.
+ *
+ * Wat: 'alles' zoals elke ochtend, 'winkels' voor alles behalve de folders, of
+ * 'folder' voor alleen de folder. Met opnieuw=true wordt een folder ook gelezen
+ * als hij al in de database staat.
+ */
+export async function startOphalen(wat = 'alles', opnieuw = false) {
+    await probeer('het ophalen starten',
+        () => db.rpc('beheer_start_ophalen', { wat, opnieuw }));
+}
+
+/**
+ * Hoe de laatste startseinen zijn aangekomen bij GitHub.
+ *
+ * Dit gaat niet over het ophalen zelf — dat staat in de runstatus — maar over
+ * de vraag of het sein überhaupt is aangenomen. Een verlopen sleutel is anders
+ * nergens aan te zien.
+ */
+export async function haalOphaalOpdrachten() {
+    const data = await probeer('de laatste startseinen ophalen',
+        () => db.rpc('beheer_ophaalopdrachten'));
     return data || [];
 }
 

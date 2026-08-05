@@ -2,17 +2,14 @@
 ===============================================================================
  Dealbot — het dagelijkse ophalen van aanbiedingen
 
- Versie      : 2.0
- Reden       : De winkelindeling van een assortimentsronde gaat nu wél naar de
-               groepenlijst. Die ging er expres níét in, omdat de groepenlijst
-               destijds alleen de keuzelijst van het profielscherm voedde en een
-               zoekvraag op zo'n groep nooit een aanbieding zou opleveren. Sinds
-               het vertaalboekje bestaat voedt diezelfde lijst óók de vertaler,
-               en dus werd Vomar als enige winkel nooit vertaald: al zijn
-               zesduizend producten hingen nergens onder onze eigen indeling.
-               De keuzelijst van het profielscherm put inmiddels uit onze eigen
-               indeling, dus de oude reden is vervallen.
- Datum       : 05-08-2026 11:52
+ Versie      : 2.1
+ Reden       : Het ophalen is nu ook met de hand te starten vanaf de
+               beheerpagina, en dan wil je niet altijd de hele ronde. De folder
+               van Vomar is het geval waar het om begonnen is: die wordt maar
+               één keer per week gelezen, dus als er iets misging in het
+               voorlezen moet hij gericht opnieuw kunnen — ook al staat hij al
+               in de database.
+ Datum       : 05-08-2026 23:50
 
  Onderdelen:
    main()               - gaat alle winkels langs en vat het resultaat samen
@@ -21,8 +18,11 @@
    verwerk_folder()     - de weekfolder laten aflezen, alleen als hij nieuw is
 
  Uitvoeren:
-   python scripts/scan.py            alles
-   python scripts/scan.py --proef    alleen ophalen, niets wegschrijven
+   python scripts/scan.py                       alles
+   python scripts/scan.py --wat winkels         alles behalve de folders
+   python scripts/scan.py --wat folder           alleen de folders
+   python scripts/scan.py --wat folder --opnieuw  ook een al gelezen folder
+   python scripts/scan.py --proef                alleen ophalen, niets wegschrijven
 ===============================================================================
 """
 
@@ -190,7 +190,8 @@ def verwerk_assortiment(database: Database, winkel_id: int, naam: str, haal_op) 
     return aantal
 
 
-def verwerk_folder(database: Database, winkel_id: int, naam: str, bron) -> int:
+def verwerk_folder(database: Database, winkel_id: int, naam: str, bron,
+                   opnieuw: bool = False) -> int:
     """
     Leest de weekfolder van één winkel, maar alleen als hij nieuw is.
 
@@ -198,10 +199,14 @@ def verwerk_folder(database: Database, winkel_id: int, naam: str, bron) -> int:
     maar één keer per week. Staat de uitgave die nu op de site hangt al in de
     database, dan is er niets te doen: de aanbiedingen blijven gewoon staan.
 
+    Met opnieuw=True gaat die controle eraf en wordt de folder hoe dan ook
+    gelezen. Dat is er voor de beheerder: ging het voorlezen half mis, dan is de
+    folder anders een week lang niet meer over te doen.
+
     Geeft het aantal aanbiedingen terug, of -1 als er niets te doen was. Dat
     verschil telt: niets te doen is een goede uitkomst, nul aanbiedingen niet.
     """
-    log.info("== %s (folder) ==", naam)
+    log.info("== %s (folder%s) ==", naam, ", opnieuw" if opnieuw else "")
 
     try:
         folder = bron.zoek_folder()
@@ -209,7 +214,7 @@ def verwerk_folder(database: Database, winkel_id: int, naam: str, bron) -> int:
         log.error("%s: de folder is niet te vinden: %s", naam, fout)
         return 0
 
-    if database.folder_al_gelezen(winkel_id, folder.voorvoegsel):
+    if not opnieuw and database.folder_al_gelezen(winkel_id, folder.voorvoegsel):
         log.info("%s: '%s' staat al in de database; niets te lezen.", naam, folder.titel)
         return -1
 
@@ -316,6 +321,10 @@ def proefdraai() -> int:
 
 def main() -> int:
     argumenten = argparse.ArgumentParser(description="Aanbiedingen ophalen voor Dealbot.")
+    argumenten.add_argument("--wat", choices=("alles", "winkels", "folder"), default="alles",
+                            help="alles, alleen de gewone winkels, of alleen de folders")
+    argumenten.add_argument("--opnieuw", action="store_true",
+                            help="een folder ook lezen als hij al in de database staat")
     argumenten.add_argument("--proef", action="store_true",
                             help="alleen ophalen en tonen, niets wegschrijven")
     argumenten.add_argument("--uitgebreid", action="store_true",
@@ -337,26 +346,32 @@ def main() -> int:
         return 1
 
     totaal = 0
-    mislukt = []
-    for winkel_id, naam, haal_op in WINKELS:
-        aantal = verwerk_winkel(database, winkel_id, naam, haal_op)
-        totaal += aantal
-        if aantal == 0:
-            mislukt.append(naam)
-
     prijzen = 0
-    for winkel_id, naam, haal_op in ASSORTIMENTEN:
-        aantal = verwerk_assortiment(database, winkel_id, naam, haal_op)
-        prijzen += aantal
-        if aantal == 0:
-            mislukt.append(f"{naam} (assortiment)")
+    mislukt = []
 
-    for winkel_id, naam, bron in FOLDERS:
-        aantal = verwerk_folder(database, winkel_id, naam, bron)
-        if aantal > 0:
+    # De gewone winkels en de folders zijn apart te draaien. Dat is er voor de
+    # beheerpagina: één folder overdoen hoeft niet de hele ochtendronde te
+    # kosten, en andersom hoeft een gewone ronde geen AI-vragen op te maken.
+    if keuzes.wat in ("alles", "winkels"):
+        for winkel_id, naam, haal_op in WINKELS:
+            aantal = verwerk_winkel(database, winkel_id, naam, haal_op)
             totaal += aantal
-        elif aantal == 0:
-            mislukt.append(f"{naam} (folder)")
+            if aantal == 0:
+                mislukt.append(naam)
+
+        for winkel_id, naam, haal_op in ASSORTIMENTEN:
+            aantal = verwerk_assortiment(database, winkel_id, naam, haal_op)
+            prijzen += aantal
+            if aantal == 0:
+                mislukt.append(f"{naam} (assortiment)")
+
+    if keuzes.wat in ("alles", "folder"):
+        for winkel_id, naam, bron in FOLDERS:
+            aantal = verwerk_folder(database, winkel_id, naam, bron, opnieuw=keuzes.opnieuw)
+            if aantal > 0:
+                totaal += aantal
+            elif aantal == 0:
+                mislukt.append(f"{naam} (folder)")
 
     log.info(
         "Klaar: %s aanbiedingen en %s standaardprijzen in de database.", totaal, prijzen
