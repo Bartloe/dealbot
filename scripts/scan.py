@@ -2,11 +2,17 @@
 ===============================================================================
  Dealbot — het dagelijkse ophalen van aanbiedingen
 
- Versie      : 1.9
- Reden       : Elke ronde vermeldt in het logboek wat voor soort het was:
-               aanbiedingen, assortiment of folder. Op de beheerpagina zijn de
-               twee rondes van Vomar daardoor uit elkaar te houden.
- Datum       : 04-08-2026 22:16
+ Versie      : 2.0
+ Reden       : De winkelindeling van een assortimentsronde gaat nu wél naar de
+               groepenlijst. Die ging er expres níét in, omdat de groepenlijst
+               destijds alleen de keuzelijst van het profielscherm voedde en een
+               zoekvraag op zo'n groep nooit een aanbieding zou opleveren. Sinds
+               het vertaalboekje bestaat voedt diezelfde lijst óók de vertaler,
+               en dus werd Vomar als enige winkel nooit vertaald: al zijn
+               zesduizend producten hingen nergens onder onze eigen indeling.
+               De keuzelijst van het profielscherm put inmiddels uit onze eigen
+               indeling, dus de oude reden is vervallen.
+ Datum       : 05-08-2026 11:52
 
  Onderdelen:
    main()               - gaat alle winkels langs en vat het resultaat samen
@@ -142,11 +148,10 @@ def verwerk_assortiment(database: Database, winkel_id: int, naam: str, haal_op) 
     """
     Haalt het hele assortiment van één winkel op en zet het in de database.
 
-    Werkt net als verwerk_winkel(), maar dan voor het gewone schap. Er komen
-    hier geen aanbiedingen binnen, dus de winkelindeling gaat bewust níet naar
-    de keuzelijst van het profielscherm: een zoekvraag op zo'n groep zou nooit
-    een treffer opleveren. De groepen komen wel op de standaardprijzen-pagina
-    zelf terecht, rechtstreeks uit de producten.
+    Werkt net als verwerk_winkel(), maar dan voor het gewone schap. De
+    winkelindeling gaat daarbij net zo goed naar de groepenlijst: dat is de
+    lijst waaruit het vertaalboekje put, en zonder die stap blijft een winkel
+    die alleen een assortiment levert buiten onze eigen indeling hangen.
     """
     log.info("== %s (assortiment) ==", naam)
     log_id, moment = database.start_ronde(winkel_id, "assortiment")
@@ -166,6 +171,9 @@ def verwerk_assortiment(database: Database, winkel_id: int, naam: str, haal_op) 
     try:
         aantal = database.schrijf_standaardprijzen(assortiment.producten, moment)
         database.ruim_oude_prijzen_op(winkel_id, moment)
+        # Pas hierna, net als bij de aanbiedingen: de groepenlijst is een
+        # naslagwerk en geen voorwaarde voor de producten zelf.
+        database.bewaar_groepen(winkel_id, assortiment.alle_groepen())
     except DatabaseFout as fout:
         log.error("%s: wegschrijven mislukt: %s", naam, fout)
         database.sluit_ronde(log_id, "mislukt", 0, f"Wegschrijven mislukt: {fout}")

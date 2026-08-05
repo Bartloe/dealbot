@@ -2,12 +2,12 @@
 ===============================================================================
  Dealbot — gemeenschappelijke vorm van een aanbieding
 
- Versie      : 1.3
- Reden       : Vomar levert geen aanbiedingen maar wél zijn hele assortiment met
-               gewone winkelprijzen en streepjescodes. Daar hoort een eigen vorm
-               bij: een product dat altijd in de schappen ligt, zonder actie en
-               zonder einddatum.
- Datum       : 02-08-2026 11:15
+ Versie      : 1.4
+ Reden       : De winkelindeling van een assortiment gaat voortaan net zo goed
+               naar de groepenlijst als die van een aanbiedingenronde. Zonder
+               die stap bleef een winkel die alleen zijn schap publiceert buiten
+               het vertaalboekje, en dus buiten onze eigen indeling.
+ Datum       : 05-08-2026 11:54
 
  Onderdelen:
    Aanbieding                 - één aanbieding zoals die in de database komt
@@ -153,9 +153,8 @@ class Assortiment:
     Wat één assortimentsronde bij één winkel oplevert.
 
     Naast de producten met hun gewone prijs gaat de productgroep-indeling mee,
-    net als bij een Oogst. Bij een winkel die géén aanbiedingen levert blijft die
-    indeling bewust buiten de keuzelijst van het profielscherm: een zoekvraag op
-    zo'n groep zou nooit een treffer geven.
+    net als bij een Oogst. Die indeling is nodig om het assortiment onder onze
+    eigen indeling te kunnen hangen: het vertaalboekje werkt per winkelgroep.
     """
 
     producten: list[Standaardprijs] = field(default_factory=list)

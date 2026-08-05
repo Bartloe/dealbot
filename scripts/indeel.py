@@ -2,29 +2,31 @@
 ===============================================================================
  Dealbot — alles onder onze eigen productindeling hangen
 
- Versie      : 1.1
- Reden       : De vijf ketens spreken elk hun eigen taal: samen 2606 groepsnamen
-               waarmee je met één zoekvraag nooit alle winkels vond. Dit script
-               legt het vertaalboekje aan (winkelgroep -> onze eigen groep) en
-               deelt daarmee alle aanbiedingen in.
+ Versie      : 1.2
+ Reden       : De ketens spreken elk hun eigen taal: samen ruim tweeduizend
+               groepsnamen waarmee je met één zoekvraag nooit alle winkels vond.
+               Dit script legt het vertaalboekje aan (winkelgroep -> onze eigen
+               groep) en deelt daarmee alles in.
 
                Het vertalen gebeurt één keer per groepsnaam en wordt bewaard.
                Een groepsnaam verandert immers niet elke week, en zo kost een
                gewone ophaalronde 's ochtends geen enkele AI-vraag.
 
-               Bijgewerkt na de eerste grote ronde: elk vertaald blok gaat nu
-               meteen naar de database in plaats van alles pas aan het eind. Die
-               eerste ronde liep bij het opslaan vast en nam veertig AI-vragen
-               mee in de val, terwijl de dagvoorraad vragen beperkt is.
- Datum       : 04-08-2026 01:25
+               Nu ook de standaardprijzen. Die bleven tot nu toe buiten de
+               indeling hangen, waardoor de standaardprijzen-pagina alleen de
+               groepsnamen van de winkel zelf kon tonen — bij Vomar heet vochtig
+               toiletpapier "Toiletpapier Vochtig" en dat is niet onze taal.
+ Datum       : 05-08-2026 12:00
 
  Onderdelen:
    main()              - de drie stappen achter elkaar, met een samenvatting
    stap_indeling()     - onze eigen indeling naar de database
    stap_vertalen()     - onbekende winkelgroepen door de AI, resultaat bewaren
-   stap_toepassen()    - alle aanbiedingen opnieuw indelen
-   _plek_van()         - de plek van één aanbieding: winkelgroep, dan productnaam
-   _verslag()          - wat het opgeleverd heeft, per winkel en per groep
+   stap_toepassen()    - aanbiedingen én standaardprijzen opnieuw indelen
+   _lees_boekje()      - het vertaalboekje in de vorm die het indelen nodig heeft
+   _deel_tabel_in()    - één tabel indelen; beide gaan langs dezelfde weg
+   _plek_van()         - de plek van één product: winkelgroep, dan productnaam
+   _verslag()          - wat het opgeleverd heeft, per tabel, winkel en groep
 
  Uitvoeren:
    python scripts/indeel.py                alles: vertalen en toepassen
@@ -175,11 +177,11 @@ def stap_vertalen(
 # Stap 3 — alle aanbiedingen indelen.
 # -----------------------------------------------------------------------------
 def _plek_van(
-    aanbieding: dict,
+    regel: dict,
     boekje: dict[tuple[int, str], tuple[str, str | None, bool]],
 ) -> eigen.Plek | None:
     """
-    Waar hoort deze aanbieding? Eerst het vertaalboekje, dan de productnaam.
+    Waar hoort dit product? Eerst het vertaalboekje, dan de productnaam.
 
     De winkelgroep is leidend voor de hoofdgroep — een winkel legt zijn eigen
     product in zijn eigen schap, dus dat klopt vrijwel altijd. Alleen de fijne
@@ -189,31 +191,29 @@ def _plek_van(
     iets anders dan een groep die niet onder onze indeling valt: in dat tweede
     geval heeft de winkel al gezegd wat voor product het is.
     """
-    winkelgroep = eigen.schoon(aanbieding.get("productgroep"))
-    uit_boekje = boekje.get((aanbieding["winkel_id"], winkelgroep)) if winkelgroep else None
+    winkelgroep = eigen.schoon(regel.get("productgroep"))
+    uit_boekje = boekje.get((regel["winkel_id"], winkelgroep)) if winkelgroep else None
 
     uit_winkelgroep = None
     if uit_boekje:
         uit_winkelgroep = eigen.Plek(uit_boekje[0], uit_boekje[1], herkomst="winkelgroep")
 
     return eigen.plaats(
-        aanbieding.get("product_naam"),
+        regel.get("product_naam"),
         uit_winkelgroep,
         winkel_heeft_groep=bool(winkelgroep),
         gemengd=bool(uit_boekje and uit_boekje[2]),
     )
 
 
-def stap_toepassen(db: Database, proef: bool) -> tuple[list[dict], Counter, Counter]:
+def _lees_boekje(db: Database) -> dict[tuple[int, str], tuple[str, str | None, bool]]:
     """
-    Deelt alle aanbiedingen die er nu staan in volgens het vertaalboekje.
+    Het vertaalboekje in de vorm waarin het indelen het nodig heeft.
 
-    Dit gebeurt hier in één keer voor alles, zodat een verbeterd vertaalboekje
-    meteen doorwerkt zonder op de ophaalronde van morgenochtend te wachten.
+    Regels zonder hoofdgroep horen bewust niet in het boekje: die zeggen "deze
+    winkelgroep hoort nergens bij ons". Ze staan er alleen zodat de AI er niet
+    nog eens naar gevraagd wordt.
     """
-    # Regels zonder hoofdgroep horen bewust niet in het boekje: die zeggen "deze
-    # winkelgroep hoort nergens bij ons". Ze staan er alleen zodat de AI er niet
-    # nog eens naar gevraagd wordt.
     alle_regels = db.koppelingen()
     boekje = {
         (rij["winkel_id"], eigen.schoon(rij["productgroep"])):
@@ -224,27 +224,43 @@ def stap_toepassen(db: Database, proef: bool) -> tuple[list[dict], Counter, Coun
     log.info("Vertaalboekje: %s winkelgroepen onder onze indeling, "
              "%s bekeken en afgevallen.",
              len(alle_regels) - afgevallen, afgevallen)
+    return boekje
 
-    aanbiedingen = db.aanbiedingen_ruw()
-    log.info("%s aanbiedingen om in te delen.", len(aanbiedingen))
+
+def _deel_tabel_in(
+    db: Database,
+    tabel: str,
+    naam: str,
+    boekje: dict[tuple[int, str], tuple[str, str | None, bool]],
+    proef: bool,
+) -> tuple[list[dict], Counter, Counter]:
+    """
+    Deelt alles in één tabel in volgens het vertaalboekje.
+
+    Aanbiedingen en standaardprijzen gaan langs precies dezelfde weg: allebei
+    hebben ze een winkel, een productnaam en de groep van de winkel zelf, en
+    allebei hangen ze onder dezelfde eigen indeling.
+    """
+    producten = db.producten_ruw(tabel)
+    log.info("%s %s om in te delen.", len(producten), naam)
 
     ingedeeld: list[dict] = []
     bijwerken: list[dict] = []
     per_winkel: Counter = Counter()
     per_groep: Counter = Counter()
 
-    for aanbieding in aanbiedingen:
-        plek = _plek_van(aanbieding, boekje)
+    for product in producten:
+        plek = _plek_van(product, boekje)
         hoofdgroep = plek.hoofdgroep if plek else None
         subgroep = plek.subgroep if plek else None
 
         # Alleen wegschrijven wat werkelijk verandert. Een verbeterd
         # vertaalboekje raakt meestal een handvol groepen; dan hoeven er geen
         # duizenden ongewijzigde regels langs de database.
-        if (hoofdgroep, subgroep) != (aanbieding.get("hoofdgroep"),
-                                      aanbieding.get("subgroep")):
+        if (hoofdgroep, subgroep) != (product.get("hoofdgroep"),
+                                      product.get("subgroep")):
             bijwerken.append({
-                "id": aanbieding["id"],
+                "id": product["id"],
                 "hoofdgroep": hoofdgroep,
                 "subgroep": subgroep,
             })
@@ -252,55 +268,102 @@ def stap_toepassen(db: Database, proef: bool) -> tuple[list[dict], Counter, Coun
         if plek is None:
             continue
 
-        ingedeeld.append({"id": aanbieding["id"], "hoofdgroep": hoofdgroep,
+        ingedeeld.append({"id": product["id"], "hoofdgroep": hoofdgroep,
                           "subgroep": subgroep})
-        per_winkel[aanbieding["winkel_id"]] += 1
+        per_winkel[product["winkel_id"]] += 1
         per_groep[(plek.hoofdgroep, plek.subgroep or "(alleen de afdeling)")] += 1
 
     kwijt = sum(1 for regel in bijwerken if regel["hoofdgroep"] is None)
     if kwijt:
-        log.info("%s aanbiedingen vallen niet langer onder de indeling en worden "
-                 "leeggemaakt.", kwijt)
+        log.info("%s %s vallen niet langer onder de indeling en worden "
+                 "leeggemaakt.", kwijt, naam)
 
     if bijwerken and not proef:
-        db.zet_eigen_groepen(bijwerken)
+        db.zet_eigen_groepen(bijwerken, tabel)
     elif not bijwerken:
-        log.info("Er verandert niets; alles stond al op de goede plek.")
+        log.info("Er verandert niets bij de %s; alles stond al op de goede plek.", naam)
 
     return ingedeeld, per_winkel, per_groep
+
+
+def stap_toepassen(
+    db: Database, proef: bool
+) -> dict[str, tuple[list[dict], Counter, Counter]]:
+    """
+    Deelt alles wat er nu staat in volgens het vertaalboekje.
+
+    Zowel de aanbiedingen van deze week als de standaardprijzen van het gewone
+    schap. Dat laatste is nodig omdat de standaardprijzen-pagina anders alleen
+    de groepsnamen van de winkel zelf kan tonen: bij Vomar heet vochtig
+    toiletpapier "Toiletpapier Vochtig" en dat is niet de taal van Dealbot.
+
+    Het gebeurt hier in één keer voor alles, zodat een verbeterd vertaalboekje
+    meteen doorwerkt zonder op de ophaalronde van morgenochtend te wachten.
+    """
+    boekje = _lees_boekje(db)
+
+    return {
+        "aanbiedingen": _deel_tabel_in(db, "aanbiedingen", "aanbiedingen", boekje, proef),
+        "standaardprijzen": _deel_tabel_in(
+            db, "standaardprijzen", "standaardprijzen", boekje, proef
+        ),
+    }
 
 
 # -----------------------------------------------------------------------------
 # Verslag
 # -----------------------------------------------------------------------------
-def _verslag(
-    db: Database, ingedeeld: list[dict], per_winkel: Counter, per_groep: Counter
+def _verslag_tabel(
+    winkels: dict[int, str],
+    naam: str,
+    ingedeeld: list[dict],
+    per_winkel: Counter,
+    per_groep: Counter,
 ) -> None:
-    """Vertelt in gewone taal wat het opgeleverd heeft."""
+    """Wat één tabel heeft opgeleverd, in gewone taal."""
+    print(f"\n  --- {naam} ---")
+
+    if not ingedeeld:
+        print("    Nog niets. Staat het vertaalboekje al in de database?")
+        return
+
+    print(f"\n    {len(ingedeeld)} ingedeeld.\n")
+    print("    Per winkel:")
+    for winkel_id, aantal in sorted(per_winkel.items(), key=lambda p: -p[1]):
+        print(f"      {winkels.get(winkel_id, winkel_id):<15} {aantal:>6}")
+
+    onvolledig = sum(a for (_, sub), a in per_groep.items() if sub == "(alleen de afdeling)")
+    if onvolledig:
+        deel = onvolledig / len(ingedeeld) * 100
+        print(f"\n    {onvolledig} daarvan ({deel:.0f}%) kwamen niet verder dan de "
+              "afdeling: de winkelgroep was te grof en de productnaam gaf niets prijs.")
+
+
+def _verslag(db: Database, uitkomst: dict[str, tuple[list[dict], Counter, Counter]]) -> None:
+    """
+    Vertelt in gewone taal wat het opgeleverd heeft.
+
+    Per tabel het aantal en de verdeling over de winkels, en daarna de volledige
+    verdeling over onze eigen groepen — die laatste over alles bij elkaar, want
+    daar gaat het om: hoe vol zit elke lade.
+    """
     winkels = db.winkels()
 
     print("\n" + "=" * 70)
     print("  Wat er nu onder onze eigen indeling hangt")
     print("=" * 70)
 
-    if not ingedeeld:
-        print("\n  Nog niets. Staat het vertaalboekje al in de database?")
+    alles: Counter = Counter()
+    for naam, (ingedeeld, per_winkel, per_groep) in uitkomst.items():
+        _verslag_tabel(winkels, naam, ingedeeld, per_winkel, per_groep)
+        alles.update(per_groep)
+
+    if not alles:
         return
 
-    print(f"\n  {len(ingedeeld)} aanbiedingen ingedeeld.\n")
-    print("  Per winkel:")
-    for winkel_id, aantal in sorted(per_winkel.items(), key=lambda p: -p[1]):
-        print(f"    {winkels.get(winkel_id, winkel_id):<15} {aantal:>6}")
-
-    print("\n  Per groep:")
-    for (hoofd, sub), aantal in sorted(per_groep.items()):
+    print("\n  Per groep (alles bij elkaar):")
+    for (hoofd, sub), aantal in sorted(alles.items()):
         print(f"    {hoofd} / {sub:<32} {aantal:>6}")
-
-    onvolledig = sum(a for (_, sub), a in per_groep.items() if sub == "(alleen de afdeling)")
-    if onvolledig:
-        deel = onvolledig / len(ingedeeld) * 100
-        print(f"\n  {onvolledig} daarvan ({deel:.0f}%) kwamen niet verder dan de "
-              "afdeling: de winkelgroep was te grof en de productnaam gaf niets prijs.")
 
 
 def main() -> int:
@@ -332,12 +395,12 @@ def main() -> int:
     try:
         stap_indeling(db, keuze.proef)
         _, klachten = stap_vertalen(db, keuze.proef, keuze.opnieuw, woorden)
-        ingedeeld, per_winkel, per_groep = stap_toepassen(db, keuze.proef)
+        uitkomst = stap_toepassen(db, keuze.proef)
     except DatabaseFout as fout:
         log.error("Het ging mis met de database: %s", fout)
         return 1
 
-    _verslag(db, ingedeeld, per_winkel, per_groep)
+    _verslag(db, uitkomst)
 
     if klachten:
         print("\n  Let op, dit ging niet goed:")

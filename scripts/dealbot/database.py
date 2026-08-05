@@ -2,13 +2,14 @@
 ===============================================================================
  Dealbot — verkeer met de database (Supabase)
 
- Versie      : 1.8
- Reden       : Het logboek vermeldt voortaan wat voor soort ronde het was —
-               aanbiedingen, assortiment of folder. Vomar levert onder één
-               winkelnummer twee dingen; op de beheerpagina moeten die uit
-               elkaar te houden zijn, anders verbergt een geslaagde prijzenronde
-               een mislukte folder.
- Datum       : 04-08-2026 22:15
+ Versie      : 1.9
+ Reden       : Niet alleen de aanbiedingen maar ook de standaardprijzen hangen
+               voortaan onder onze eigen indeling. Beide tabellen zien er voor
+               het indelen hetzelfde uit, dus ophalen en bijwerken doen ze nu
+               langs dezelfde weg, met de tabelnaam als keuze. Welke tabellen
+               dat mogen zijn ligt vast, zodat een tikfout nooit een andere
+               tabel raakt.
+ Datum       : 05-08-2026 11:56
 
  Onderdelen:
    Database.start_ronde()             - logboekregel, en geeft het moment terug
@@ -25,6 +26,8 @@
    Database.bewaar_eigen_indeling()   - onze eigen indeling wegschrijven
    Database.koppelingen()             - het vertaalboekje, per winkel
    Database.bewaar_koppelingen()      - vertalingen toevoegen of bijwerken
+   Database.producten_ruw()           - een hele tabel om opnieuw in te delen
+   Database.zet_eigen_groepen()       - onze hoofd- en subgroep wegschrijven
 ===============================================================================
 """
 
@@ -433,26 +436,54 @@ class Database:
         log.info("  %s koppelingen weggeschreven.", weggeschreven)
         return weggeschreven
 
+    # De twee tabellen die onder onze eigen indeling hangen. Ze zien er voor het
+    # indelen hetzelfde uit — een winkel, een productnaam en de groep van de
+    # winkel zelf — dus ze worden ook op dezelfde manier behandeld.
+    _INDEELBAAR = ("aanbiedingen", "standaardprijzen")
+
+    def _controleer_tabel(self, tabel: str) -> None:
+        """Voorkomt dat er per ongeluk een andere tabel wordt bijgewerkt."""
+        if tabel not in self._INDEELBAAR:
+            raise DatabaseFout(f"Tabel {tabel!r} hoort niet bij de indeling.")
+
+    def producten_ruw(
+        self,
+        tabel: str = "aanbiedingen",
+        velden: str = "id,winkel_id,product_naam,productgroep,hoofdgroep,subgroep",
+    ) -> list[dict[str, Any]]:
+        """
+        Alles wat er nu in een tabel staat, om het opnieuw in te kunnen delen.
+
+        Werkt voor de aanbiedingen én voor de standaardprijzen: beide hangen
+        onder dezelfde eigen indeling en hebben dezelfde velden nodig.
+        """
+        self._controleer_tabel(tabel)
+        return self._alles(tabel, {"select": velden, "order": "id"})
+
     def aanbiedingen_ruw(
         self,
         velden: str = "id,winkel_id,product_naam,productgroep,hoofdgroep,subgroep",
     ) -> list[dict[str, Any]]:
         """Alle aanbiedingen die er nu staan, om ze opnieuw in te kunnen delen."""
-        return self._alles("aanbiedingen", {"select": velden, "order": "id"})
+        return self.producten_ruw("aanbiedingen", velden)
 
-    def zet_eigen_groepen(self, regels: list[dict[str, Any]]) -> int:
+    def zet_eigen_groepen(
+        self, regels: list[dict[str, Any]], tabel: str = "aanbiedingen"
+    ) -> int:
         """
-        Zet bij bestaande aanbiedingen onze hoofd- en subgroep.
+        Zet bij bestaande regels onze hoofd- en subgroep.
 
         Wordt gebruikt om in één keer alles opnieuw in te delen nadat het
         vertaalboekje is bijgewerkt, zonder eerst een hele ophaalronde te hoeven
         draaien.
 
-        Het bijwerken gaat per groep en niet per aanbieding. Dat scheelt enorm:
-        duizenden aanbiedingen krijgen dezelfde twee waarden, dus één opdracht
-        met een lijst nummers volstaat. Die lijst gaat in stukken, want een
-        webadres mag niet eindeloos lang worden.
+        Het bijwerken gaat per groep en niet per regel. Dat scheelt enorm:
+        duizenden producten krijgen dezelfde twee waarden, dus één opdracht met
+        een lijst nummers volstaat. Die lijst gaat in stukken, want een webadres
+        mag niet eindeloos lang worden.
         """
+        self._controleer_tabel(tabel)
+
         per_groep: dict[tuple[str | None, str | None], list[int]] = {}
         for regel in regels:
             sleutel = (regel.get("hoofdgroep"), regel.get("subgroep"))
@@ -463,14 +494,14 @@ class Database:
             for start in range(0, len(nummers), _BLOKGROOTTE):
                 blok = nummers[start:start + _BLOKGROOTTE]
                 self._rest(
-                    "PATCH", "aanbiedingen",
+                    "PATCH", tabel,
                     params={"id": f"in.({','.join(str(n) for n in blok)})"},
                     json={"hoofdgroep": hoofdgroep, "subgroep": subgroep},
                     headers={"Prefer": "return=minimal"},
                 )
                 bijgewerkt += len(blok)
 
-            log.info("  %s / %s: %s aanbiedingen.",
+            log.info("  %s / %s: %s regels.",
                      hoofdgroep or "(uit de indeling gehaald)",
                      subgroep or "(alleen de afdeling)", len(nummers))
 
