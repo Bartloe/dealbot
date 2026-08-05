@@ -449,7 +449,7 @@ class Database:
         # is hoe ver hij gekomen was. Zonder dat moment kan een volgende ronde
         # alleen kiezen tussen alles overslaan of alles opnieuw vragen.
         params = {"select": "winkel_id,productgroep,hoofdgroep,subgroep,kenmerk,"
-                            "gemengd,herkomst,gewijzigd_op"}
+                            "eigenschapgroep,herkomst,gewijzigd_op"}
         if winkel_id is not None:
             params["winkel_id"] = f"eq.{winkel_id}"
         return self._alles("groep_koppelingen", params)

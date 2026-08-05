@@ -268,17 +268,39 @@ controleer(
     Plek(KOFFIE, "IJskoffie", "productnaam"),
 )
 
-# Een gemengde winkelgroep ("IJskoffie en milkshakes"): het product moet zichzelf
-# bewijzen met zijn naam, anders telt het niet mee.
-gemengde_groep = Plek(KOFFIE, None, "winkelgroep")
+# Een grove winkelgroep waar niet alles even netjes in ligt ("IJskoffie en
+# milkshakes"): de afdeling van de winkel is het vangnet. De ijskoffie krijgt zijn
+# eigen lade omdat de naam die aanwijst; de milkshake blijft bij de afdeling
+# staan. Dat is niet perfect, maar wél vindbaar — en dat is beter dan verdwijnen.
+rommelige_groep = Plek(KOFFIE, None, "winkelgroep")
 controleer(
-    "gemengde groep, naam bewijst het: telt mee",
-    plaats("Starbucks Caffe Latte ijskoffie 220 ml", gemengde_groep, True, gemengd=True),
-    Plek(KOFFIE, "IJskoffie", "gemengde winkelgroep+productnaam"),
+    "rommelige groep, naam wijst de lade aan",
+    plaats("Starbucks Caffe Latte ijskoffie 220 ml", rommelige_groep, True),
+    Plek(KOFFIE, "IJskoffie", "winkelgroep+productnaam"),
 )
 controleer(
-    "gemengde groep, naam bewijst niets: telt niet mee",
-    plaats("Optimel milkshake aardbei 250 ml", gemengde_groep, True, gemengd=True),
+    "rommelige groep, naam zegt niets: valt terug op de afdeling",
+    plaats("Optimel milkshake aardbei 250 ml", rommelige_groep, True),
+    rommelige_groep,
+)
+
+# Een eigenschapgroep ("Glutenvrij", "Kerst"): de winkelgroep noemt geen afdeling,
+# dus die is er ook niet om op terug te vallen. De productnaam beslist, en die mag
+# hier vrij kiezen — glutenvrij brood hoort niet per se in dezelfde afdeling als
+# glutenvrije pasta.
+controleer(
+    "eigenschapgroep: de naam wijst zelf de plek aan",
+    plaats("Schar glutenvrij meergranenbrood", None, True, eigenschapgroep=True),
+    Plek("Bakkerij", "Brood", "productnaam"),
+)
+controleer(
+    "eigenschapgroep: de naam mag naar een heel andere afdeling wijzen",
+    plaats("Lipton green tea 20 zakjes", None, True, eigenschapgroep=True),
+    Plek(KOFFIE, "Thee", "productnaam"),
+)
+controleer(
+    "eigenschapgroep, naam zegt niets: dan pas de restbak",
+    plaats("Deze week extra voordelig", None, True, eigenschapgroep=True),
     None,
 )
 

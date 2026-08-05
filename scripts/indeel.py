@@ -2,8 +2,15 @@
 ===============================================================================
  Dealbot — alles onder onze eigen productindeling hangen
 
- Versie      : 2.1
- Reden       : Een vertaalronde die halverwege stilviel — de dagvoorraad
+ Versie      : 2.2
+ Reden       : Producten uit een grove winkelgroep vallen nu terug op de afdeling
+               van die groep in plaats van te verdwijnen. Daarnaast kent het
+               vertaalboekje een nieuw soort regel: de eigenschapgroep. Die heeft
+               géén afdeling — bij "Glutenvrij" valt er niets te noemen — maar de
+               producten tellen wel mee; daar beslist de productnaam.
+ Datum       : 06-08-2026 01:25
+
+ Vorige      : Een vertaalronde die halverwege stilviel — de dagvoorraad
                AI-vragen is op — kon alleen nog helemaal opnieuw of helemaal
                niet. Alles opnieuw gooit het werk van de vorige avond weg;
                zonder --opnieuw slaat hij alles over, want élke groep staat al
@@ -274,11 +281,17 @@ def stap_vertalen(
 # Stap 3 — alle aanbiedingen indelen.
 # -----------------------------------------------------------------------------
 class Boekjeregel(NamedTuple):
-    """Wat het vertaalboekje over één winkelgroep zegt."""
+    """
+    Wat het vertaalboekje over één winkelgroep zegt.
 
-    hoofdgroep: str
+    Bij een eigenschapgroep ("Glutenvrij", "Kerst") is de hoofdgroep leeg. Dat
+    hoort zo: die producten liggen door de hele winkel en er valt geen afdeling
+    over te zeggen.
+    """
+
+    hoofdgroep: str | None
     subgroep: str | None
-    gemengd: bool
+    eigenschapgroep: bool
     kenmerk: str | None
 
 
@@ -301,7 +314,7 @@ def _plek_van(
     uit_boekje = boekje.get((regel["winkel_id"], winkelgroep)) if winkelgroep else None
 
     uit_winkelgroep = None
-    if uit_boekje:
+    if uit_boekje and uit_boekje.hoofdgroep:
         uit_winkelgroep = eigen.Plek(uit_boekje.hoofdgroep, uit_boekje.subgroep,
                                      herkomst="winkelgroep")
 
@@ -309,7 +322,7 @@ def _plek_van(
         regel.get("product_naam"),
         uit_winkelgroep,
         winkel_heeft_groep=bool(winkelgroep),
-        gemengd=bool(uit_boekje and uit_boekje.gemengd),
+        eigenschapgroep=bool(uit_boekje and uit_boekje.eigenschapgroep),
     )
 
 
@@ -355,6 +368,10 @@ def _lees_boekje(db: Database) -> tuple[dict[tuple[int, str], Boekjeregel], Woor
     winkelgroep hoort nergens bij ons". Ze staan er alleen zodat de AI er niet
     nog eens naar gevraagd wordt.
 
+    Op één na: een eigenschapgroep heeft ook geen hoofdgroep maar moet wél mee.
+    Daar zegt de lege hoofdgroep niet "hoort er niet bij" maar "er valt geen
+    afdeling over te zeggen — kijk naar de productnaam".
+
     De woordenlijst komt uit datzelfde boekje: alle kenmerken die de winkels
     samen hebben opgeleverd, gesorteerd per lade. Dat is de woordenschat waarmee
     straks de productnamen worden afgezocht.
@@ -362,14 +379,18 @@ def _lees_boekje(db: Database) -> tuple[dict[tuple[int, str], Boekjeregel], Woor
     alle_regels = db.koppelingen()
     boekje = {
         (rij["winkel_id"], eigen.schoon(rij["productgroep"])):
-            Boekjeregel(rij["hoofdgroep"], rij.get("subgroep"),
-                        bool(rij.get("gemengd")), rij.get("kenmerk"))
-        for rij in alle_regels if rij.get("hoofdgroep")
+            Boekjeregel(rij.get("hoofdgroep"), rij.get("subgroep"),
+                        bool(rij.get("eigenschapgroep")), rij.get("kenmerk"))
+        for rij in alle_regels
+        if rij.get("hoofdgroep") or rij.get("eigenschapgroep")
     }
-    afgevallen = sum(1 for rij in alle_regels if not rij.get("hoofdgroep"))
+    eigenschap = sum(1 for rij in alle_regels if rij.get("eigenschapgroep"))
+    afgevallen = sum(1 for rij in alle_regels
+                     if not rij.get("hoofdgroep") and not rij.get("eigenschapgroep"))
     log.info("Vertaalboekje: %s winkelgroepen onder onze indeling, "
+             "%s eigenschapgroepen waar de productnaam beslist, "
              "%s bekeken en afgevallen.",
-             len(alle_regels) - afgevallen, afgevallen)
+             len(alle_regels) - afgevallen - eigenschap, eigenschap, afgevallen)
 
     woordenlijst = Woordenlijst.van_koppelingen(alle_regels)
     laden = woordenlijst.laden()

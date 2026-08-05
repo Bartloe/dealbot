@@ -2,8 +2,23 @@
 ===============================================================================
  Dealbot — onze eigen productindeling van twee lagen
 
- Versie      : 2.0
- Reden       : Het proefstuk met alleen "Koffie & thee" is geslaagd: 340
+ Versie      : 2.1
+ Reden       : Een grove winkelgroep als "Soepen" of "Kruiden" liet producten
+               verdwijnen. De regel was: bij zo'n groep telt een product pas mee
+               als de productnaam zelf bewijst waar het hoort. "Knorr Good
+               noodles kip" bewijst niets, dus verdween het uit de indeling —
+               terwijl de winkel allang gezegd had dat het soep is. Zo raakten
+               2489 producten zoek, 93% van de hele restbak.
+
+               Nu valt zo'n product terug op de afdeling van de groep: geen lade,
+               wél vindbaar. Daarvoor moest de AI wel iets nieuws leren zien. Een
+               groepsnaam als "Glutenvrij" of "Kerst" noemt namelijk helemaal
+               geen afdeling — die producten liggen door de hele winkel. Terugvallen
+               zou daar de hele groep op één hoop gooien. Zulke groepen heten nu
+               eigenschapgroepen en daar beslist alleen de productnaam.
+ Datum       : 06-08-2026 01:15
+
+ Vorige      : Het proefstuk met alleen "Koffie & thee" is geslaagd: 340
                aanbiedingen van vijf winkels hangen onder één indeling. Daarmee
                is bewezen dat de aanpak werkt en gaat nu het hele assortiment
                erin — 28 hoofdgroepen met samen ruim 280 subgroepen.
@@ -1227,7 +1242,7 @@ def plaats(
     product_naam: str | None,
     uit_winkelgroep: Plek | None = None,
     winkel_heeft_groep: bool = False,
-    gemengd: bool = False,
+    eigenschapgroep: bool = False,
 ) -> Plek | None:
     """
     De eindregel: waar hangt dit product?
@@ -1243,47 +1258,46 @@ def plaats(
     "Cacao & chocolademelk", maar een pak hagelslag dat daar per ongeluk in zit
     blijft gewoon bij de hoofdgroep staan.
 
-    Belangrijk is het verschil tussen drie soorten winkelgroep.
+    Zegt de productnaam niets, dan blijft de afdeling van de groep staan. Dat is
+    het antwoord van de winkel zelf en dat is bijna altijd goed: "Knorr Good
+    noodles kip" in de groep "Soepen" is soep, ook al staat dat woord er niet op.
+    Het product is dan vindbaar via de afdeling, alleen niet via een lade.
+
+    Er zijn drie soorten winkelgroep waar dit anders loopt.
 
     1. De winkel levert hélemaal geen groep — de voorgelezen Vomar-folder. Dan is
        de productnaam het enige houvast en beslist die alles.
     2. De winkel levert een groep die niet onder onze indeling valt. Dan heeft de
        winkel al gezegd wat voor product het is en gaan we daar niet overheen.
        Anders belandt "Nivea Men Espresso deodorant" bij de koffie.
-    3. De groep is gemengd: er ligt van alles door elkaar, waarvan een deel van
-       ons is. "IJskoffie en milkshakes" is zo'n groep. Dan telt een product pas
-       mee als de naam zelf laat zien dat het erbij hoort — het voordeel van de
-       twijfel gaat hier naar de productnaam, niet naar de groep.
+    3. De groep is een eigenschapgroep: de naam zegt niet wat voor product het is
+       maar wat het ergens van heeft — "Glutenvrij", "Kerst", "High protein".
+       Die producten liggen door de hele winkel verspreid, dus er ís geen
+       afdeling om op terug te vallen. Alleen de productnaam telt, en die mag
+       hier vrij kiezen: glutenvrij brood hoort bij de bakkerij, glutenvrije
+       pasta bij de pasta.
 
     Levert niets een plek op, dan komt het product in de restbak — zichtbaar,
     zodat we kunnen bijsturen.
     """
+    if eigenschapgroep:
+        return uit_naam(product_naam)
+
     if uit_winkelgroep is None:
         return None if winkel_heeft_groep else uit_naam(product_naam)
-
-    uit_de_naam = uit_naam(product_naam)
-    past_eronder = bool(
-        uit_de_naam
-        and uit_de_naam.subgroep
-        and hoofdgroep_van(uit_de_naam.subgroep) == uit_winkelgroep.hoofdgroep
-    )
-
-    if gemengd:
-        if not past_eronder:
-            return None
-        return Plek(
-            uit_winkelgroep.hoofdgroep,
-            uit_de_naam.subgroep,          # type: ignore[union-attr]
-            herkomst="gemengde winkelgroep+productnaam",
-        )
 
     if uit_winkelgroep.volledig:
         return uit_winkelgroep
 
-    if past_eronder:
+    uit_de_naam = uit_naam(product_naam)
+    if (
+        uit_de_naam
+        and uit_de_naam.subgroep
+        and hoofdgroep_van(uit_de_naam.subgroep) == uit_winkelgroep.hoofdgroep
+    ):
         return Plek(
             uit_winkelgroep.hoofdgroep,
-            uit_de_naam.subgroep,          # type: ignore[union-attr]
+            uit_de_naam.subgroep,
             herkomst="winkelgroep+productnaam",
         )
 

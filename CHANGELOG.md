@@ -1,5 +1,62 @@
 # Wijzigingen — Dealbot
 
+## 06-08-2026 — De restbak van 2489 producten leeggehaald
+
+Bijna 2500 producten stonden nergens. Niet omdat we niet wisten waar ze hoorden,
+maar door een regel die te streng was.
+
+Winkels gebruiken vaak een grove groep: "Soepen", "Kruiden", "Verse salades".
+Onze eigen indeling is fijner, dus zo'n groep wijst wel de afdeling aan maar niet
+de lade. De oude regel zei dan: het product telt pas mee als de productnaam zélf
+bewijst in welke lade het hoort. "Knorr Good noodles kip" bewijst niets — dus
+verdween het, terwijl Albert Heijn allang gezegd had dat het soep is. Dat was
+93% van de hele restbak.
+
+Nu valt zo'n product terug op de afdeling van de groep. Geen lade, wél vindbaar.
+Het staat dan onder "Soepen, sauzen & smaakmakers" zonder verder onderscheid, en
+dat is precies wat de winkel er zelf over zegt.
+
+### De uitzondering: eigenschapgroepen
+
+Terugvallen op de afdeling mag niet altijd, en daar zit het echte werk. Een groep
+als **Glutenvrij** noemt namelijk helemaal geen afdeling: er is glutenvrij brood,
+glutenvrije pasta én glutenvrij bier, en die liggen door de hele winkel. Zou je
+daar terugvallen, dan belandt de hele groep op één willekeurige hoop.
+
+Zulke groepen heten voortaan eigenschapgroepen, en de AI leert ze herkennen aan
+één vraag: *kun je aan de naam zien in welke afdeling dit ligt, zonder de
+producten te zien?* Bij "Soepen" kan dat, bij "Glutenvrij" niet. Ze komen in drie
+smaken voor:
+
+- een **eigenschap** — Glutenvrij, Suikervrij, High protein, Natuurlijke voeding;
+- een **gelegenheid** — Kerst, Sinterklaas, Cadeau, Dierendag;
+- een **nietszeggend filterwoord** — Wit, Zoet, Stukken, Spray, Navulling. Jumbo
+  zet die naast iets anders; los zeggen ze niets. Bij "Zoet" hoorde zowel jam als
+  dessertwijn, en die groep stuurde rosé naar het broodbeleg.
+
+Bij een eigenschapgroep beslist alleen de productnaam, en die mag dan vrij kiezen
+over alle afdelingen heen — glutenvrij brood gaat naar de bakkerij, glutenvrije
+pasta naar de pasta. Zegt de naam niets, dan blijft het product in de restbak
+staan. Dat is daar het eerlijke antwoord.
+
+Staat er wél een productsoort naast de eigenschap, dan verandert er niets:
+"Glutenvrije koek" is gewoon koek, "Biologisch zuivel & kaas" is gewoon zuivel.
+
+### Wat het oplevert
+
+Van 24.924 ingedeelde producten naar 27.266 — **2342 erbij**, de restbak loopt
+van 2489 terug naar ongeveer 150. Ruim 5000 producten staan alleen op hun
+afdeling en niet in een lade; die zijn nu tenminste te vinden.
+
+Het oude vlaggetje "gemengd" gooide de grove groep en de eigenschapgroep op één
+hoop en is vervangen. De 267 groepen die eronder vielen worden opnieuw beoordeeld
+— reken op vijf AI-vragen.
+
+Vastgelegd in `scripts/tests/test_eigenschapgroep.py`, met de randen: een
+eigenschapgroep waar de AI tóch een afdeling bij noemt (die valt weg), het
+verschil met een groep die helemaal niet bij ons hoort, en een verzonnen afdeling
+die geweigerd blijft worden.
+
 ## 06-08-2026 — Een afgebroken vertaalronde hervatten
 
 De ronde die alle 2606 winkelgroepen langs de AI stuurt om er de kenmerken uit

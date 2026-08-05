@@ -2,8 +2,21 @@
 ===============================================================================
  Dealbot — winkelgroepen onder onze eigen indeling hangen
 
- Versie      : 2.0
- Reden       : Een winkelgroep leverde tot nu toe alleen een afdeling en een
+ Versie      : 2.1
+ Reden       : De AI kende één soort "past niet precies": gemengd. Daar viel
+               zowel "Soepen" onder (grof, maar de afdeling staat vast) als
+               "Glutenvrij" (die producten liggen door de hele winkel). Beide
+               werden hetzelfde behandeld, en dat kostte 2489 producten: die van
+               de grove groepen verdwenen omdat de productnaam niets bewees.
+
+               De AI maakt nu het onderscheid. Een grove groep levert gewoon zijn
+               afdeling; die is het vangnet als de productnaam zwijgt. Een
+               eigenschapgroep levert géén afdeling — daar zou elke afdeling een
+               gok zijn — en daar beslist alleen de productnaam, vrij over alle
+               afdelingen heen.
+ Datum       : 06-08-2026 01:20
+
+ Vorige      : Een winkelgroep leverde tot nu toe alleen een afdeling en een
                lade op. Het detail dat de winkel er zelf bij zette ging verloren:
                "Toiletpapier Vochtig" werd Huishouden / Toiletpapier, en het
                woord "vochtig" verdween. Daardoor kon je in je profiel wel het
@@ -65,13 +78,19 @@ class Koppeling:
     het betekent "bekeken, en deze groep hoort nergens bij ons". Die uitkomst
     wordt net zo goed bewaard als een treffer, want anders gaan dezelfde 2500
     afgewezen groepsnamen elke ronde opnieuw langs de AI.
+
+    Een eigenschapgroep heeft óók geen hoofdgroep, maar om een andere reden: de
+    naam noemt geen afdeling maar een eigenschap ("Glutenvrij", "Kerst"), en die
+    producten liggen door de hele winkel. Het verschil met "hoort nergens bij
+    ons" is dat de producten hier wél meetellen — alleen moet de productnaam
+    zelf vertellen waar ze horen.
     """
 
     winkel_id: int
     productgroep: str
     hoofdgroep: str | None
     subgroep: str | None = None
-    gemengd: bool = False
+    eigenschapgroep: bool = False
     herkomst: str = "ai"
 
     # Wat deze winkelgroep binnen de lade verbijzondert, in onze eigen woorden.
@@ -87,7 +106,7 @@ class Koppeling:
             "hoofdgroep": self.hoofdgroep,
             "subgroep": self.subgroep,
             "kenmerk": self.kenmerk,
-            "gemengd": self.gemengd,
+            "eigenschapgroep": self.eigenschapgroep,
             "herkomst": self.herkomst,
         }
 
@@ -101,27 +120,48 @@ onder welke hoofdgroep en subgroep van ONZE indeling hij valt.
 ONZE INDELING:
 {indeling}
 
-Er zijn vier soorten antwoord mogelijk:
+Er zijn vier soorten antwoord mogelijk. De hoofdvraag die ze uit elkaar houdt:
+KUN JE AAN DE GROEPSNAAM ZIEN IN WELKE AFDELING DIT LIGT, zonder de producten
+zelf te zien? Bij "Soepen" kan dat. Bij "Glutenvrij" niet — dat ligt door de
+hele winkel verspreid.
 
 A. De groepsnaam past precies op één van onze subgroepen.
-   Vul hoofdgroep én subgroep in, gemengd = false.
+   Vul hoofdgroep én subgroep in, eigenschapgroep = false.
    Voorbeeld: "Koffiebonen" -> Koffie & thee / Koffiebonen.
 
-B. De groepsnaam gaat helemaal over onze hoofdgroep, maar is grover dan onze
-   subgroepen: alles wat erin ligt hoort bij ons, alleen niet in één hokje.
-   Vul alleen de hoofdgroep in, laat subgroep leeg, gemengd = false.
+B. De groepsnaam wijst wél onze afdeling aan, maar is grover dan onze
+   subgroepen. Dit is het gewone geval en veruit het meest voorkomende antwoord.
+   Vul alleen de hoofdgroep in, laat subgroep leeg, eigenschapgroep = false.
    Voorbeeld: "Koffie & cacao" -> Koffie & thee / (leeg).
+   Voorbeeld: "Soepen" -> Soepen, sauzen & smaakmakers / (leeg).
+   Kies B ook als er iets in de groep ligt dat er strikt genomen niet bij hoort.
+   In "IJskoffie en milkshakes" zit een milkshake die eigenlijk zuivel is, maar
+   de afdeling Koffie & thee klopt voor het grootste deel van de groep, en dat
+   is genoeg. We proberen niet elk product apart goed te krijgen; we proberen de
+   groep in de goede afdeling te zetten.
 
-C. De groep is gemengd: een deel van wat erin ligt hoort bij ons, een ander deel
-   hoort ergens anders thuis.
-   Vul de hoofdgroep in, laat subgroep leeg, gemengd = true.
-   Voorbeeld: "IJskoffie en milkshakes" -> Koffie & thee / (leeg) / gemengd.
-   Voorbeeld: "Drinkyoghurt, chocolademelk, ontbijtdranken" -> ook gemengd.
+C. Eigenschapgroep: de naam zegt niet WAT voor product het is, maar wat het
+   ergens van heeft, waar het voor bedoeld is of wanneer je het koopt. Zulke
+   producten liggen door de hele winkel verspreid, dus er is geen afdeling om
+   te noemen.
+   Laat hoofdgroep én subgroep leeg, eigenschapgroep = true.
+   Voorbeeld: "Glutenvrij" -> er is glutenvrij brood, glutenvrije pasta en
+   glutenvrij bier; één afdeling bestaat niet. Eigenschapgroep.
+   Voorbeeld: "Kerst", "Cadeau", "Sinterklaas", "Aanbiedingen van de week".
+   Voorbeeld: "High protein", "Suikervrij", "Natuurlijke voeding".
+   Voorbeeld: nietszeggende namen die alleen een vorm, kleur of smaak noemen:
+   "Wit", "Zoet", "Stukken", "Spray", "Navulling", "Portieverpakkingen". Een
+   winkel gebruikt die als filter naast iets anders; los zeggen ze niets. Bij
+   "Zoet" kan zowel jam als dessertwijn horen.
+   Let op: staat er wél een productsoort bij de eigenschap, dan is het gewoon
+   antwoord A of B. "Glutenvrije koek" is koek, "Biologisch zuivel & kaas" is
+   zuivel, "Kerst desserts" zijn desserts.
 
 D. De groepsnaam heeft niets met onze indeling te maken.
-   Laat hoofdgroep leeg. Dit antwoord is zeldzaam geworden: onze indeling dekt
-   het hele supermarktassortiment. Gebruik het alleen voor wat echt geen
-   boodschap is — een dienst, een spaaractie, statiegeld, een afhaalpunt.
+   Laat hoofdgroep leeg, eigenschapgroep = false. Dit antwoord is zeldzaam
+   geworden: onze indeling dekt het hele supermarktassortiment. Gebruik het
+   alleen voor wat echt geen boodschap is — een dienst, een spaaractie,
+   statiegeld, een afhaalpunt.
 
 HET KENMERK:
 
@@ -136,7 +176,8 @@ iets wat wij anders kwijtraken. Zet dat woord in het veld "kenmerk".
 - Herhaal de subgroep niet. Bij "Toiletpapier Vochtig" is het kenmerk "vochtig",
   niet "toiletpapier vochtig".
 - Kies géén kenmerk bij antwoord B, C of D: zonder vaste subgroep is er niets om
-  het onder te hangen.
+  het onder te hangen. Bij een eigenschapgroep geldt dat dubbel: daar is zelfs
+  de afdeling nog niet bekend.
 - Woorden als "overig", "diversen" en "algemeen" zijn geen kenmerk. Laat leeg.
 
 BELANGRIJK — deze kenmerken kennen we al. Gaat jouw groepsnaam over hetzelfde
@@ -146,15 +187,17 @@ ding, gebruik dan exact het woord dat er al staat en verzin geen synoniem:
 
 REGELS:
 - Kies uitsluitend namen die letterlijk in onze indeling staan. Verzin niets.
-- Twijfel je tussen B en C, kies dan C. Bij een gemengde groep kijken we daarna
-  nog naar de productnaam zelf, dus daar gaat niets verloren.
+- Twijfel je tussen B en C, kies dan B. Kun je een afdeling noemen die voor het
+  merendeel van de groep klopt, noem hem dan: dan zijn die producten in elk
+  geval te vinden. C is alleen voor namen waarbij élke afdeling een gok is.
 - Diepvries wint van elke andere afdeling. "Diepvries groente" hoort bij
   Diepvries, niet bij de groente; alleen als de groepsnaam niet zegt dat het uit
   de vriezer komt, gaat het product naar zijn eigen afdeling.
 - Glutenvrij, lactosevrij, biologisch en "vrij van" zijn eigenschappen, geen
-  afdelingen. "Glutenvrije koekjes" horen gewoon bij de koek. Alleen waar onze
-  indeling er zelf een plek voor heeft (halal vlees, lactosevrije kaas) mag je
-  die kiezen.
+  afdelingen. Staat er een productsoort bij, deel dan daarop in: "Glutenvrije
+  koekjes" horen gewoon bij de koek. Staat de eigenschap er alleen, dan is het
+  antwoord C. Alleen waar onze indeling er zelf een plek voor heeft (halal
+  vlees, lactosevrije kaas) mag je die kiezen.
 - Let op groepsnamen die misleiden. "Theeworst" is worst en heeft niets met thee
   te maken. "Wasmiddel capsules" zijn geen koffiecups.
 - Sommige namen beginnen met "lokaal". Negeer dat woord; het zegt niets over wat
@@ -179,10 +222,10 @@ def _vorm() -> dict[str, Any]:
                         "hoofdgroep": {"type": "string"},
                         "subgroep": {"type": "string"},
                         "kenmerk": {"type": "string"},
-                        "gemengd": {"type": "boolean"},
+                        "eigenschapgroep": {"type": "boolean"},
                     },
                     "required": ["groepsnaam", "hoofdgroep", "subgroep",
-                                 "kenmerk", "gemengd"],
+                                 "kenmerk", "eigenschapgroep"],
                 },
             }
         },
@@ -255,6 +298,15 @@ def _lees_antwoord(
             continue
         beantwoord.add(origineel)
 
+        # Een eigenschapgroep noemt geen afdeling — dat is precies wat hem
+        # eigenschapgroep maakt. Noemt de AI er toch een, dan valt die weg:
+        # anders belandt alles wat "Glutenvrij" heet alsnog op één hoop.
+        eigenschapgroep = bool(regel.get("eigenschapgroep"))
+        if eigenschapgroep:
+            koppelingen.append(Koppeling(winkel_id, origineel, None,
+                                         eigenschapgroep=True))
+            continue
+
         hoofd = (regel.get("hoofdgroep") or "").strip()
         if not hoofd:
             koppelingen.append(Koppeling(winkel_id, origineel, None))
@@ -271,20 +323,10 @@ def _lees_antwoord(
                       sub, hoofd, origineel)
             sub = None
 
-        # Een gemengde groep heeft per definitie geen vaste subgroep: die moet
-        # per product uit de naam komen. Noemt de AI er tóch een, dan valt die
-        # weg — anders zou de helft van de groep op de verkeerde plek landen.
-        gemengd = bool(regel.get("gemengd"))
-        if gemengd:
-            sub = None
-
         # Het kenmerk hangt onder de lade, dus zonder vaste lade vervalt het.
-        # Bij een gemengde groep geldt dat dubbel: daar moet de subgroep nog uit
-        # de productnaam komen, en een kenmerk zou dan bij de verkeerde lade
-        # kunnen belanden.
-        kenmerk = None if gemengd else woordenlijst.pas_in(hoofd, sub, regel.get("kenmerk"))
+        kenmerk = woordenlijst.pas_in(hoofd, sub, regel.get("kenmerk"))
 
-        koppelingen.append(Koppeling(winkel_id, origineel, hoofd, sub, gemengd,
+        koppelingen.append(Koppeling(winkel_id, origineel, hoofd, sub,
                                      kenmerk=kenmerk))
 
     return koppelingen, afgekeurd
