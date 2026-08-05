@@ -1,5 +1,20 @@
 # Wijzigingen — Dealbot
 
+## 05-08-2026 — De groepenlijst in het profiel doet het weer
+
+Wie in zijn profiel een zoekvraag wilde toevoegen, kreeg bij het eerste zoekveld
+"De productgroepen konden niet worden opgehaald" en zag geen enkele afdeling
+staan. Typen hielp niet: er viel niets te doorzoeken.
+
+- **Oorzaak**: bij het gebruikersbeheer van gisteren is de groepenlijst achter de
+  blokkadecontrole gezet. In die striktere vorm ging het optellen van een hele
+  afdeling mis — de database rekende het totaal uit als kommagetal terwijl er een
+  heel getal beloofd was, en weigerde daarop het hele antwoord.
+- **Opgelost** in `database/14_groepenlijst_hersteld.sql`. De afdelingen, laden
+  en aantallen zijn ongewijzigd; alleen het totaal komt er weer goed uit.
+
+Alleen de database; aan de website verandert niets.
+
 ## 05-08-2026 — Pincode vergeten? Zelf een nieuwe kiezen
 
 Wie zijn pincode kwijt was, kon nergens heen: de beheerder kent hem ook niet en
