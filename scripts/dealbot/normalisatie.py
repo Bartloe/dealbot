@@ -2,11 +2,12 @@
 ===============================================================================
  Dealbot — prijsnormalisatie
 
- Versie      : 1.1
- Reden       : Jumbo gebruikt de aanbiedingsvorm "1,00 korting" — een bedrag in
-               euro's van de prijs af. Die werd nog niet omgerekend, waardoor
-               zulke aanbiedingen de normale prijs hielden.
- Datum       : 31-07-2026 00:12
+ Versie      : 1.2
+ Reden       : Picnic kent de aanbiedingsvorm "2e = 40% korting": de korting
+               geldt alleen voor het tweede exemplaar. Zonder eigen regel werd
+               die als een gewone procentkorting op élk exemplaar gelezen,
+               waardoor zo'n aanbieding twee keer zo gunstig leek.
+ Datum       : 05-08-2026 12:20
 
  Onderdelen:
    lees_inhoud()        - herkent "400 g", "2 x 125 g", "1,5 l", "5 stuks"
@@ -38,9 +39,14 @@ _EENHEDEN = {
 }
 
 # Woorden die op losse exemplaren duiden in plaats van op gewicht of inhoud.
+# De tweede regel komt van Picnic, die zijn koffie en thee niet in grammen maar
+# in bekers telt ("36 pads", "20 koppen"). Bewust niet in deze lijst: "porties"
+# en "punten" — dat zegt iets over hoeveel mensen ervan eten, niet over wat er
+# in de verpakking zit.
 _STUKS_WOORDEN = {
     "stuk", "stuks", "st", "pack", "pak", "pakket", "rollen", "rol",
     "zakken", "zak", "blikken", "blik", "flessen", "fles", "bossen", "bos",
+    "pads", "cups", "capsules", "koppen", "zakjes", "zakje", "plakken", "sneden",
 }
 
 
@@ -151,6 +157,15 @@ def effectieve_prijs(
         if aantal and totaal:
             return round(totaal / aantal, 4)
 
+    # "nu €1.99" — Picnic zet het nieuwe bedrag in de actietekst zelf. Meestal
+    # staat de doorgestreepte prijs er ook bij en telt die al mee; dit is het
+    # vangnet voor als die ontbreekt.
+    match = re.search(r"^nu\s*€?\s*(\d+(?:[.,]\d+)?)", tekst)
+    if match:
+        bedrag = _getal(match.group(1))
+        if bedrag:
+            return round(bedrag, 4)
+
     # "voor 3.49"
     match = re.search(r"^voor\s*€?\s*(\d+(?:[.,]\d+)?)", tekst)
     if match:
@@ -171,6 +186,17 @@ def effectieve_prijs(
         return round(basis * 0.75, 4)
     if re.search(r"2e\s+gratis", tekst):
         return round(basis * 0.5, 4)
+
+    # "2e = 40% korting" — de korting geldt alleen voor het tweede exemplaar.
+    # Moet vóór de gewone procentregel staan, anders wordt de korting op álle
+    # exemplaren gerekend en lijkt de aanbieding twee keer zo gunstig.
+    match = re.search(r"(\d+)e\s*=?\s*(\d+(?:[.,]\d+)?)\s*%", tekst)
+    if match:
+        hoeveelste = _getal(match.group(1))
+        percentage = _getal(match.group(2))
+        if hoeveelste and hoeveelste > 1 and percentage is not None and 0 < percentage < 100:
+            samen = (hoeveelste - 1) + (1 - percentage / 100)
+            return round(basis * samen / hoeveelste, 4)
 
     # "1,00 korting", "5,00 korting" — een bedrag in euro's van de prijs af
     match = re.search(r"€?\s*(\d+[.,]\d{2})\s*korting", tekst)

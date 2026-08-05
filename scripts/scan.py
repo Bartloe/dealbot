@@ -36,7 +36,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from dealbot.bronnen import albert_heijn, dirk, jumbo, lidl, vomar, vomar_folder  # noqa: E402
+from dealbot.bronnen import albert_heijn, dirk, jumbo, lidl, picnic, vomar, vomar_folder  # noqa: E402
 from dealbot.database import Database, DatabaseFout  # noqa: E402
 
 # Elke winkel met de module die zijn aanbiedingen ophaalt.
@@ -45,12 +45,18 @@ WINKELS = [
     (jumbo.WINKEL_ID, jumbo.WINKEL_NAAM, jumbo.haal_op),
     (dirk.WINKEL_ID, dirk.WINKEL_NAAM, dirk.haal_op),
     (lidl.WINKEL_ID, lidl.WINKEL_NAAM, lidl.haal_op),
+    (picnic.WINKEL_ID, picnic.WINKEL_NAAM, picnic.haal_op),
 ]
 
 # Winkels die hun hele assortiment met gewone prijzen publiceren. Dat is iets
 # anders dan een aanbiedingenbron: dit zijn de gewone schapprijzen.
+#
+# Picnic staat in beide lijsten. Bij hem levert één rondgang door de winkel
+# allebei op: zijn aanbiedingen zitten als vlaggetje op dezelfde producttegels
+# als de gewone prijzen. De winkel wordt daarom maar één keer afgelopen.
 ASSORTIMENTEN = [
     (vomar.WINKEL_ID, vomar.WINKEL_NAAM, vomar.haal_assortiment),
+    (picnic.WINKEL_ID, picnic.WINKEL_NAAM, picnic.haal_assortiment),
 ]
 
 # Winkels waarvan de aanbiedingen alleen in een digitale folder staan. Die wordt

@@ -94,8 +94,22 @@ Bijgewerkt: 04-08-2026 11:30
       productgroep en looptijd; 89 daarvan met kiloprijs. Veertig aanbiedingen
       zijn Lidl Plus-kaartprijzen en staan in een eigen veld — die tellen mee,
       met "met Lidl Plus" in de actietekst. Een merkveld is er niet
-- [ ] Meer winkels: DekaMarkt (werkt precies als Dirk, dus weinig werk), Bol, Amazon,
-      Picnic. Plus, Coop en Hoogvliet blokkeren automatisch ophalen
+- [x] **Zesde keten: Picnic.** Gedaan op 05-08-2026: 1836 aanbiedingen (91% met
+      kiloprijs) en 12.754 schapprijzen uit één rondgang door 265 laden, in vijf
+      minuten. Picnic heeft geen webwinkel en geen folder — alles zit in zijn app —
+      dus Dealbot logt in met een eigen Picnic-account. Elke verse inlog vraagt om
+      een code per sms of e-mail, dus er is één keer met de hand ingelogd; die
+      sleutel geldt tot 01-02-2027. Een aanbieding is te herkennen aan het gele
+      vlaggetje op de producttegel, níet aan de rode prijs — dat label
+      ("Prijskampioen") is een blijvend lage prijs
+- [ ] **De sleutel van Picnic als instelling op GitHub zetten**: `PICNIC_TOKEN`
+      onder Settings → Secrets and variables → Actions. Zonder die instelling
+      draait de ochtendronde gewoon door, maar blijft Picnic buiten de lijst
+- [ ] **Op tijd waarschuwen dat de Picnic-sleutel verloopt** (01-02-2027). Nu merk
+      je het pas als de ronde stukloopt; de beheerpagina zou het van tevoren
+      kunnen melden
+- [ ] Meer winkels: DekaMarkt (werkt precies als Dirk, dus weinig werk), Bol, Amazon.
+      Plus, Coop en Hoogvliet blokkeren automatisch ophalen
 - [x] Vomar gebruiken voor de standaardprijzen-pagina: hun productlijst geeft het hele
       assortiment met normale prijs, merk, inhoud én streepjescode (EAN). Gedaan op
       02-08-2026: 6174 producten, allemaal met kiloprijs en EAN, in twee verzoeken.
@@ -126,9 +140,12 @@ Bijgewerkt: 04-08-2026 11:30
 - [x] De standaardprijzen-pagina bouwen — gedaan op 02-08-2026, gevuld met Vomar.
       Zoeken op merk of productnaam, of een productgroep kiezen; resultaten van
       goedkoop naar duur per kilo
-- [ ] **Dirk (en Lidl) erbij als tweede winkel op de standaardprijzen-pagina, zodat
-      er echt te vergelijken valt.** Met één winkel erin staat er alleen een prijs;
-      pas met een tweede wordt de pagina nuttig.
+- [x] **Een tweede winkel op de standaardprijzen-pagina** — opgelost op 05-08-2026
+      door Picnic, die 12.754 schapprijzen meelevert uit dezelfde rondgang als zijn
+      aanbiedingen. Naast Vomar staat er nu dus echt iets te vergelijken. Let op:
+      Picnic geeft geen streepjescode, dus koppelen aan Vomar kan alleen op naam
+- [ ] **Dirk erbij als derde winkel op de standaardprijzen-pagina.** Nu minder
+      dringend dan het was, maar hoe meer winkels hoe beter te vergelijken.
       - **Dirk** is de makkelijke: het hele assortiment is op te halen met
         `listWebGroupProducts(webGroupId)` per groep, gevolgd door
         `products(productIds, storeId)` in blokken. Let op: van de 1123 artikelen
@@ -137,10 +154,9 @@ Bijgewerkt: 04-08-2026 11:30
         op 03-08-2026: Lidl blokkeert niet — zijn aanbiedingenpagina bevat de
         prijzen gewoon zelf, 108 stuks in één verzoek. Maar schapprijzen bestaan
         bij Lidl niet online: alleen wat in de bonus ligt heeft een bedrag.
-        Voor deze pagina is Dirk dus de tweede winkel.
       - Koppelen tussen winkels gaat het beste op streepjescode. Vomar levert die
-        bij 100% van zijn producten; van Dirk is dat nog onbekend, Lidl geeft er
-        geen (alleen eigen artikelnummers, dus koppelen op naam)
+        bij 100% van zijn producten; van Dirk is dat nog onbekend, Lidl en Picnic
+        geven er geen (alleen eigen artikelnummers, dus koppelen op naam)
 - [ ] Ook merk als keuzelijst in het profielscherm (de productgroep is er al één)
 - [ ] Geschikt maken voor een mobiele app
 

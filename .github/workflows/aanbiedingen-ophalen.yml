@@ -1,12 +1,11 @@
 # =============================================================================
 #  Dealbot — dagelijks de aanbiedingen ophalen
 #
-#  Versie : 1.3
-#  Reden  : De weekfolder van Vomar wordt nu met AI uitgelezen. Dat gebeurt
-#           alleen als er een nieuwe folder hangt (in de praktijk één keer per
-#           week) maar duurt dan een minuut of tien; vandaar de ruimere tijd.
-#           De Gemini-sleutels komen als één instelling mee.
-#  Datum  : 03-08-2026 10:50
+#  Versie : 1.4
+#  Reden  : Picnic is erbij. Zijn hele winkel wordt lade voor lade afgelopen,
+#           wat een minuut of vijf kost, en dat kan alleen met een ingelogde
+#           sleutel — vandaar de extra instelling en de ruimere tijd.
+#  Datum  : 05-08-2026 14:10
 #
 #  Draait elke ochtend om 07:00 Nederlandse tijd (05:00 UTC) en is daarnaast
 #  handmatig te starten via het tabblad Actions op GitHub.
@@ -22,7 +21,7 @@ on:
 jobs:
   ophalen:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
 
     steps:
       - name: Code ophalen
@@ -45,4 +44,10 @@ jobs:
           # deze instelling gaat alles gewoon door; alleen de folder van Vomar
           # blijft dan ongelezen.
           GEMINI_API_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+          # De geverifieerde sleutel van het Picnic-account. Picnic vraagt bij
+          # elke verse inlog om een code per sms of e-mail, en die kan een
+          # ochtendronde niet beantwoorden; daarom is er één keer met de hand
+          # ingelogd en gebruiken we die sleutel. Zonder deze instelling gaat de
+          # ronde gewoon door, maar blijft Picnic buiten de lijst.
+          PICNIC_TOKEN: ${{ secrets.PICNIC_TOKEN }}
         run: python scripts/scan.py

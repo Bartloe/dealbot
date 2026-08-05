@@ -1,5 +1,82 @@
 # Wijzigingen — Dealbot
 
+## 05-08-2026 — Picnic erbij als zesde winkel
+
+Picnic doet mee, en hij is meteen de op één na grootste bron: **1836
+aanbiedingen en 12.754 schapprijzen**, verdeeld over 265 productgroepen. Van die
+aanbiedingen heeft 91% een kiloprijs.
+
+### Waarom dit anders ging dan bij de andere ketens
+
+Picnic heeft geen winkel om binnen te lopen en geen folder om te lezen. Hij
+heeft ook geen webwinkel: zijn hele assortiment zit uitsluitend in zijn app.
+Hun eigen site zegt het zo — *"Nee, een papieren folder hebben we niet. Maar
+eigenlijk kun je onze app zien als een folder."* Die app-ingang laat alleen
+ingelogde klanten toe, en een omweg via een vergelijkingssite bestaat niet:
+supermarktscanner.nl heeft Picnic helemaal niet in huis.
+
+Dealbot logt daarom in met een eigen Picnic-account. Dat kan niet elke ochtend
+opnieuw: **Picnic vraagt bij elke verse inlog om een code per sms of e-mail**, en
+die kan een ochtendronde niet beantwoorden. Er is dus één keer met de hand
+ingelogd; de sleutel die daaruit komt is bewaard en geldt **tot 1 februari
+2027**. Loopt hij af, dan meldt de beheerpagina dat met zoveel woorden — en dan
+is er opnieuw één code nodig.
+
+### Wat er binnenkomt
+
+- **De hele winkel wordt afgelopen**, net als bij Albert Heijn: 26 afdelingen met
+  daaronder 265 laden als *Koffiebonen*, *Yoghurt & skyr* en *Verse vis*. Dat is
+  dezelfde fijne indeling waar Albert Heijn zijn laden voor heeft, en dus veel
+  bruikbaarder dan de grove afdelingen van Dirk.
+- **Eén rondgang levert allebei**: de aanbiedingen én de gewone schapprijzen. Bij
+  Picnic zit dat op dezelfde producttegel, dus de winkel wordt maar één keer
+  afgelopen. Het kost ongeveer vijf minuten.
+- **Picnic is daarmee de tweede winkel op de standaardprijzen-pagina.** Tot nu
+  toe stond daar alleen Vomar, en met één winkel valt er niets te vergelijken.
+- **Ligt een product deze week in de actie, dan staat op de
+  standaardprijzen-pagina zijn gewóne prijs** — daar hoort te staan wat iets
+  kost als er even geen aanbieding is.
+
+### Twee valkuilen die we eruit hebben gehaald
+
+- **Een rode prijs betekent niet "aanbieding".** Picnic zet het label
+  *Prijskampioen* — een blijvend lage prijs — in exact dezelfde rode kleur als
+  een actieprijs. Alleen het gele vlaggetje op de tegel telt; daar staat de
+  actietekst ook in.
+- **"1+1 gratis" en "2e = 40% korting" staan bij Picnic naast de gewóne prijs.**
+  Wie die klakkeloos overneemt, zet zo'n aanbieding twee keer zo duur in de lijst
+  als hij is. Dealbot rekent nu zelf uit wat je per stuk betaalt. De vorm
+  "2e = 40% korting" was nieuw en werd eerst gelezen als korting op élk
+  exemplaar — dat scheelde een kwart in de prijs.
+
+### Onderweg verbeterd voor álle winkels
+
+- **Koffie en thee krijgen eindelijk een prijs per kopje.** Dealbot rekende in
+  grammen en liters en kende "36 pads", "20 koppen" of "10 cups" niet, waardoor
+  die producten zonder kiloprijs onderaan bleven hangen. Nu tellen ze mee.
+  Bewust níet meegeteld: "3-4 porties" en "6-8 punten" — dat zegt iets over
+  hoeveel mensen ervan eten, niet over wat er in de verpakking zit. Een
+  bereidingstijd ("30 min") wordt ook niet voor inhoud aangezien.
+- **Herkomst is geen merk.** Bij onverpakte groente en fruit zet Picnic "Uit
+  Nederland" in het merkveld. Dat blijft er nu uit: anders vindt dezelfde aardbei
+  bij Albert Heijn zijn tegenhanger niet meer, want winkels worden op merk plus
+  productnaam aan elkaar geknoopt.
+
+### Onder onze eigen indeling
+
+**257 van de 258 Picnic-groepen** hebben een plek gekregen in onze eigen
+indeling, en daarmee hangt **91% van zijn aanbiedingen** eronder. Eén keer
+*Koffiebonen* aanvinken geeft nu 40 aanbiedingen bij zes winkels; *Yoghurt &
+skyr* er 39, waarvan 23 van Picnic.
+
+### Wat er nog moet gebeuren
+
+- **De sleutel als instelling op GitHub zetten**: `PICNIC_TOKEN` onder Settings →
+  Secrets and variables → Actions. Zonder die instelling draait de ochtendronde
+  gewoon door, maar blijft Picnic buiten de lijst.
+- `database/13_picnic.sql` staat klaar. De winkel is al aangemaakt, dus dit
+  script uitvoeren verandert niets meer — het is de vastlegging.
+
 ## 05-08-2026 — Eén hapering gooide een hele winkel om
 
 Vanochtend om 07:35 viel Albert Heijn uit de ronde met de melding "wegschrijven
