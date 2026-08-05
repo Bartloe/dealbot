@@ -76,10 +76,12 @@ Bijgewerkt: 04-08-2026 11:30
       verschillen van de huidige (Supabase weigert dezelfde), en de ingebouwde mailer
       stuurt maar een handvol berichten per uur — voor 25 gebruikers genoeg, maar niet om
       mee te testen
-- [ ] **In Supabase de Site URL goedzetten** (Authentication → URL Configuration):
-      `https://bartloe.github.io/dealbot/` als Site URL en `https://bartloe.github.io/dealbot/**`
-      bij Redirect URLs. Zonder dat komt de link uit de herstelmail bij localhost terecht.
-      Te controleren met `python scripts/tests/test_pincode.py`
+- [x] **In Supabase de Site URL goedgezet** (05-08-2026): `https://bartloe.github.io/dealbot/`
+      als Site URL, met `https://bartloe.github.io/dealbot/**` bij Redirect URLs. De hele
+      weg van vergeten pincode naar nieuwe pincode is daarna van begin tot eind nagelopen
+      met `python scripts/tests/test_pincode.py` — 13 controles, allemaal goed: de link
+      komt op onze eigen pagina uit, geeft tijdelijke toegang, de nieuwe pincode werkt en
+      de oude niet meer, en een kapotte link geeft een nette melding
 
 ## Fase 2 — later
 
