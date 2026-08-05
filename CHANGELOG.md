@@ -32,6 +32,51 @@ middernacht, een regel uit een oudere ronde die wél opnieuw moet, een tijdstip
 zonder tijdzone (dat is altijd UTC — anders schuift alles twee uur op en valt de
 grens midden in de ronde) en een datum die niet te lezen is.
 
+## 05-08-2026 — Ophalen starten met één knop, en de folder overdoen
+
+Het ophalen tussendoor laten draaien ging tot nu toe via een omweg: de knop op de
+beheerpagina bracht je naar GitHub, en daar moest je de juiste werkstroom zoeken
+en nog twee keer klikken. Dat is geen knop maar een routebeschrijving.
+
+Nu staan er twee echte knoppen op de beheerpagina.
+
+### Wat je ervan merkt
+
+- **Nu ophalen** doet meteen wat er elke ochtend om 07.00 uur gebeurt. Reken op
+  een minuut of vijf, en klik daarna op *Overzicht verversen* om te zien wat
+  eruit kwam.
+- **Folder opnieuw lezen** laat de folder van Vomar nog een keer voorlezen, ook
+  als hij al gelezen is. Dat kon niet: een folder wordt bewust maar één keer per
+  week gelezen, dus ging het voorlezen half mis, dan zat je er een week aan vast.
+  De knop vraagt eerst om een bevestiging, want elk voorlezen kost tientallen
+  AI-vragen van de dagvoorraad.
+- **Boven de tabel** staat of het startsein is aangekomen. Dat is iets anders dan
+  of het ophalen zelf gelukt is: als de sleutel van GitHub verlopen is, gebeurt
+  er anders gewoon niets en is nergens te zien waarom.
+- **Niet vaker dan eens per vijf minuten.** Een tweede ronde bovenop een lopende
+  levert niets op en kost alleen maar vragen.
+
+### Hoe het onder water werkt
+
+Het echte werk — winkels aflopen, een folder laten voorlezen — duurt minuten en
+blijft draaien op GitHub. Alleen het startsein verhuist naar de site. De website
+vraagt dat aan de database, en de database belt GitHub met een sleutel die in
+zijn eigen kluis ligt. Zo staat er nergens een sleutel op een openbare pagina:
+de website weet niet eens dat GitHub bestaat.
+
+Het ophaalscript kan sindsdien ook in stukken: `--wat winkels` slaat de folders
+over, `--wat folder` doet alleen de folders, en `--opnieuw` leest een folder die
+al in de database staat toch nog een keer.
+
+### Eenmalig in te stellen
+
+Zonder deze twee stappen doet de knop niets, en zegt de pagina dat ook:
+
+1. Een fijnmazige toegangssleutel maken op GitHub die alléén bij de repo dealbot
+   mag, met het recht *Actions: Read and write*.
+2. `database/17_ophalen_starten.sql` uitvoeren, en die sleutel daarna één keer in
+   de kluis zetten met het regeltje dat bovenin dat bestand staat.
+
 ## 05-08-2026 — Kenmerken: alleen het vochtige toiletpapier volgen
 
 Onze indeling heeft één lade *Huishouden › Toiletpapier*, met het droge en het
