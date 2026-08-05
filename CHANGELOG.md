@@ -1,5 +1,20 @@
 # Wijzigingen — Dealbot
 
+## 05-08-2026 — Na acht uur stilte gaat de sessie eruit
+
+Wie inlogde bleef ingelogd tot hij op Uitloggen klikte. Op een gedeelde of
+vergeten laptop stond Dealbot daarmee voor iedereen open.
+
+- **Acht uur zonder enige handeling beëindigt de sessie.** Bij terugkomst staat
+  het inlogscherm klaar met de reden erbij.
+- **Wie bezig is, merkt er niets van.** Elke klik, toetsaanslag of scrollbeweging
+  zet de klok terug op nul; niemand wordt midden in het kijken uitgegooid.
+- Staat de pagina uren onaangeroerd open, dan valt hij vanzelf terug op het
+  inlogscherm — er hoeft niet eerst iets geklikt te worden.
+- Uitloggen wist het moment, zodat de volgende gebruiker met een schone lei begint.
+
+Alleen de website; aan de database verandert niets.
+
 ## 05-08-2026 — Gebruikersbeheer: wie er is, en wie er niet meer in mag
 
 De beheerpagina heeft er twee blokken bij gekregen. Aanmelden blijft vrij, maar

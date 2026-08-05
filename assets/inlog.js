@@ -2,15 +2,17 @@
  * =============================================================================
  *  Dealbot — het inlogscherm
  *
- *  Versie      : 1.2
- *  Reden       : Na het inloggen vraagt elke pagina één keer wat dit account
- *                mag: staat het op slot, dan gaat de sessie er meteen weer uit
- *                met een uitleg in plaats van een lege pagina. Is het de
- *                beheerder, dan komt de beheerknop in de balk.
- *  Datum       : 04-08-2026 23:35
+ *  Versie      : 1.3
+ *  Reden       : Een sessie die acht uur stil is, eindigt vanzelf. Daarnaast
+ *                vraagt elke pagina na het inloggen wat dit account mag: staat
+ *                het op slot, dan gaat de sessie er meteen weer uit met een
+ *                uitleg in plaats van een lege pagina. Is het de beheerder, dan
+ *                komt de beheerknop in de balk.
+ *  Datum       : 05-08-2026 00:40
  *
  *  Onderdelen:
  *    beveiligPagina()   - geeft de ingelogde gebruiker, of toont het inlogscherm
+ *    beeindigSessie()   - logt uit en zegt waarom
  *    toonInlogscherm()  - zet het inlogscherm in beeld, met eventueel een melding
  *    koppelUitloggen()  - laat de uitlogknop werken
  * =============================================================================
@@ -19,6 +21,7 @@
 import {
     logIn, meldAan, logUit, haalGebruiker, haalToegang, DealbotFout, PINCODE_LENGTE,
 } from './data.js';
+import { sessieVerlopen, bewaakSessie, meldActiviteit, wisActiviteit, STILTE_UREN } from './sessie.js';
 
 const SCHERM = `
 <div class="inlogkaart">
@@ -64,18 +67,22 @@ export async function beveiligPagina() {
     const houder = document.getElementById('inlogscherm');
 
     if (gebruiker) {
+        // Is het langer dan acht uur stil geweest, dan eindigt de sessie hier —
+        // nog vóór er iets aan de database gevraagd wordt.
+        if (sessieVerlopen()) {
+            await beeindigSessie(houder,
+                `Je bent automatisch uitgelogd omdat je ${STILTE_UREN} uur niets `
+                + 'hebt gedaan. Log opnieuw in.');
+            return null;
+        }
+
         const toegang = await haalToegang();
 
         // Een account dat op slot staat komt er niet in. De database geeft hem
         // toch niets meer; dit scherm zegt hem waaróm zijn lijst leeg is.
         if (toegang.geblokkeerd) {
             console.info('Dealbot — dit account staat op slot; sessie beëindigd.');
-            try {
-                await logUit();
-            } catch (fout) {
-                console.error('Dealbot — uitloggen na blokkade mislukt:', fout);
-            }
-            toonInlogscherm(houder,
+            await beeindigSessie(houder,
                 'Dit account is geblokkeerd. Neem contact op met de beheerder.');
             return null;
         }
@@ -91,11 +98,28 @@ export async function beveiligPagina() {
                 knop.hidden = false;
             }
         }
+
+        // Vanaf hier telt de stilte. Blijft de pagina uren onaangeroerd open
+        // staan, dan valt hij vanzelf terug op het inlogscherm.
+        bewaakSessie(() => beeindigSessie(document.getElementById('inlogscherm'),
+            `Je bent automatisch uitgelogd omdat je ${STILTE_UREN} uur niets hebt gedaan.`));
+
         return gebruiker;
     }
 
     toonInlogscherm(houder);
     return null;
+}
+
+/** Beëindigt de sessie en zet het inlogscherm in beeld met de reden erbij. */
+async function beeindigSessie(houder, tekst) {
+    try {
+        await logUit();
+    } catch (fout) {
+        console.error('Dealbot — uitloggen mislukt:', fout);
+    }
+    wisActiviteit();
+    toonInlogscherm(houder, tekst);
 }
 
 /** Zet het inlogscherm in beeld, eventueel met een melding erboven. */
@@ -161,6 +185,9 @@ function bouwInlogscherm() {
             } else {
                 await logIn(email, pincode);
             }
+            // De klok van de stilte begint hier opnieuw; anders zou een oud
+            // moment van de vorige gebruiker meteen weer uitloggen.
+            meldActiviteit(true);
             // Opnieuw laden is de eenvoudigste manier om de pagina met de
             // gegevens van de zojuist ingelogde gebruiker op te bouwen.
             window.location.reload();
@@ -193,6 +220,7 @@ export function koppelUitloggen() {
         } catch (fout) {
             console.error('Dealbot — uitloggen mislukt:', fout);
         } finally {
+            wisActiviteit();
             window.location.reload();
         }
     });

@@ -69,7 +69,8 @@ Bijgewerkt: 04-08-2026 11:30
       de lijst geweerde e-mailadressen, zodat opnieuw aanmelden met hetzelfde adres niet
       lukt. Aanmelden blijft verder vrij. De knop "herstelmail sturen" hoort bij de klus
       hieronder — zonder pagina om een nieuwe pincode te kiezen leidt die mail nergens heen
-- [ ] **Automatisch uitloggen na 8 uur zonder activiteit**
+- [x] **Automatisch uitloggen na 8 uur zonder activiteit** (05-08-2026): de klok loopt in
+      de browser en wordt door elke klik of toetsaanslag teruggezet
 - [ ] **Pincode vergeten**: de gebruiker vraagt zelf een herstelmail aan en stelt via de
       link een nieuwe pincode in (mag dezelfde zijn). Let op: de ingebouwde mailer van
       Supabase stuurt maar een handvol berichten per uur — voor 25 gebruikers genoeg,
