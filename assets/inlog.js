@@ -2,21 +2,22 @@
  * =============================================================================
  *  Dealbot — het inlogscherm
  *
- *  Versie      : 1.1
- *  Reden       : De beheerpagina erbij. De knop ernaartoe hoort alleen in de
- *                balk van de beheerder te staan, dus wordt na het inloggen
- *                gevraagd of dit account dat is.
- *  Datum       : 04-08-2026 22:25
+ *  Versie      : 1.2
+ *  Reden       : Na het inloggen vraagt elke pagina één keer wat dit account
+ *                mag: staat het op slot, dan gaat de sessie er meteen weer uit
+ *                met een uitleg in plaats van een lege pagina. Is het de
+ *                beheerder, dan komt de beheerknop in de balk.
+ *  Datum       : 04-08-2026 23:35
  *
  *  Onderdelen:
- *    beveiligPagina() - geeft de ingelogde gebruiker, of toont het inlogscherm
- *    toonBeheerknop() - zet de beheerknop in de balk als je beheerder bent
- *    koppelUitloggen() - laat de uitlogknop werken
+ *    beveiligPagina()   - geeft de ingelogde gebruiker, of toont het inlogscherm
+ *    toonInlogscherm()  - zet het inlogscherm in beeld, met eventueel een melding
+ *    koppelUitloggen()  - laat de uitlogknop werken
  * =============================================================================
  */
 
 import {
-    logIn, meldAan, logUit, haalGebruiker, benIkBeheerder, DealbotFout, PINCODE_LENGTE,
+    logIn, meldAan, logUit, haalGebruiker, haalToegang, DealbotFout, PINCODE_LENGTE,
 } from './data.js';
 
 const SCHERM = `
@@ -63,34 +64,54 @@ export async function beveiligPagina() {
     const houder = document.getElementById('inlogscherm');
 
     if (gebruiker) {
+        const toegang = await haalToegang();
+
+        // Een account dat op slot staat komt er niet in. De database geeft hem
+        // toch niets meer; dit scherm zegt hem waaróm zijn lijst leeg is.
+        if (toegang.geblokkeerd) {
+            console.info('Dealbot — dit account staat op slot; sessie beëindigd.');
+            try {
+                await logUit();
+            } catch (fout) {
+                console.error('Dealbot — uitloggen na blokkade mislukt:', fout);
+            }
+            toonInlogscherm(houder,
+                'Dit account is geblokkeerd. Neem contact op met de beheerder.');
+            return null;
+        }
+
         houder.hidden = true;
         document.querySelectorAll('[data-na-inloggen]').forEach((deel) => {
             deel.hidden = false;
         });
-        // Los van de pagina zelf: de knop mag gerust een fractie later komen.
-        toonBeheerknop();
+
+        if (toegang.beheerder) {
+            const knop = document.getElementById('beheerlink');
+            if (knop) {
+                knop.hidden = false;
+            }
+        }
         return gebruiker;
     }
 
-    houder.innerHTML = SCHERM;
-    houder.hidden = false;
-    bouwInlogscherm();
+    toonInlogscherm(houder);
     return null;
 }
 
-/**
- * Zet de knop naar de beheerpagina in de balk, maar alleen bij de beheerder.
- *
- * Voor alle anderen bestaat die knop niet. Wie het adres tóch intikt komt niet
- * verder: de database geeft de beheergegevens alleen aan het beheerdersaccount.
- */
-async function toonBeheerknop() {
-    const knop = document.getElementById('beheerlink');
-    if (!knop) {
-        return;
-    }
-    if (await benIkBeheerder()) {
-        knop.hidden = false;
+/** Zet het inlogscherm in beeld, eventueel met een melding erboven. */
+function toonInlogscherm(houder, tekst = '') {
+    houder.innerHTML = SCHERM;
+    houder.hidden = false;
+    document.querySelectorAll('[data-na-inloggen]').forEach((deel) => {
+        deel.hidden = true;
+    });
+    bouwInlogscherm();
+
+    if (tekst) {
+        const melding = document.getElementById('inlogmelding');
+        melding.textContent = tekst;
+        melding.className = 'melding fout';
+        melding.hidden = false;
     }
 }
 

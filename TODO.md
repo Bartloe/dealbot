@@ -64,10 +64,11 @@ Bijgewerkt: 04-08-2026 11:30
 - [x] **Beheerpagina, alleen voor het beheerdersaccount** (04-08-2026): hoe de laatste
       ronde per winkel is gegaan (met storingsmelding) en hoe compleet de oogst is —
       aantallen zonder kiloprijs en zonder plek in onze eigen indeling
-- [ ] **Gebruikersoverzicht**: naam, e-mail, aangemaakt op, laatst ingelogd, aantal
-      zoekvragen. Per gebruiker: uitzetten, weer aanzetten, herstelmail sturen en
-      verwijderen. Plus een lijst geweerde e-mailadressen, zodat opnieuw aanmelden met
-      hetzelfde adres niet lukt. Aanmelden blijft verder vrij
+- [x] **Gebruikersoverzicht** (05-08-2026): naam, e-mail, aangemaakt op, laatst ingelogd,
+      aantal zoekvragen. Per gebruiker: op slot zetten, weer openen en verwijderen. Plus
+      de lijst geweerde e-mailadressen, zodat opnieuw aanmelden met hetzelfde adres niet
+      lukt. Aanmelden blijft verder vrij. De knop "herstelmail sturen" hoort bij de klus
+      hieronder — zonder pagina om een nieuwe pincode te kiezen leidt die mail nergens heen
 - [ ] **Automatisch uitloggen na 8 uur zonder activiteit**
 - [ ] **Pincode vergeten**: de gebruiker vraagt zelf een herstelmail aan en stelt via de
       link een nieuwe pincode in (mag dezelfde zijn). Let op: de ingebouwde mailer van

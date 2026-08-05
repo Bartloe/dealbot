@@ -47,6 +47,36 @@
                     via het profiel niet te vinden.</p>
                 <div id="kwaliteit"></div>
             </section>
+
+            <section class="blok">
+                <h2>Gebruikers</h2>
+                <p class="uitleg">Wie er een account heeft. <strong>Op slot</strong> is terug te
+                    draaien: die gebruiker kan nog inloggen maar ziet niets meer.
+                    <strong>Verwijderen</strong> is dat niet — het account en alle zoekvragen
+                    gaan dan weg, en het e-mailadres komt weer vrij.</p>
+                <div id="gebruikers"></div>
+            </section>
+
+            <section class="blok">
+                <h2>Geweerde e-mailadressen</h2>
+                <p class="uitleg">Met deze adressen kan geen nieuw account worden aangemaakt.
+                    Een bestaand account zet je hierboven op slot; deze lijst voorkomt dat
+                    iemand zich met hetzelfde adres opnieuw aanmeldt.</p>
+
+                <form class="weerform" id="weerformulier" novalidate>
+                    <label>
+                        E-mailadres
+                        <input type="email" id="weeradres" autocomplete="off" required>
+                    </label>
+                    <label>
+                        Reden (mag leeg blijven)
+                        <input type="text" id="weerreden" autocomplete="off">
+                    </label>
+                    <button type="submit" class="knop" id="weerknop">Adres weren</button>
+                </form>
+
+                <div id="geweerd"></div>
+            </section>
         </div>
     </main>
 

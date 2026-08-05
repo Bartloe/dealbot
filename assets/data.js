@@ -2,11 +2,13 @@
  * =============================================================================
  *  Dealbot — verkeer met de database vanuit de website
  *
- *  Versie      : 1.8
- *  Reden       : De beheerpagina erbij. Die vraagt drie dingen aan de database
- *                die niemand anders mag zien: ben ik beheerder, hoe ging de
- *                laatste ronde per winkel, en hoe compleet is de oogst.
- *  Datum       : 04-08-2026 22:20
+ *  Versie      : 1.9
+ *  Reden       : Gebruikersbeheer erbij: het overzicht van accounts, een account
+ *                op slot zetten of verwijderen, en de lijst met e-mailadressen
+ *                die geen nieuw account mogen maken. De vraag "ben ik
+ *                beheerder" is opgegaan in één vraag die ook meldt of het
+ *                account op slot staat.
+ *  Datum       : 04-08-2026 23:25
  *
  *  Onderdelen:
  *    meldAan()               - maakt een nieuw account met e-mail + pincode
@@ -24,9 +26,15 @@
  *    verwijderZoekvraag()    - wist een zoekvraag
  *    haalPrijsgroepen()      - de groepen op de standaardprijzen-pagina
  *    zoekStandaardprijzen()  - de gewone winkelprijzen binnen groep of zoekterm
- *    benIkBeheerder()        - mag deze gebruiker de beheerpagina gebruiken?
+ *    haalToegang()           - ben ik beheerder, en staat mijn account op slot?
  *    haalRunstatus()         - de laatste ophaalronde per winkel (beheer)
  *    haalKwaliteit()         - hoeveel er per winkel staat en wat ontbreekt
+ *    haalGebruikers()        - het overzicht van accounts (beheer)
+ *    blokkeerGebruiker()     - een account op slot zetten of weer openen
+ *    verwijderGebruiker()    - een account met alles erin en eraan wissen
+ *    haalGeweerdeAdressen()  - de adressen die geen account mogen maken
+ *    weerAdres()             - een adres op die lijst zetten
+ *    laatAdresToe()          - een adres er weer af halen
  * =============================================================================
  */
 
@@ -89,9 +97,18 @@ function inGewoneTaal(melding) {
     if (tekst.includes('failed to fetch') || tekst.includes('networkerror')) {
         return 'Geen verbinding met de database. Controleer je internetverbinding.';
     }
-    // De beheerfuncties weigeren zelf al in gewone taal; die melding is beter
-    // dan wat wij ervan zouden maken.
-    if (tekst.includes('beheerder')) {
+    // Het aanmelden strandt op de deurcontrole: dit adres staat op de lijst met
+    // geweerde adressen. De database meldt dat in eigen bewoordingen.
+    if (tekst.includes('database error saving new user')
+        || tekst.includes('kan geen account aanmaken')) {
+        return 'Met dit e-mailadres kan geen account worden aangemaakt.';
+    }
+    if (tekst.includes('duplicate key') || tekst.includes('already exists')) {
+        return 'Dit adres staat al op de lijst.';
+    }
+    // De beheerfuncties en de blokkade weigeren zelf al in gewone taal; die
+    // melding is beter dan wat wij ervan zouden maken.
+    if (tekst.includes('beheerder') || tekst.includes('geblokkeerd')) {
         return melding;
     }
     return `Er ging iets mis: ${melding}`;
@@ -464,24 +481,29 @@ export async function verwijderZoekvraag(id) {
 // -- beheer ------------------------------------------------------------------
 
 /**
- * Of de ingelogde gebruiker beheerder is.
+ * Wat elke pagina na het inloggen moet weten: ben ik beheerder, en staat mijn
+ * account op slot?
  *
- * Hiermee bepaalt elke pagina of de beheerknop in de balk hoort te staan. Het
- * antwoord is geen beveiliging maar een beleefdheid: de database weigert de
- * beheergegevens sowieso aan iedereen die het vlaggetje niet heeft. Lukt de
- * vraag niet, dan is het antwoord "nee" en blijft de knop weg.
+ * Het beheerdersantwoord bepaalt alleen of de knop in de balk staat; het is
+ * geen beveiliging, want de database weigert de beheergegevens sowieso aan
+ * iedereen zonder vlaggetje. Lukt de vraag niet, dan gaan we uit van een gewone
+ * gebruiker die gewoon mag doorwerken — een storing mag niemand buitensluiten.
  */
-export async function benIkBeheerder() {
+export async function haalToegang() {
     try {
-        const { data, error } = await db.rpc('is_beheerder');
+        const { data, error } = await db.rpc('mijn_toegang');
         if (error) {
-            console.error('Dealbot — beheerderschap opvragen mislukt:', error);
-            return false;
+            console.error('Dealbot — toegang opvragen mislukt:', error);
+            return { beheerder: false, geblokkeerd: false };
         }
-        return data === true;
+        const regel = Array.isArray(data) ? data[0] : data;
+        return {
+            beheerder: regel ? regel.beheerder === true : false,
+            geblokkeerd: regel ? regel.geblokkeerd === true : false,
+        };
     } catch (fout) {
-        console.error('Dealbot — beheerderschap opvragen mislukt:', fout);
-        return false;
+        console.error('Dealbot — toegang opvragen mislukt:', fout);
+        return { beheerder: false, geblokkeerd: false };
     }
 }
 
@@ -503,4 +525,58 @@ export async function haalRunstatus() {
 export async function haalKwaliteit() {
     const data = await probeer('kwaliteitscijfers ophalen', () => db.rpc('beheer_kwaliteit'));
     return data || [];
+}
+
+/**
+ * Alle accounts met naam, e-mailadres, laatste inlog en aantal zoekvragen.
+ *
+ * Het e-mailadres en het inlogmoment houdt de database in een afgeschermd deel
+ * bij; alleen de beheerder krijgt ze te zien.
+ */
+export async function haalGebruikers() {
+    const data = await probeer('gebruikers ophalen', () => db.rpc('beheer_gebruikers'));
+    return data || [];
+}
+
+/** Zet een account op slot (of weer open). Terug te draaien. */
+export async function blokkeerGebruiker(id, opSlot) {
+    await probeer(opSlot ? 'account op slot zetten' : 'account weer openen',
+        () => db.rpc('beheer_blokkeer', { gebruiker: id, op_slot: opSlot }));
+}
+
+/**
+ * Verwijdert een account met profiel en zoekvragen. Onomkeerbaar; het scherm
+ * vraagt daarom eerst om een bevestiging.
+ */
+export async function verwijderGebruiker(id) {
+    await probeer('account verwijderen',
+        () => db.rpc('beheer_verwijder_gebruiker', { gebruiker: id }));
+}
+
+/** De e-mailadressen die geen nieuw account mogen aanmaken. */
+export async function haalGeweerdeAdressen() {
+    const data = await probeer('geweerde adressen ophalen', () => db
+        .from('geweerde_adressen')
+        .select('email, reden, toegevoegd_op')
+        .order('toegevoegd_op', { ascending: false }));
+    return data || [];
+}
+
+/** Zet een e-mailadres op de lijst; aanmelden ermee lukt daarna niet meer. */
+export async function weerAdres(email, reden) {
+    const adres = (email || '').trim().toLowerCase();
+    if (!adres.includes('@')) {
+        throw new DealbotFout('Vul een geldig e-mailadres in.');
+    }
+    await probeer('adres weren', () => db
+        .from('geweerde_adressen')
+        .insert({ email: adres, reden: (reden || '').trim() || null }));
+}
+
+/** Haalt een e-mailadres weer van de lijst. */
+export async function laatAdresToe(email) {
+    await probeer('adres weer toelaten', () => db
+        .from('geweerde_adressen')
+        .delete()
+        .eq('email', email));
 }

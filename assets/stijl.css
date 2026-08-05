@@ -650,6 +650,51 @@ a.regelnaam:hover { text-decoration: underline; }
     word-break: break-word;
 }
 
+/* De knoppen in een regel van het gebruikersoverzicht. */
+.beheertabel .acties { text-align: right; }
+
+.rijknoppen {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.actieknop {
+    padding: 5px 11px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    background: var(--wit);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.actieknop.zacht { border: 1px solid var(--groen); color: var(--groen-donker); }
+.actieknop.zacht:hover:not(:disabled) { background: #e8f4ec; }
+.actieknop.gevaar { border: 1px solid var(--rood); color: var(--rood); }
+.actieknop.gevaar:hover:not(:disabled) { background: #fbeceb; }
+
+.aantekening { color: var(--grijs); font-size: 0.85rem; }
+
+/* Het formulier om een e-mailadres te weren: op één regel als het past. */
+.weerform {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-end;
+    margin-bottom: 16px;
+}
+
+.weerform label { margin-bottom: 0; flex: 1 1 200px; }
+.weerform input { margin-top: 4px; }
+
+.weerform button {
+    font-family: inherit;
+    font-size: 0.95rem;
+    border: none;
+    cursor: pointer;
+}
+
 /* -- profiel -------------------------------------------------------------- */
 
 .blok {

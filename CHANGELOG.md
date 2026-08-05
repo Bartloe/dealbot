@@ -1,5 +1,31 @@
 # Wijzigingen — Dealbot
 
+## 05-08-2026 — Gebruikersbeheer: wie er is, en wie er niet meer in mag
+
+De beheerpagina heeft er twee blokken bij gekregen. Aanmelden blijft vrij, maar
+er is nu wel te zien wie dat gedaan heeft en er is een manier om in te grijpen.
+
+- **Het overzicht van accounts**: naam, e-mailadres, wanneer het account is
+  aangemaakt, wanneer er voor het laatst is ingelogd en hoeveel zoekvragen
+  eronder hangen.
+- **Op slot zetten** is terug te draaien. Die gebruiker kan nog wel inloggen,
+  maar krijgt niets meer te zien: het inlogscherm zegt hem dat zijn account
+  geblokkeerd is en de sessie stopt meteen. Ook als hij de website omzeilt komt
+  hij niet verder — alle leesrechten in de database lopen sinds deze wijziging
+  langs dezelfde controle.
+- **Verwijderen** is dat niet: het inlogaccount, het profiel en alle zoekvragen
+  gaan weg. Het scherm vraagt eerst om een bevestiging.
+- **De beheerder kan zichzelf niet buitensluiten.** Met één beheerder zou er dan
+  niemand meer binnenkomen om het terug te draaien; de database weigert het.
+- **Een lijst geweerde e-mailadressen.** Blokkeren houdt een bestaand account
+  tegen; deze lijst voorkomt dat er met hetzelfde adres een nieuw account bij
+  komt. Bewust op adres en niet op IP-nummer: thuisaansluitingen wisselen van
+  nummer en op mobiel internet delen duizenden mensen er één, dus daarmee raak je
+  vooral de verkeerde.
+
+Database: `database/12_gebruikersbeheer.sql` moet één keer worden uitgevoerd.
+Tot dat moment werkt de beheerpagina niet — ook de knop in de balk blijft weg.
+
 ## 04-08-2026 — Een beheerpagina: hoe ging het ophalen, en wat kwam eruit
 
 Er was tot nu toe geen plek waar te zien is of het ophalen van vanochtend gelukt

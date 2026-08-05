@@ -2,23 +2,35 @@
  * =============================================================================
  *  Dealbot — de beheerpagina
  *
- *  Versie      : 1.0
- *  Reden       : Tot nu toe was nergens te zien hoe het ophalen van vanochtend
- *                is gegaan. Bij een storing zag de site er gewoon uit, alleen
- *                met oudere prijzen. Deze pagina laat per winkel zien wanneer
- *                er voor het laatst is opgehaald, of dat lukte en hoeveel er
- *                binnenkwam — en wat er aan de oogst ontbreekt.
- *  Datum       : 04-08-2026 22:35
+ *  Versie      : 1.1
+ *  Reden       : Gebruikersbeheer erbij: wie er een account heeft, wanneer hij
+ *                voor het laatst inlogde, en de mogelijkheid om een account op
+ *                slot te zetten of te verwijderen. Plus de lijst met adressen
+ *                die geen nieuw account mogen maken.
+ *  Datum       : 04-08-2026 23:45
  *
  *  Onderdelen:
- *    bouwPagina()    - regelt de toegang en haalt beide overzichten op
+ *    bouwPagina()    - regelt de toegang en haalt de overzichten op
  *    toonRunstatus() - de laatste ronde per winkel als tabel
  *    toonKwaliteit() - aantallen per winkel, met wat er ontbreekt
+ *    toonGebruikers()- de accounts, met de knoppen om in te grijpen
+ *    toonGeweerd()   - de e-mailadressen die geen account mogen maken
  *    maakTabel()     - een tabel met kop en regels, zonder opsmuk
  * =============================================================================
  */
 
-import { benIkBeheerder, haalRunstatus, haalKwaliteit, DealbotFout } from './data.js';
+import {
+    haalToegang,
+    haalRunstatus,
+    haalKwaliteit,
+    haalGebruikers,
+    blokkeerGebruiker,
+    verwijderGebruiker,
+    haalGeweerdeAdressen,
+    weerAdres,
+    laatAdresToe,
+    DealbotFout,
+} from './data.js';
 import { beveiligPagina, koppelUitloggen } from './inlog.js';
 import { momentTekst } from './opmaak.js';
 
@@ -40,6 +52,8 @@ const melding = document.getElementById('melding');
 const beheer = document.getElementById('beheer');
 const runstatus = document.getElementById('runstatus');
 const kwaliteit = document.getElementById('kwaliteit');
+const gebruikers = document.getElementById('gebruikers');
+const geweerd = document.getElementById('geweerd');
 
 function toonMelding(tekst, soort = 'fout') {
     melding.textContent = tekst;
@@ -197,22 +211,171 @@ function toonKwaliteit(regels) {
     ));
 }
 
-/** Haalt beide overzichten op en zet ze op het scherm. */
+/** Een knop in een tabelregel, die tijdens het werk even op slot gaat. */
+function maakActie(tekst, klasse, handeling) {
+    const knop = maak('button', `actieknop ${klasse}`, tekst);
+    knop.type = 'button';
+    knop.addEventListener('click', async () => {
+        knop.disabled = true;
+        try {
+            await handeling();
+        } catch (fout) {
+            if (fout instanceof DealbotFout) {
+                toonMelding(fout.message);
+            } else {
+                console.error('Dealbot — bewerking mislukt:', fout);
+                toonMelding('Dat lukte niet. Probeer het nog eens.');
+            }
+            knop.disabled = false;
+        }
+    });
+    return knop;
+}
+
+/**
+ * De accounts, met per regel de knoppen om in te grijpen.
+ *
+ * Bij het eigen account staan geen knoppen: met één beheerder zou je jezelf
+ * kunnen buitensluiten en dan komt er niemand meer binnen om het terug te
+ * draaien. De database weigert het trouwens ook.
+ */
+function toonGebruikers(regels) {
+    if (regels.length === 0) {
+        gebruikers.replaceChildren(maak('p', 'leeg-regel', 'Er zijn nog geen accounts.'));
+        return;
+    }
+
+    const rijen = regels.map((regel) => {
+        const staat = maak('span', regel.geblokkeerd ? 'fout-tekst' : null,
+            regel.geblokkeerd ? 'op slot' : 'actief');
+
+        const knoppen = maak('div', 'rijknoppen');
+        if (regel.ben_ikzelf) {
+            knoppen.append(maak('span', 'aantekening', 'jijzelf'));
+        } else {
+            knoppen.append(maakActie(
+                regel.geblokkeerd ? 'Weer open' : 'Op slot',
+                'zacht',
+                async () => {
+                    await blokkeerGebruiker(regel.id, !regel.geblokkeerd);
+                    await laadOverzichten();
+                }
+            ));
+            knoppen.append(maakActie('Verwijderen', 'gevaar', async () => {
+                const naam = regel.weergavenaam || regel.email;
+                const zeker = window.confirm(
+                    `Account van ${naam} verwijderen?\n\n`
+                    + 'Het account en alle zoekvragen gaan weg. Dit is niet terug te draaien.'
+                );
+                if (!zeker) {
+                    return;
+                }
+                await verwijderGebruiker(regel.id);
+                await laadOverzichten();
+            }));
+        }
+
+        return {
+            klasse: regel.geblokkeerd ? 'uit' : null,
+            cellen: [
+                { tekst: regel.weergavenaam || '—' },
+                { tekst: regel.email },
+                { tekst: momentTekst(regel.aangemaakt_op) || '—' },
+                { tekst: momentTekst(regel.laatst_ingelogd) || 'nog nooit' },
+                { tekst: String(regel.zoekvragen ?? 0), klasse: 'getal' },
+                { element: staat },
+                { element: knoppen, klasse: 'acties' },
+            ],
+        };
+    });
+
+    gebruikers.replaceChildren(maakTabel(
+        ['Naam', 'E-mail', 'Aangemaakt', 'Laatst ingelogd', 'Zoekvragen', 'Staat', ''],
+        rijen
+    ));
+}
+
+/** De e-mailadressen die geen nieuw account mogen maken. */
+function toonGeweerd(regels) {
+    if (regels.length === 0) {
+        geweerd.replaceChildren(maak('p', 'leeg-regel', 'Er staat nog geen adres op de lijst.'));
+        return;
+    }
+
+    const rijen = regels.map((regel) => ({
+        cellen: [
+            { tekst: regel.email },
+            { tekst: regel.reden || '—' },
+            { tekst: momentTekst(regel.toegevoegd_op) || '—' },
+            {
+                element: maakActie('Weer toelaten', 'zacht', async () => {
+                    await laatAdresToe(regel.email);
+                    await laadOverzichten();
+                }),
+                klasse: 'acties',
+            },
+        ],
+    }));
+
+    geweerd.replaceChildren(maakTabel(['E-mailadres', 'Reden', 'Sinds', ''], rijen));
+}
+
+/** Koppelt het formulier waarmee een adres op de lijst komt. */
+function koppelWeerformulier() {
+    const formulier = document.getElementById('weerformulier');
+    const knop = document.getElementById('weerknop');
+    const adresveld = document.getElementById('weeradres');
+    const redenveld = document.getElementById('weerreden');
+
+    formulier.addEventListener('submit', async (gebeurtenis) => {
+        gebeurtenis.preventDefault();
+        knop.disabled = true;
+        try {
+            await weerAdres(adresveld.value, redenveld.value);
+            adresveld.value = '';
+            redenveld.value = '';
+            await laadOverzichten();
+        } catch (fout) {
+            if (fout instanceof DealbotFout) {
+                toonMelding(fout.message);
+            } else {
+                console.error('Dealbot — adres weren mislukt:', fout);
+                toonMelding('Het adres kon niet op de lijst worden gezet.');
+            }
+        } finally {
+            knop.disabled = false;
+        }
+    });
+}
+
+/** Haalt alle overzichten op en zet ze op het scherm. */
 async function laadOverzichten() {
     runstatus.replaceChildren(maak('p', 'bezig', 'Overzicht ophalen…'));
     kwaliteit.replaceChildren(maak('p', 'bezig', 'Cijfers ophalen…'));
+    gebruikers.replaceChildren(maak('p', 'bezig', 'Accounts ophalen…'));
+    geweerd.replaceChildren(maak('p', 'bezig', 'Lijst ophalen…'));
 
     try {
-        const [rondes, cijfers] = await Promise.all([haalRunstatus(), haalKwaliteit()]);
+        const [rondes, cijfers, accounts, adressen] = await Promise.all([
+            haalRunstatus(),
+            haalKwaliteit(),
+            haalGebruikers(),
+            haalGeweerdeAdressen(),
+        ]);
         console.info(
-            `Dealbot — beheer: ${rondes.length} rondes en ${cijfers.length} winkels opgehaald.`
+            `Dealbot — beheer: ${rondes.length} rondes, ${cijfers.length} winkels, `
+            + `${accounts.length} accounts en ${adressen.length} geweerde adressen.`
         );
         toonRunstatus(rondes);
         toonKwaliteit(cijfers);
+        toonGebruikers(accounts);
+        toonGeweerd(adressen);
         toonMelding('');
     } catch (fout) {
         runstatus.replaceChildren();
         kwaliteit.replaceChildren();
+        gebruikers.replaceChildren();
+        geweerd.replaceChildren();
         if (fout instanceof DealbotFout) {
             toonMelding(fout.message);
         } else {
@@ -231,7 +394,8 @@ async function bouwPagina() {
 
     // De echte grendel zit in de database; deze controle is er om een gewone
     // gebruiker een fatsoenlijke uitleg te geven in plaats van een foutmelding.
-    if (!(await benIkBeheerder())) {
+    const toegang = await haalToegang();
+    if (!toegang.beheerder) {
         beheer.hidden = true;
         toonMelding('Deze pagina is alleen voor de beheerder.');
         return;
@@ -239,6 +403,7 @@ async function bouwPagina() {
 
     beheer.hidden = false;
     document.getElementById('verversen').addEventListener('click', laadOverzichten);
+    koppelWeerformulier();
     await laadOverzichten();
 }
 
