@@ -79,6 +79,25 @@
                 <div id="geweerd"></div>
             </section>
         </div>
+
+        <!-- Verwijderen en weren horen bij elkaar: zodra het account weg is, is
+             het e-mailadres nergens meer af te lezen. Daarom staan ze hier in
+             één vraag bij elkaar. -->
+        <dialog id="verwijderscherm" class="vraagscherm">
+            <form method="dialog">
+                <h2>Account verwijderen</h2>
+                <p id="verwijdertekst"></p>
+                <label class="keuzeregel">
+                    <input type="checkbox" id="ookweren">
+                    <span>Dit e-mailadres ook weren, zodat er geen nieuw account
+                        mee aangemaakt kan worden.</span>
+                </label>
+                <div class="knoppen">
+                    <button type="submit" value="nee" class="actieknop zacht">Annuleren</button>
+                    <button type="submit" value="ja" class="actieknop gevaar">Verwijderen</button>
+                </div>
+            </form>
+        </dialog>
     </main>
 
     <script type="module" src="assets/beheer.js"></script>

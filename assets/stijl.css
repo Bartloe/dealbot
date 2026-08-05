@@ -721,6 +721,46 @@ a.regelnaam:hover { text-decoration: underline; }
 
 .aantekening { color: var(--grijs); font-size: 0.85rem; }
 
+/* De staat van een account: op slot of actief, met de aantekening eronder. */
+.staat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* Het venster dat vraagt of een account echt weg mag. Onopgesmukt: hier hoort
+   even niets anders te kunnen dan lezen en kiezen. */
+.vraagscherm {
+    max-width: 420px;
+    padding: 20px 22px;
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.vraagscherm::backdrop { background: rgba(0, 0, 0, 0.35); }
+
+.vraagscherm h2 { margin: 0 0 10px; font-size: 1.1rem; }
+.vraagscherm p { margin: 0 0 14px; }
+
+/* Het vinkje naast zijn tekst, niet erboven; de tekst mag doorlopen. */
+.keuzeregel {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin-bottom: 18px;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.keuzeregel input { margin-top: 3px; flex: none; }
+
+.vraagscherm .knoppen {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
 /* Het formulier om een e-mailadres te weren: op één regel als het past. */
 .weerform {
     display: flex;

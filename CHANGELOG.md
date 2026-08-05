@@ -1,5 +1,35 @@
 # Wijzigingen — Dealbot
 
+## 05-08-2026 — Verwijderen en weren in één handeling
+
+Een account verwijderen en het e-mailadres weren zijn twee dingen die je bijna
+altijd achter elkaar doet — en juist die volgorde werkte ongelukkig: zodra het
+account weg was, stond het adres nergens meer op het scherm en moest je het uit
+je hoofd overtikken in het blok eronder.
+
+- **Bij het verwijderen staat nu een vinkje**: "dit e-mailadres ook weren, zodat
+  er geen nieuw account mee aangemaakt kan worden". Eén handeling dus.
+- **Het adres gaat eerst op de lijst, het account pas daarna weg.** Gaat er bij
+  het weren iets mis, dan staat het account er nog gewoon en kun je het opnieuw
+  proberen. Andersom zou het adres onvindbaar zijn geworden.
+- **Annuleren is de standaardkeuze.** Wie het venster wegklikt of op Enter drukt,
+  verwijdert niets.
+
+Twee kleinigheden meegenomen in hetzelfde overzicht:
+
+- **Knoppen blijven niet meer grijs.** Wie het verwijderen afbrak, keek daarna
+  tegen een knop aan die niets meer deed. De knop *Herstelmail* meldt nu kort
+  "Verstuurd" en is na een halve minuut weer te gebruiken — lang genoeg om een
+  tweede mail door dubbelklikken te voorkomen, kort genoeg om het opnieuw te
+  kunnen proberen als de eerste niet aankwam.
+- **Te zien welk account de beheerder is.** Dat vlaggetje is alleen in de
+  database te zetten, maar het hoort wel zichtbaar te zijn: anders is aan niets
+  af te lezen welk account overal bij kan.
+
+De proef op het gebruikersbeheer (`scripts/tests/test_beheer.py`) is uitgebreid
+met deze handeling: 28 controles, allemaal goed. Het adres blijft daarna ook
+echt dicht — aanmelden met datzelfde adres lukt niet meer.
+
 ## 05-08-2026 — Picnic erbij als zesde winkel
 
 Picnic doet mee, en hij is meteen de op één na grootste bron: **1836

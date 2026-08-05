@@ -2,12 +2,13 @@
 ===============================================================================
  Dealbot — controle op het gebruikersbeheer
 
- Versie      : 1.0
- Reden       : De toegangsregels bepalen wie wat mag zien, en die zijn met
-               nalezen niet te bewijzen. Deze proef doet het echt: twee
-               wegwerp-accounts, één daarvan beheerder, en dan alles proberen
-               wat de beheerpagina kan — inclusief wat er níet mag lukken.
- Datum       : 05-08-2026 00:15
+ Versie      : 1.1
+ Reden       : Het verwijderen vraagt sinds 05-08-2026 of het e-mailadres ook
+               geweerd moet worden, en doet dat in één handeling. Die volgorde —
+               eerst weren, dan pas verwijderen — hoort ook bewezen te worden,
+               inclusief de belofte eronder: met dat adres komt er geen nieuw
+               account meer bij.
+ Datum       : 05-08-2026 14:05
 
  Onderdelen:
    het overzicht van accounts  - beheerder wel, gewone gebruiker niet
@@ -15,6 +16,7 @@
    de grenzen                  - de beheerder kan zichzelf niet buitensluiten
    geweerde adressen           - aanmelden met zo'n adres mislukt
    een account verwijderen     - account en profiel gaan echt weg
+   verwijderen én weren        - in één handeling, en het adres blijft dicht
 
  Let op: dit draait tegen de echte database en heeft de geheime servicesleutel
  uit .env nodig. Alles wat het aanmaakt eindigt op @dealbot-proef.nl en wordt
@@ -49,6 +51,7 @@ OPENBAAR = re.search(r"SUPABASE_SLEUTEL\s*=\s*'([^']+)'", CONFIG).group(1)
 A_MAIL, A_WACHT = "proef.beheerder@dealbot-proef.nl", "dealbot-pin-1234"
 B_MAIL, B_WACHT = "proef.gebruiker@dealbot-proef.nl", "dealbot-pin-5678"
 GEWEERD = "proef.geweerd@dealbot-proef.nl"
+WEG_EN_GEWEERD = "proef.wegenweg@dealbot-proef.nl"
 
 geslaagd, gezakt = [], []
 
@@ -102,7 +105,8 @@ def ruim_op(ids):
     for nummer in ids:
         if nummer:
             roep(f"/auth/v1/admin/users/{nummer}", "DELETE")
-    roep(f"/rest/v1/geweerde_adressen?email=eq.{GEWEERD}", "DELETE")
+    for adres in (GEWEERD, WEG_EN_GEWEERD):
+        roep(f"/rest/v1/geweerde_adressen?email=eq.{adres}", "DELETE")
 
 
 print("Wegwerp-accounts klaarzetten")
@@ -211,6 +215,32 @@ controle("het inlogaccount is echt weg", status == 404, status)
 
 status, profiel = roep(f"/rest/v1/profielen?id=eq.{b_id}&select=id")
 controle("het profiel is meeverdwenen", status == 200 and len(profiel or []) == 0)
+
+print("\n6. Verwijderen en weren in één handeling")
+# De knop op de beheerpagina doet dit in deze volgorde: eerst het adres op de
+# lijst, dan pas het account weg. Struikelt het weren, dan staat het account er
+# nog en kun je het gewoon opnieuw proberen — andersom zou het adres onvindbaar
+# zijn geworden.
+c_id = maak_account(WEG_EN_GEWEERD, "dealbot-pin-2468")
+controle("er staat een account om te verwijderen", bool(c_id))
+
+status, _ = roep("/rest/v1/geweerde_adressen", "POST",
+                 {"email": WEG_EN_GEWEERD, "reden": "Account verwijderd vanaf de beheerpagina"},
+                 sleutel=OPENBAAR, token=a_token)
+controle("eerst gaat het adres op de lijst", status in (200, 201, 204), status)
+
+status, _ = roep("/rest/v1/rpc/beheer_verwijder_gebruiker", "POST",
+                 {"gebruiker": c_id}, sleutel=OPENBAAR, token=a_token)
+controle("en daarna is het account weg", status in (200, 204), status)
+
+status, gegevens = roep(f"/auth/v1/admin/users/{c_id}")
+controle("het inlogaccount bestaat niet meer", status == 404, status)
+
+status, melding = roep("/auth/v1/signup", "POST",
+                       {"email": WEG_EN_GEWEERD, "password": "dealbot-pin-1357"},
+                       sleutel=OPENBAAR)
+controle("hetzelfde adres kan zich niet opnieuw aanmelden", status >= 400,
+         (melding or {}).get("msg") if isinstance(melding, dict) else status)
 
 print("\nOpruimen")
 _, alles = roep("/auth/v1/admin/users?per_page=100")

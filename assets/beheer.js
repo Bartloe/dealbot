@@ -2,20 +2,24 @@
  * =============================================================================
  *  Dealbot — de beheerpagina
  *
- *  Versie      : 1.1
- *  Reden       : Gebruikersbeheer erbij: wie er een account heeft, wanneer hij
- *                voor het laatst inlogde, en de mogelijkheid om een account op
- *                slot te zetten of te verwijderen. Plus de lijst met adressen
- *                die geen nieuw account mogen maken.
- *  Datum       : 04-08-2026 23:45
+ *  Versie      : 1.2
+ *  Reden       : Verwijderen en weren zaten los van elkaar, terwijl je ze bijna
+ *                altijd achter elkaar doet — en zodra het account weg is, staat
+ *                het e-mailadres nergens meer op het scherm. Het verwijderen
+ *                vraagt nu in één keer of het adres ook geweerd moet worden.
+ *                Verder komen de knoppen na een klik weer terug, en is te zien
+ *                welk account de beheerder is.
+ *  Datum       : 05-08-2026 13:58
  *
  *  Onderdelen:
- *    bouwPagina()    - regelt de toegang en haalt de overzichten op
- *    toonRunstatus() - de laatste ronde per winkel als tabel
- *    toonKwaliteit() - aantallen per winkel, met wat er ontbreekt
- *    toonGebruikers()- de accounts, met de knoppen om in te grijpen
- *    toonGeweerd()   - de e-mailadressen die geen account mogen maken
- *    maakTabel()     - een tabel met kop en regels, zonder opsmuk
+ *    bouwPagina()      - regelt de toegang en haalt de overzichten op
+ *    toonRunstatus()   - de laatste ronde per winkel als tabel
+ *    toonKwaliteit()   - aantallen per winkel, met wat er ontbreekt
+ *    toonGebruikers()  - de accounts, met de knoppen om in te grijpen
+ *    vraagVerwijderen()- weg met dit account, en het adres erbij?
+ *    maakStaat()       - op slot, actief, en of het de beheerder is
+ *    toonGeweerd()     - de e-mailadressen die geen account mogen maken
+ *    maakTabel()       - een tabel met kop en regels, zonder opsmuk
  * =============================================================================
  */
 
@@ -212,14 +216,32 @@ function toonKwaliteit(regels) {
     ));
 }
 
-/** Een knop in een tabelregel, die tijdens het werk even op slot gaat. */
-function maakActie(tekst, klasse, handeling) {
+/**
+ * Een knop in een tabelregel, die tijdens het werk even op slot gaat.
+ *
+ * Daarna is hij gewoon weer te gebruiken. Dat is nodig omdat lang niet elke klik
+ * de tabel opnieuw opbouwt: wie het verwijderen afbreekt of alleen een mail
+ * verstuurt, zou anders naar een blijvend grijze knop kijken.
+ *
+ * Met een wachttijd meldt de knop eerst kort wat er gebeurd is. Bij de
+ * herstelmail houdt dat een tweede mail door dubbelklikken tegen, terwijl
+ * opnieuw sturen na een halve minuut gewoon kan.
+ */
+function maakActie(tekst, klasse, handeling, { gedaanTekst = '', terugNa = 0 } = {}) {
     const knop = maak('button', `actieknop ${klasse}`, tekst);
     knop.type = 'button';
     knop.addEventListener('click', async () => {
         knop.disabled = true;
         try {
             await handeling();
+            if (terugNa > 0) {
+                knop.textContent = gedaanTekst || tekst;
+                window.setTimeout(() => {
+                    knop.textContent = tekst;
+                    knop.disabled = false;
+                }, terugNa);
+                return;
+            }
         } catch (fout) {
             if (fout instanceof DealbotFout) {
                 toonMelding(fout.message);
@@ -227,10 +249,53 @@ function maakActie(tekst, klasse, handeling) {
                 console.error('Dealbot — bewerking mislukt:', fout);
                 toonMelding('Dat lukte niet. Probeer het nog eens.');
             }
-            knop.disabled = false;
         }
+        knop.disabled = false;
     });
     return knop;
+}
+
+/**
+ * Vraagt of dit account echt weg mag, en of het adres geweerd moet worden.
+ *
+ * Die twee horen bij elkaar: is het account eenmaal weg, dan staat het
+ * e-mailadres nergens meer op het scherm en is het weren een kwestie van uit je
+ * hoofd overtikken. Annuleren is de standaardkeuze — wie op Enter drukt,
+ * verwijdert dus niets.
+ */
+function vraagVerwijderen(regel) {
+    const scherm = document.getElementById('verwijderscherm');
+    const vinkje = document.getElementById('ookweren');
+    const naam = regel.weergavenaam || regel.email;
+
+    document.getElementById('verwijdertekst').textContent =
+        `Het account van ${naam} (${regel.email}) gaat weg, met alle zoekvragen `
+        + 'eronder. Dit is niet terug te draaien.';
+    vinkje.checked = false;
+
+    return new Promise((klaar) => {
+        scherm.addEventListener('close', () => klaar({
+            doorgaan: scherm.returnValue === 'ja',
+            weren: vinkje.checked,
+        }), { once: true });
+        scherm.showModal();
+    });
+}
+
+/**
+ * De staat van een account: op slot of actief, en of het de beheerder is.
+ *
+ * Het beheerdersvlaggetje is alleen in de database te zetten. Het hoort hier wel
+ * te staan: anders is aan niets te zien welk account overal bij kan.
+ */
+function maakStaat(regel) {
+    const cel = maak('div', 'staat');
+    cel.append(maak('span', regel.geblokkeerd ? 'fout-tekst' : null,
+        regel.geblokkeerd ? 'op slot' : 'actief'));
+    if (regel.beheerder) {
+        cel.append(maak('span', 'aantekening', 'beheerder'));
+    }
+    return cel;
 }
 
 /**
@@ -247,17 +312,17 @@ function toonGebruikers(regels) {
     }
 
     const rijen = regels.map((regel) => {
-        const staat = maak('span', regel.geblokkeerd ? 'fout-tekst' : null,
-            regel.geblokkeerd ? 'op slot' : 'actief');
-
         const knoppen = maak('div', 'rijknoppen');
 
         // Deze kan wél op het eigen account: je stuurt jezelf gewoon een mail.
+        // De knop komt na een halve minuut terug: zo is een dubbele mail door
+        // dubbelklikken uitgesloten, maar blijft opnieuw sturen mogelijk als de
+        // eerste niet aankwam.
         knoppen.append(maakActie('Herstelmail', 'zacht', async () => {
             await vraagHerstelmail(regel.email);
             toonMelding(`Er is een mail naar ${regel.email} gestuurd om een nieuwe `
                 + 'pincode te kiezen.', 'goed');
-        }));
+        }, { gedaanTekst: 'Verstuurd', terugNa: 30000 }));
 
         if (regel.ben_ikzelf) {
             knoppen.append(maak('span', 'aantekening', 'jijzelf'));
@@ -271,13 +336,14 @@ function toonGebruikers(regels) {
                 }
             ));
             knoppen.append(maakActie('Verwijderen', 'gevaar', async () => {
-                const naam = regel.weergavenaam || regel.email;
-                const zeker = window.confirm(
-                    `Account van ${naam} verwijderen?\n\n`
-                    + 'Het account en alle zoekvragen gaan weg. Dit is niet terug te draaien.'
-                );
-                if (!zeker) {
+                const keuze = await vraagVerwijderen(regel);
+                if (!keuze.doorgaan) {
                     return;
+                }
+                // Bewust eerst weren en dan pas verwijderen: struikelt het weren,
+                // dan staat het account er nog en is de knop opnieuw te gebruiken.
+                if (keuze.weren) {
+                    await weerAdres(regel.email, 'Account verwijderd vanaf de beheerpagina');
                 }
                 await verwijderGebruiker(regel.id);
                 await laadOverzichten();
@@ -292,7 +358,7 @@ function toonGebruikers(regels) {
                 { tekst: momentTekst(regel.aangemaakt_op) || '—' },
                 { tekst: momentTekst(regel.laatst_ingelogd) || 'nog nooit' },
                 { tekst: String(regel.zoekvragen ?? 0), klasse: 'getal' },
-                { element: staat },
+                { element: maakStaat(regel) },
                 { element: knoppen, klasse: 'acties' },
             ],
         };
