@@ -29,6 +29,7 @@ import {
     haalGeweerdeAdressen,
     weerAdres,
     laatAdresToe,
+    vraagHerstelmail,
     DealbotFout,
 } from './data.js';
 import { beveiligPagina, koppelUitloggen } from './inlog.js';
@@ -250,6 +251,14 @@ function toonGebruikers(regels) {
             regel.geblokkeerd ? 'op slot' : 'actief');
 
         const knoppen = maak('div', 'rijknoppen');
+
+        // Deze kan wél op het eigen account: je stuurt jezelf gewoon een mail.
+        knoppen.append(maakActie('Herstelmail', 'zacht', async () => {
+            await vraagHerstelmail(regel.email);
+            toonMelding(`Er is een mail naar ${regel.email} gestuurd om een nieuwe `
+                + 'pincode te kiezen.', 'goed');
+        }));
+
         if (regel.ben_ikzelf) {
             knoppen.append(maak('span', 'aantekening', 'jijzelf'));
         } else {

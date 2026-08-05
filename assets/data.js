@@ -88,8 +88,18 @@ function inGewoneTaal(melding) {
     if (tekst.includes('email not confirmed')) {
         return 'Dit account is nog niet bevestigd. Kijk in je mailbox.';
     }
+    if (tekst.includes('should be different')) {
+        return 'Deze pincode is dezelfde als je vorige. Kies een andere.';
+    }
     if (tekst.includes('password should be') || tekst.includes('weak password')) {
         return 'De pincode wordt door de database geweigerd. Meld dit even.';
+    }
+    if (tekst.includes('redirect') || tekst.includes('not allowed for this')) {
+        return 'De herstelmail kon niet worden verstuurd; het adres van de site staat '
+            + 'nog niet in de database. Meld dit even.';
+    }
+    if (tekst.includes('expired') || tekst.includes('invalid token')) {
+        return 'Deze link is verlopen of al gebruikt. Vraag een nieuwe mail aan.';
     }
     if (tekst.includes('rate limit') || tekst.includes('too many')) {
         return 'Er zijn te veel pogingen achter elkaar gedaan. Probeer het over een minuut nog eens.';
@@ -164,6 +174,91 @@ export async function logIn(email, pincode) {
 
 export async function logUit() {
     await probeer('uitloggen', () => db.auth.signOut());
+}
+
+/**
+ * Stuurt een mail met een link om een nieuwe pincode in te stellen.
+ *
+ * De link komt uit bij nieuwe-pincode.html op deze website; dat adres moet in
+ * de database bij de toegestane adressen staan, anders weigert hij hem.
+ *
+ * Bestaat het e-mailadres niet, dan meldt de database dat bewust niet: anders
+ * kon je met deze knop uitproberen wie er wel en niet een account heeft.
+ */
+export async function vraagHerstelmail(email) {
+    const adres = (email || '').trim();
+    if (!adres.includes('@')) {
+        throw new DealbotFout('Vul een geldig e-mailadres in.');
+    }
+
+    const bestemming = new URL('nieuwe-pincode.html', window.location.href).href;
+    await probeer('herstelmail aanvragen', () => db.auth.resetPasswordForEmail(adres, {
+        redirectTo: bestemming,
+    }));
+}
+
+/**
+ * Zet de nieuwe pincode voor de gebruiker die via de mail-link binnenkwam.
+ *
+ * Die link levert een tijdelijke sessie op; zonder die sessie is er niets in te
+ * stellen en hoort het scherm om een nieuwe mail te vragen.
+ */
+export async function zetNieuwePincode(pincode) {
+    if (!new RegExp(`^\\d{${PINCODE_LENGTE}}$`).test(pincode || '')) {
+        throw new DealbotFout(`De pincode bestaat uit ${PINCODE_LENGTE} cijfers.`);
+    }
+
+    const gebruiker = await haalGebruiker();
+    if (!gebruiker) {
+        throw new DealbotFout(
+            'Deze link is verlopen of al gebruikt. Vraag een nieuwe mail aan.'
+        );
+    }
+
+    await probeer('nieuwe pincode instellen', () => db.auth.updateUser({
+        password: wachtwoordVanPincode(pincode),
+    }));
+}
+
+/**
+ * Wacht tot de link uit de herstelmail een sessie heeft opgeleverd.
+ *
+ * De sleutel staat achter het hekje in het webadres en wordt door de
+ * databasebibliotheek zelf opgepikt; dat gebeurt vlak ná het laden van de
+ * pagina. Vandaar dat er even op gewacht wordt in plaats van meteen te kijken.
+ * Duurt het te lang, dan was de link niet goed en zegt het scherm dat.
+ */
+export function wachtOpHerstelsessie(tijdslimiet = 6000) {
+    return new Promise((klaar) => {
+        let afgerond = false;
+        let luisteraar = null;
+        let wekker = null;
+
+        const rond = (gelukt) => {
+            if (afgerond) {
+                return;
+            }
+            afgerond = true;
+            if (luisteraar) luisteraar.unsubscribe();
+            if (wekker) window.clearTimeout(wekker);
+            klaar(gelukt);
+        };
+
+        const { data } = db.auth.onAuthStateChange((_gebeurtenis, sessie) => {
+            if (sessie) {
+                rond(true);
+            }
+        });
+        luisteraar = data.subscription;
+
+        haalGebruiker().then((gebruiker) => {
+            if (gebruiker) {
+                rond(true);
+            }
+        });
+
+        wekker = window.setTimeout(() => rond(false), tijdslimiet);
+    });
 }
 
 /** Geeft de ingelogde gebruiker terug, of null als er niemand ingelogd is. */

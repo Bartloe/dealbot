@@ -1,5 +1,32 @@
 # Wijzigingen — Dealbot
 
+## 05-08-2026 — Pincode vergeten? Zelf een nieuwe kiezen
+
+Wie zijn pincode kwijt was, kon nergens heen: de beheerder kent hem ook niet en
+kan hem niet opzoeken. Dat is nu opgelost zonder dat iemand anders de pincode
+onder ogen krijgt.
+
+- **"Pincode vergeten?" op het inlogscherm** stuurt een mail met een link. Via die
+  link kies je op een eigen pagina een nieuwe pincode, twee keer in te tikken
+  tegen typefouten.
+- **De site verraadt niet wie er een account heeft.** Of het adres bekend is of
+  niet, het antwoord is hetzelfde: "is dit adres bij ons bekend, dan staat er een
+  mail voor je klaar".
+- **De beheerder kan zo'n mail ook namens iemand versturen** met de knop
+  *Herstelmail* in het gebruikersoverzicht. Hij stelt de pincode dus niet zelf in
+  en krijgt hem ook niet te zien.
+- Een verlopen of al gebruikte link levert een begrijpelijke melding op in plaats
+  van een leeg scherm.
+
+Twee dingen om te weten: **de nieuwe pincode moet verschillen van de huidige** —
+Supabase weigert dezelfde opnieuw. En de ingebouwde mailer van Supabase stuurt
+maar een handvol berichten per uur; voor deze kring van gebruikers ruim genoeg,
+maar niet om mee te stoeien.
+
+Instelling in Supabase: onder Authentication → URL Configuration moet de Site URL
+`https://bartloe.github.io/dealbot/` zijn, met `https://bartloe.github.io/dealbot/**`
+bij de Redirect URLs. Zonder dat komt de link uit de mail bij localhost terecht.
+
 ## 05-08-2026 — Na acht uur stilte gaat de sessie eruit
 
 Wie inlogde bleef ingelogd tot hij op Uitloggen klikte. Op een gedeelde of

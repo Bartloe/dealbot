@@ -695,6 +695,15 @@ a.regelnaam:hover { text-decoration: underline; }
     cursor: pointer;
 }
 
+/* -- pincode vergeten ----------------------------------------------------- */
+
+/* Onder de aanmeldknop, maar rustiger: dit is de uitzondering, niet de weg. */
+.schakelaar.zacht {
+    margin-top: 2px;
+    font-size: 0.85rem;
+    color: var(--grijs);
+}
+
 /* -- profiel -------------------------------------------------------------- */
 
 .blok {

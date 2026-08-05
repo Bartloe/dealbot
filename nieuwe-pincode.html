@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dealbot — nieuwe pincode</title>
+    <link rel="stylesheet" href="assets/stijl.css">
+</head>
+<body>
+    <div id="pincodescherm">
+        <div class="inlogkaart">
+            <h1>Dealbot</h1>
+            <p class="ondertitel">Kies een nieuwe pincode.</p>
+            <p class="bezig" id="wachten">Even geduld, we controleren je link…</p>
+
+            <form id="pincodeformulier" novalidate hidden>
+                <label>
+                    Nieuwe pincode
+                    <input type="password" id="pincode" inputmode="numeric" pattern="\d*"
+                           maxlength="4" autocomplete="new-password" required>
+                </label>
+
+                <label>
+                    Nog een keer
+                    <input type="password" id="herhaling" inputmode="numeric" pattern="\d*"
+                           maxlength="4" autocomplete="new-password" required>
+                </label>
+
+                <p class="melding" id="melding" role="alert" hidden></p>
+
+                <button type="submit" id="opslaan">Pincode opslaan</button>
+            </form>
+
+            <p class="melding" id="linkmelding" role="alert" hidden></p>
+            <a class="schakelaar" href="index.html">Terug naar Dealbot</a>
+        </div>
+    </div>
+
+    <script type="module" src="assets/pincode.js"></script>
+</body>
+</html>

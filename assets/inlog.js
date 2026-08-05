@@ -2,13 +2,12 @@
  * =============================================================================
  *  Dealbot — het inlogscherm
  *
- *  Versie      : 1.3
- *  Reden       : Een sessie die acht uur stil is, eindigt vanzelf. Daarnaast
- *                vraagt elke pagina na het inloggen wat dit account mag: staat
- *                het op slot, dan gaat de sessie er meteen weer uit met een
- *                uitleg in plaats van een lege pagina. Is het de beheerder, dan
- *                komt de beheerknop in de balk.
- *  Datum       : 05-08-2026 00:40
+ *  Versie      : 1.4
+ *  Reden       : "Pincode vergeten?" erbij: één knop die een mail stuurt met een
+ *                link waarmee je zelf een nieuwe kiest. Daarvoor: een sessie die
+ *                acht uur stil is eindigt vanzelf, en elke pagina vraagt na het
+ *                inloggen wat dit account mag.
+ *  Datum       : 05-08-2026 01:20
  *
  *  Onderdelen:
  *    beveiligPagina()   - geeft de ingelogde gebruiker, of toont het inlogscherm
@@ -19,7 +18,8 @@
  */
 
 import {
-    logIn, meldAan, logUit, haalGebruiker, haalToegang, DealbotFout, PINCODE_LENGTE,
+    logIn, meldAan, logUit, haalGebruiker, haalToegang, vraagHerstelmail,
+    DealbotFout, PINCODE_LENGTE,
 } from './data.js';
 import { sessieVerlopen, bewaakSessie, meldActiviteit, wisActiviteit, STILTE_UREN } from './sessie.js';
 
@@ -52,6 +52,10 @@ const SCHERM = `
 
     <button type="button" class="schakelaar" id="schakelaar">
         Nog geen account? Meld je aan
+    </button>
+
+    <button type="button" class="schakelaar zacht" id="pincodevergeten">
+        Pincode vergeten?
     </button>
 </div>
 `;
@@ -163,6 +167,32 @@ function bouwInlogscherm() {
             ? 'Heb je al een account? Log in'
             : 'Nog geen account? Meld je aan';
         toon('');
+    });
+
+    // Pincode vergeten: één mail met een link waarmee je zelf een nieuwe kiest.
+    // Of het adres bij ons bekend is, zeggen we bewust niet — anders kun je met
+    // deze knop uitproberen wie er een account heeft.
+    const vergeten = document.getElementById('pincodevergeten');
+    vergeten.addEventListener('click', async () => {
+        const email = document.getElementById('email').value;
+        vergeten.disabled = true;
+        toon('');
+
+        try {
+            await vraagHerstelmail(email);
+            toon('Is dit adres bij ons bekend, dan staat er een mail voor je klaar. '
+                + 'Daarin zit een link om een nieuwe pincode te kiezen.', 'goed');
+        } catch (fout) {
+            const tekst = fout instanceof DealbotFout
+                ? fout.message
+                : 'Het versturen lukte niet. Probeer het over een minuutje nog eens.';
+            if (!(fout instanceof DealbotFout)) {
+                console.error('Dealbot — herstelmail aanvragen mislukt:', fout);
+            }
+            toon(tekst);
+        } finally {
+            vergeten.disabled = false;
+        }
     });
 
     formulier.addEventListener('submit', async (gebeurtenis) => {

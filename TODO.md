@@ -71,10 +71,15 @@ Bijgewerkt: 04-08-2026 11:30
       hieronder — zonder pagina om een nieuwe pincode te kiezen leidt die mail nergens heen
 - [x] **Automatisch uitloggen na 8 uur zonder activiteit** (05-08-2026): de klok loopt in
       de browser en wordt door elke klik of toetsaanslag teruggezet
-- [ ] **Pincode vergeten**: de gebruiker vraagt zelf een herstelmail aan en stelt via de
-      link een nieuwe pincode in (mag dezelfde zijn). Let op: de ingebouwde mailer van
-      Supabase stuurt maar een handvol berichten per uur — voor 25 gebruikers genoeg,
-      maar niet om mee te testen
+- [x] **Pincode vergeten** (05-08-2026): de gebruiker vraagt zelf een herstelmail aan en
+      stelt via de link een nieuwe pincode in. Twee kanttekeningen: de nieuwe pincode moet
+      verschillen van de huidige (Supabase weigert dezelfde), en de ingebouwde mailer
+      stuurt maar een handvol berichten per uur — voor 25 gebruikers genoeg, maar niet om
+      mee te testen
+- [ ] **In Supabase de Site URL goedzetten** (Authentication → URL Configuration):
+      `https://bartloe.github.io/dealbot/` als Site URL en `https://bartloe.github.io/dealbot/**`
+      bij Redirect URLs. Zonder dat komt de link uit de herstelmail bij localhost terecht.
+      Te controleren met `python scripts/tests/test_pincode.py`
 
 ## Fase 2 — later
 
