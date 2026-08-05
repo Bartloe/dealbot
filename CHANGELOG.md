@@ -1,5 +1,37 @@
 # Wijzigingen — Dealbot
 
+## 05-08-2026 — Eén hapering gooide een hele winkel om
+
+Vanochtend om 07:35 viel Albert Heijn uit de ronde met de melding "wegschrijven
+mislukt". De vier andere winkels liepen op datzelfde moment gewoon door, dus de
+database was niet plat: de verbinding haperde een paar tellen, precies toen het
+eerste pakketje aanbiedingen de deur uit ging. Daar was geen weg omheen — lukte
+het versturen niet in één keer, dan stopte het daar. Bij bijna vijfduizend
+aanbiedingen in vierentwintig pakketjes is dat vragen om ongelukken, en het is
+geen toeval dat het juist de grootste winkel trof.
+
+- **Elke vraag aan de database krijgt nu drie herkansingen**, met een oplopende
+  pauze ertussen: een halve seconde, twee, en vijf. Een hapering duurt zelden
+  langer, en langer wachten houdt de ochtendronde onnodig op.
+- **Alleen bij een hapering of een tijdelijke storing.** Is het een echte fout in
+  wat wij versturen, dan stopt het meteen — zo'n fout hoort zichtbaar te worden
+  en niet vier keer zinloos herhaald.
+- **Opnieuw sturen kan geen kwaad**: wegschrijven gebeurt als "bijwerken op
+  sleutel", dus hetzelfde pakketje twee keer versturen levert exact hetzelfde
+  resultaat en geen dubbele regels.
+- **Blijft het stuk, dan zegt de melding dat ook** ("ook na 4 pogingen"), zodat
+  op de beheerpagina te zien is dat het niet aan één toevallige tel lag.
+
+Er is niets verloren gegaan. Omdat het wegschrijven mislukte, is het opruimen
+overgeslagen en bleef de lijst van gisteren staan — die aanbiedingen liepen nog
+tot en met 9 augustus, dus de site heeft de hele ochtend kloppende prijzen laten
+zien. De ronde is intussen opnieuw gedraaid: Albert Heijn staat weer op 4787
+aanbiedingen.
+
+Een nieuw proefstuk (`scripts/tests/test_herkansing.py`) bewijst het gedrag met
+een nagebootste database, want dit is bij uitstek iets wat je pas mist op de
+zeldzame ochtend dat het misgaat.
+
 ## 05-08-2026 — Vochtig toiletpapier ligt nu gewoon bij het toiletpapier
 
 Op de standaardprijzen-pagina stond "Toiletpapier Vochtig" als losse groep náást
