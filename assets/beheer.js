@@ -2,8 +2,18 @@
  * =============================================================================
  *  Dealbot — de beheerpagina
  *
- *  Versie      : 1.3
- *  Reden       : Het ophalen was alleen op GitHub te starten: de knop bracht je
+ *  Versie      : 1.4
+ *  Reden       : De ochtendronde deelt sinds vandaag zelf in, maar stelt daarbij
+ *                nooit een AI-vraag: hij past alleen het vertaalboekje toe dat er
+ *                al ligt. Brengt een winkel nieuwe groepsnamen mee, dan blijven
+ *                die dus liggen en hangen hun producten nergens onder.
+ *
+ *                De kolom "onvertaald" maakt dat zichtbaar. Staat er een getal,
+ *                dan is dat het sein om het vertalen met de hand te starten; er
+ *                staat een regel onder de tabel die dat uitlegt.
+ *  Datum       : 06-08-2026 15:35
+ *
+ *  Vorige      : Het ophalen was alleen op GitHub te starten: de knop bracht je
  *                daarheen en daar moest je nog twee keer klikken. Nu staat de
  *                knop hier en geeft de database het startsein door. Er is een
  *                tweede knop bij voor de folder van Vomar: die wordt maar één
@@ -286,6 +296,11 @@ function toonRunstatus(regels) {
  *
  * Winkels waar helemaal niets van in de database staat blijven staan, maar in
  * lichtere letters: die vragen geen aandacht, ze doen alleen niet mee.
+ *
+ * De laatste kolom is de enige waar iets op te doen valt. De ochtendronde deelt
+ * zelf in, maar vertaalt nooit een nieuwe groepsnaam — dat kost AI-vragen en die
+ * heeft de folderlezer nodig. Staat er dus een getal, dan wachten er groepsnamen
+ * op een vertaalronde die met de hand gestart wordt.
  */
 function toonKwaliteit(regels) {
     if (regels.length === 0) {
@@ -293,26 +308,53 @@ function toonKwaliteit(regels) {
         return;
     }
 
+    // De database vertelt deze kolom pas sinds 19_ochtendronde_indelen.sql. Is
+    // die nog niet gedraaid, dan blijft de kolom weg in plaats van overal een
+    // nul te tonen — dat zou geruststellen zonder iets te weten.
+    const kentOnvertaald = regels.some((r) => r.onvertaalde_groepen !== undefined);
+
     const rijen = regels.map((regel) => {
         const leeg = Number(regel.aanbiedingen) === 0 && Number(regel.standaardprijzen) === 0;
-        return {
-            klasse: leeg ? 'uit' : null,
-            cellen: [
-                { tekst: winkelnaam(regel) },
-                { tekst: String(regel.aanbiedingen ?? 0), klasse: 'getal' },
-                { tekst: metAandeel(regel.zonder_kiloprijs, regel.aanbiedingen), klasse: 'getal' },
-                { tekst: metAandeel(regel.zonder_indeling, regel.aanbiedingen), klasse: 'getal' },
-                { tekst: String(regel.standaardprijzen ?? 0), klasse: 'getal' },
-                { tekst: metAandeel(regel.prijzen_zonder_kilo, regel.standaardprijzen), klasse: 'getal' },
-            ],
-        };
+        const onvertaald = Number(regel.onvertaalde_groepen) || 0;
+        const cellen = [
+            { tekst: winkelnaam(regel) },
+            { tekst: String(regel.aanbiedingen ?? 0), klasse: 'getal' },
+            { tekst: metAandeel(regel.zonder_kiloprijs, regel.aanbiedingen), klasse: 'getal' },
+            { tekst: metAandeel(regel.zonder_indeling, regel.aanbiedingen), klasse: 'getal' },
+            { tekst: String(regel.standaardprijzen ?? 0), klasse: 'getal' },
+            { tekst: metAandeel(regel.prijzen_zonder_kilo, regel.standaardprijzen), klasse: 'getal' },
+        ];
+
+        if (kentOnvertaald) {
+            cellen.push({
+                tekst: onvertaald === 0 ? '—' : String(onvertaald),
+                klasse: onvertaald === 0 ? 'getal' : 'getal aandacht',
+            });
+        }
+
+        return { klasse: leeg ? 'uit' : null, cellen };
     });
 
-    kwaliteit.replaceChildren(maakTabel(
-        ['Winkel', 'Aanbiedingen', 'zonder kiloprijs', 'zonder indeling',
-            'Schapprijzen', 'zonder kiloprijs'],
-        rijen
-    ));
+    const koppen = ['Winkel', 'Aanbiedingen', 'zonder kiloprijs', 'zonder indeling',
+        'Schapprijzen', 'zonder kiloprijs'];
+    if (kentOnvertaald) {
+        koppen.push('onvertaald');
+    }
+
+    kwaliteit.replaceChildren(maakTabel(koppen, rijen));
+
+    if (!kentOnvertaald) {
+        return;
+    }
+
+    const wachtend = regels.reduce((som, r) => som + (Number(r.onvertaalde_groepen) || 0), 0);
+    kwaliteit.append(maak('p', wachtend ? 'tabeluitleg aandacht' : 'tabeluitleg',
+        wachtend === 0
+            ? 'Alle groepsnamen van de winkels staan in het vertaalboekje. De '
+              + 'ochtendronde deelt zelf in en heeft daar geen AI voor nodig.'
+            : `${wachtend} groepsnamen zijn nog niet vertaald. Hun producten hangen `
+              + 'nergens onder tot er een vertaalronde draait; die kost AI-vragen en '
+              + 'wordt daarom met de hand gestart.'));
 }
 
 /**

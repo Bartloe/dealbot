@@ -2,8 +2,21 @@
 ===============================================================================
  Dealbot — alles onder onze eigen productindeling hangen
 
- Versie      : 2.2
- Reden       : Producten uit een grove winkelgroep vallen nu terug op de afdeling
+ Versie      : 2.3
+ Reden       : Dit script kan voortaan meedraaien in de ochtendronde op GitHub,
+               en daar mag het nooit een AI-vraag kosten. Met --zonder-ai wordt
+               het vertalen overgeslagen en alleen het bestaande boekje
+               toegepast: nieuwe aanbiedingen krijgen dan meteen hun plek in
+               onze indeling, zonder de sleutels op te eten die de folderlezer
+               diezelfde ochtend nodig heeft.
+
+               Onbekende groepsnamen verdwijnen daarmee niet uit beeld. Ze
+               worden geteld en gemeld, en dezelfde telling staat op de
+               beheerpagina — dat is het sein om het vertalen met de hand te
+               starten.
+ Datum       : 06-08-2026 15:05
+
+ Vorige      : Producten uit een grove winkelgroep vallen nu terug op de afdeling
                van die groep in plaats van te verdwijnen. Daarnaast kent het
                vertaalboekje een nieuw soort regel: de eigenschapgroep. Die heeft
                géén afdeling — bij "Glutenvrij" valt er niets te noemen — maar de
@@ -44,6 +57,7 @@
    main()              - de drie stappen achter elkaar, met een samenvatting
    stap_indeling()     - onze eigen indeling naar de database
    stap_vertalen()     - onbekende winkelgroepen door de AI, resultaat bewaren
+   tel_onvertaald()    - hoeveel groepsnamen nog buiten het boekje vallen
    stap_toepassen()    - aanbiedingen én standaardprijzen opnieuw indelen
    _lees_boekje()      - het vertaalboekje in de vorm die het indelen nodig heeft
    _deel_tabel_in()    - één tabel indelen; beide gaan langs dezelfde weg
@@ -56,6 +70,8 @@
 
  Uitvoeren:
    python scripts/indeel.py                alles: vertalen en toepassen
+   python scripts/indeel.py --zonder-ai    niet vertalen, alleen het boekje
+                                           toepassen (de ochtendronde doet dit)
    python scripts/indeel.py --proef        niets wegschrijven, alleen laten zien
    python scripts/indeel.py --opnieuw      ook al vertaalde groepen opnieuw vragen
    python scripts/indeel.py --verder       een afgebroken ronde hervatten
@@ -278,6 +294,42 @@ def stap_vertalen(
              len(alles) - raak - eigenschap, vraagbaak.aanroepen, vraagbaak.tokens)
 
     return alles, klachten
+
+
+def tel_onvertaald(db: Database) -> dict[int, int]:
+    """
+    Hoeveel groepsnamen staan er nog niet in het vertaalboekje, per winkel?
+
+    Dit is de tegenhanger van het vertalen voor de ochtendronde: die mag geen
+    AI-vraag stellen, maar mag het ook niet stilzwijgend laten liggen. Een
+    nieuwe winkel brengt in één klap een paar honderd onbekende groepsnamen mee,
+    en zolang die niet vertaald zijn hangen zijn producten nergens onder.
+
+    Alleen tellen dus, en melden. Dezelfde telling staat op de beheerpagina;
+    daar is het sein om `python scripts/indeel.py` met de hand te draaien.
+    """
+    bekend = {(rij["winkel_id"], rij["productgroep"].lower())
+              for rij in db.koppelingen()}
+
+    open_per_winkel: Counter = Counter()
+    for rij in db.winkelgroepen():
+        if (rij["winkel_id"], rij["productgroep"].lower()) not in bekend:
+            open_per_winkel[rij["winkel_id"]] += 1
+
+    if not open_per_winkel:
+        log.info("Vertalen overgeslagen; alle winkelgroepen staan al in het boekje.")
+        return {}
+
+    winkels = db.winkels()
+    totaal = sum(open_per_winkel.values())
+    log.warning(
+        "Vertalen overgeslagen, maar %s staat nog buiten het boekje: %s. "
+        "Die producten blijven zonder plek tot 'python scripts/indeel.py' draait.",
+        "1 groepsnaam" if totaal == 1 else f"{totaal} groepsnamen",
+        ", ".join(f"{winkels.get(w, w)} {a}"
+                  for w, a in sorted(open_per_winkel.items(), key=lambda p: -p[1])),
+    )
+    return dict(open_per_winkel)
 
 
 # -----------------------------------------------------------------------------
@@ -597,6 +649,9 @@ def main() -> int:
     )
     argumenten.add_argument("--proef", action="store_true",
                             help="alleen laten zien, niets wegschrijven")
+    argumenten.add_argument("--zonder-ai", action="store_true", dest="zonder_ai",
+                            help="niet vertalen, alleen het bestaande boekje "
+                                 "toepassen; kost geen enkele AI-vraag")
     argumenten.add_argument("--opnieuw", action="store_true",
                             help="ook groepen opnieuw vragen die al vertaald zijn")
     argumenten.add_argument("--woorden", default="",
@@ -622,10 +677,19 @@ def main() -> int:
     if keuze.proef:
         log.info("PROEF — er wordt niets weggeschreven.\n")
 
+    if keuze.zonder_ai and (keuze.opnieuw or keuze.verder or woorden):
+        log.error("--zonder-ai gaat niet samen met --opnieuw, --verder of "
+                  "--woorden: die drie gaan juist over het vertalen.")
+        return 1
+
     try:
         stap_indeling(db, keuze.proef)
-        _, klachten = stap_vertalen(db, keuze.proef, keuze.opnieuw, woorden,
-                                    keuze.verder)
+        klachten: list[str] = []
+        if keuze.zonder_ai:
+            tel_onvertaald(db)
+        else:
+            _, klachten = stap_vertalen(db, keuze.proef, keuze.opnieuw, woorden,
+                                        keuze.verder)
         uitkomst = stap_toepassen(db, keuze.proef)
     except ValueError as fout:
         log.error("%s", fout)

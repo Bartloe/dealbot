@@ -38,14 +38,14 @@ Bijgewerkt: 06-08-2026 14:20
       folder is geen belemmering meer, mits hij als PDF te downloaden is
 - [x] Automatisch elke ochtend laten draaien via GitHub — 07:00, duurt tien minuten
       sinds Picnic meedoet
-- [ ] **De ochtendronde zelf laten indelen.** Dit is nu het gat: de ronde haalt de
-      aanbiedingen op, maar hangt ze niet onder onze eigen indeling — dat doet
-      `scripts/indeel.py`, en dat draait alleen met de hand op de laptop. Een
-      aanbieding die al in de database stond houdt zijn plek, maar alles wat nieuw
-      binnenkomt staat nergens onder tot iemand het script draait. Zodra de folders
-      wisselen is dus een deel van de website leeg terwijl er niets stuk is.
-      Kost geen AI-vraag zolang de winkelgroep in het vertaalboekje staat, en dat
-      geldt nu voor alle 3183. Alleen een gloednieuwe groepsnaam kost er één
+- [x] **De ochtendronde deelt zelf in** (06-08-2026): het indelen hangt achter het
+      ophalen aan, zonder ooit een AI-vraag te stellen — alleen het bestaande
+      vertaalboekje wordt toegepast. Vertalen blijft handwerk, want één nieuwe keten
+      zou de ronde tientallen vragen laten doen en die heeft de folderlezer nodig.
+      Onbekende groepsnamen worden geteld en staan per winkel op de beheerpagina;
+      dát is het sein om `python scripts/indeel.py` te draaien
+      - **Nog te doen:** `database/19_ochtendronde_indelen.sql` in Supabase draaien
+        voor die kolom. Tot dan blijft de kolom weg van de beheerpagina
 - [x] Oude aanbiedingen pas opruimen nadat de nieuwe binnen zijn
 - [x] Prijs per kilo/liter berekenen; lukt dat niet, dan onderaan met de melding "kiloprijs onbekend"
 - [x] Startpagina: persoonlijke aanbiedingen, gegroepeerd per product, goedkoop naar duur

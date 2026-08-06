@@ -1,8 +1,20 @@
 # =============================================================================
 #  Dealbot — dagelijks de aanbiedingen ophalen
 #
-#  Versie : 1.5
-#  Reden  : Het ophalen is voortaan ook met één knop op de beheerpagina te
+#  Versie : 1.6
+#  Reden  : De ronde haalde wel op, maar hing niets onder onze eigen indeling.
+#           Dat deed een tweede script dat alleen met de hand op de laptop
+#           draaide, waardoor alles wat nieuw binnenkwam nergens onder stond —
+#           en dus op de website niet te vinden was — tot iemand eraan dacht.
+#           Het indelen draait nu meteen achter het ophalen aan.
+#
+#           Nadrukkelijk zónder AI: er wordt alleen toegepast wat al in het
+#           vertaalboekje staat. Vertalen kost AI-vragen en die heeft de
+#           folderlezer diezelfde ochtend nodig, dus dat blijft handwerk. Nieuwe
+#           groepsnamen worden geteld en komen op de beheerpagina te staan.
+#  Datum  : 06-08-2026 15:45
+#
+#  Vorige : Het ophalen is voortaan ook met één knop op de beheerpagina te
 #           starten. Die knop moet kunnen kiezen wát er opgehaald wordt — de
 #           hele ronde, alleen de winkels, of alleen de folder van Vomar — en
 #           moet een al gelezen folder opnieuw kunnen laten voorlezen.
@@ -70,3 +82,14 @@ jobs:
           python scripts/scan.py
           --wat "${{ inputs.wat || 'alles' }}"
           ${{ (inputs.opnieuw == true || inputs.opnieuw == 'true') && '--opnieuw' || '' }}
+
+      # Alles wat zojuist is opgehaald onder onze eigen indeling hangen, zodat
+      # het meteen via het profielscherm te vinden is. Zonder AI: er wordt
+      # uitsluitend toegepast wat al in het vertaalboekje staat, dus deze stap
+      # kost geen enkele Gemini-vraag. Nieuwe groepsnamen worden geteld en komen
+      # op de beheerpagina; die vertaalronde start je met de hand.
+      - name: Alles onder onze eigen indeling hangen
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python scripts/indeel.py --zonder-ai

@@ -28,6 +28,8 @@
     --groen: #2f7d4f;
     --groen-donker: #245f3d;
     --rood: #b3261e;
+    /* Er is niets stuk, er wacht werk: donker amber, leesbaar op wit. */
+    --let-op: #8a5a00;
     --tekst: #1f2328;
     --grijs: #5b6470;
     --lijn: #e2e6ea;
@@ -689,6 +691,24 @@ a.regelnaam:hover { text-decoration: underline; }
 
 /* Een winkel die uitstaat of niets levert: blijft zichtbaar, vraagt geen aandacht. */
 .beheertabel tr.uit td { color: var(--grijs); }
+
+/*
+ * Een getal waar iets op te doen valt — onvertaalde groepsnamen. Bewust niet
+ * rood: er is niets stuk, er wacht alleen werk. Ook een grijze regel houdt deze
+ * kleur, want juist bij een winkel die nog niets levert is dit het antwoord op
+ * de vraag waarom.
+ */
+.beheertabel .aandacht,
+.beheertabel tr.uit td.aandacht { color: var(--let-op); font-weight: 600; }
+
+/* Het zinnetje onder een tabel dat zegt wat de cijfers betekenen. */
+.tabeluitleg {
+    margin: 10px 0 0;
+    font-size: 0.85rem;
+    color: var(--grijs);
+}
+
+.tabeluitleg.aandacht { color: var(--let-op); }
 
 .fout-tekst { color: var(--rood); font-weight: 600; }
 

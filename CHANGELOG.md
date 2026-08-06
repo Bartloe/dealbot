@@ -1,5 +1,50 @@
 # Wijzigingen — Dealbot
 
+## 06-08-2026 — De ochtendronde deelt voortaan zelf in
+
+Er zat een gat tussen twee scripts. Het ene haalde elke ochtend de aanbiedingen
+op; het andere hing ze onder onze eigen indeling — maar dat tweede draaide
+alleen met de hand op de laptop.
+
+Een aanbieding die al in de database stond hield daardoor zijn plek, maar alles
+wat nieuw binnenkwam stond nergens onder. En omdat de folders wekelijks wisselen
+betekent dat: elke week valt een deel van de website stil terwijl er niets stuk
+is. Dat het tot nu toe niet opviel, kwam doordat het indelen er steeds met de
+hand achteraan ging.
+
+Het indelen hangt nu meteen achter het ophalen aan, in dezelfde ochtendronde.
+
+### Nadrukkelijk zonder AI
+
+De ronde past alleen toe wat al in het vertaalboekje staat en stelt zelf geen
+enkele vraag aan de AI. Dat is een bewuste grens: één nieuwe keten brengt in één
+klap honderden onbekende groepsnamen mee, en die zouden de ronde ineens
+tientallen AI-vragen laten doen — precies de vragen die de folderlezer diezelfde
+ochtend nodig heeft. De dagvoorraad is klein en wordt gedeeld.
+
+Vertalen blijft dus handwerk dat je zelf start (`python scripts/indeel.py`). Een
+gewone ochtend kost daarmee nul AI-vragen, en dat is ook precies wat er gebeurde
+bij de proef: alle 3183 groepsnamen stonden al in het boekje, er veranderde
+niets, en de ronde was klaar.
+
+### Maar het mag niet stilzwijgend blijven liggen
+
+Anders verschuift het probleem alleen maar: dan hangen de producten van de
+nieuwe winkel nergens onder en zwijgt de ronde erover. Daarom telt hij de
+onbekende groepsnamen wél, en meldt ze — in het logboek van de ronde en in een
+nieuwe kolom op de beheerpagina, per winkel. Staat daar een getal, dan is dat het
+sein om een vertaalronde te starten. Bewust in amber en niet in rood: er is niets
+stuk, er wacht werk.
+
+De telling ligt vast in `scripts/tests/test_onvertaald.py`, met de randen die er
+in het echt toe doen: hoofdletters mogen geen verschil maken (anders meld je werk
+dat allang gedaan is), een vertaling van de ene winkel dekt de andere niet, en
+een groep die bewust is afgevallen telt niet mee — die is beantwoord.
+
+**Nog te doen:** `database/19_ochtendronde_indelen.sql` in Supabase draaien voor
+de nieuwe kolom. Zolang dat niet gebeurd is, blijft de kolom gewoon weg van de
+beheerpagina in plaats van overal een nul te tonen.
+
 ## 06-08-2026 — De restbak van 2489 producten leeggehaald
 
 Bijna 2500 producten stonden nergens. Niet omdat we niet wisten waar ze hoorden,
