@@ -1,6 +1,6 @@
 # Dealbot — takenlijst
 
-Bijgewerkt: 04-08-2026 11:30
+Bijgewerkt: 06-08-2026 14:20
 
 ## Fase 1 — de minimale basis (nu)
 
@@ -36,25 +36,35 @@ Bijgewerkt: 04-08-2026 11:30
       worden ("aanbiedingen volgende week") of een schakelaar op de startpagina
 - [ ] Uitzoeken of Nettorama betrouwbaar uit te lezen is — nu wél kansrijk: een
       folder is geen belemmering meer, mits hij als PDF te downloaden is
-- [x] Automatisch elke ochtend laten draaien via GitHub — 07:00, duurt een halve minuut
+- [x] Automatisch elke ochtend laten draaien via GitHub — 07:00, duurt tien minuten
+      sinds Picnic meedoet
+- [ ] **De ochtendronde zelf laten indelen.** Dit is nu het gat: de ronde haalt de
+      aanbiedingen op, maar hangt ze niet onder onze eigen indeling — dat doet
+      `scripts/indeel.py`, en dat draait alleen met de hand op de laptop. Een
+      aanbieding die al in de database stond houdt zijn plek, maar alles wat nieuw
+      binnenkomt staat nergens onder tot iemand het script draait. Zodra de folders
+      wisselen is dus een deel van de website leeg terwijl er niets stuk is.
+      Kost geen AI-vraag zolang de winkelgroep in het vertaalboekje staat, en dat
+      geldt nu voor alle 3183. Alleen een gloednieuwe groepsnaam kost er één
 - [x] Oude aanbiedingen pas opruimen nadat de nieuwe binnen zijn
 - [x] Prijs per kilo/liter berekenen; lukt dat niet, dan onderaan met de melding "kiloprijs onbekend"
 - [x] Startpagina: persoonlijke aanbiedingen, gegroepeerd per product, goedkoop naar duur
 - [x] Winkelpagina: alle aanbiedingen van één winkel in de lopende week, per productgroep.
       Winkel kiezen op logo; gedaan op 03-08-2026
-- [ ] **De folderlezer ook een productgroep laten meegeven.** Vomar komt nu zonder
-      indeling binnen, waardoor zijn 153 aanbiedingen op de winkelpagina onder één
-      kopje "Overig" staan en op het profielscherm geen productgroep te kiezen is
+- [ ] **De folderlezer ook een productgroep laten meegeven.** Voor het profielscherm
+      is dit opgelost door onze eigen indeling: Vomar komt zonder winkelgroep binnen,
+      maar 124 van zijn 169 aanbiedingen krijgen alsnog een plek via de productnaam.
+      De overige 45 (27%) blijven in de restbak, en op de winkelpagina staat álles
+      van Vomar nog onder één kopje "Overig" — die pagina bundelt namelijk op de
+      groepsnaam van de winkel zelf, en die is er bij een folder niet
 - [x] Profielpagina: zoekvragen bekijken, toevoegen en verwijderen
       (afdeling/groep uit onze eigen indeling, merk, vrije tekst)
 - [x] Melding als er deze week geen aanbiedingen zijn, met link naar de standaardprijzen-pagina
-- [ ] **De Gemini-sleutels op GitHub zetten**, anders wordt de folder alleen op de
-      laptop gelezen en niet in de ochtendrun. Eén instelling volstaat:
-      `GEMINI_API_KEYS` met alle sleutels achter elkaar, gescheiden door komma's
-      (Settings → Secrets and variables → Actions). Let op: het zijn dezelfde tien
-      sleutels als in project subs, en elke sleutel heeft ongeveer twintig vragen
-      per dag. Eén folder kost er zo'n veertig, dus de folderlezer eet twee
-      sleutels op van wat subs die dag nog kan vertalen
+- [x] **De Gemini-sleutels op GitHub gezet** — nagelopen op 06-08-2026: de ronde van
+      07:36 las zelf de folder van 3 t/m 9 augustus (122 aanbiedingen). De folder
+      wordt dus niet meer alleen op de laptop gelezen. Let op: elke sleutel heeft
+      ongeveer twintig vragen per dag en één folder kost er zo'n veertig, dus de
+      folderlezer eet twee sleutels op van wat project subs die dag nog kan vertalen
 - [x] **Testknop op de site om het ophalen handmatig te starten** (05-08-2026): twee
       knoppen op de beheerpagina — *Nu ophalen* en *Folder opnieuw lezen*. De database
       geeft het startsein door aan GitHub met een sleutel uit zijn eigen kluis, dus er
@@ -104,9 +114,9 @@ Bijgewerkt: 04-08-2026 11:30
       sleutel geldt tot 01-02-2027. Een aanbieding is te herkennen aan het gele
       vlaggetje op de producttegel, níet aan de rode prijs — dat label
       ("Prijskampioen") is een blijvend lage prijs
-- [ ] **De sleutel van Picnic als instelling op GitHub zetten**: `PICNIC_TOKEN`
-      onder Settings → Secrets and variables → Actions. Zonder die instelling
-      draait de ochtendronde gewoon door, maar blijft Picnic buiten de lijst
+- [x] **De sleutel van Picnic als instelling op GitHub gezet** — nagelopen op
+      06-08-2026: de ronde van 07:36 liep zelf langs 284 laden van Picnic en zette
+      1818 aanbiedingen en 12.781 schapprijzen klaar
 - [ ] **Op tijd waarschuwen dat de Picnic-sleutel verloopt** (01-02-2027). Nu merk
       je het pas als de ronde stukloopt; de beheerpagina zou het van tevoren
       kunnen melden
@@ -122,12 +132,10 @@ Bijgewerkt: 04-08-2026 11:30
       boven, en hangt elk product daaronder. Proefstuk Koffie & thee gedaan op
       03-08-2026: 340 aanbiedingen over alle vijf de winkels, steekproef van vijftig
       vijftig keer goed, 2% viel buiten de indeling. Zie CHANGELOG voor hoe het werkt
-- [ ] **De overige 28 takken van de indeling erbij** (groente, zuivel, vlees,
-      enzovoort). Dit is herhaalwerk nu het proefstuk staat: de takken in
-      `scripts/dealbot/indeling.py` zetten en `python scripts/indeel.py` draaien.
-      Reken op zo'n 45 AI-vragen voor alle 2606 winkelgroepen in één keer — dat past
-      binnen een dag, maar het eet wel sleutels die de folderlezer die dag niet meer
-      heeft. Pas dáárna kan de website over
+- [x] **De overige 28 takken van de indeling erbij** — klaar op 06-08-2026. Onze
+      indeling telt 28 afdelingen met 252 laden, en het vertaalboekje is compleet:
+      alle 3183 winkelgroepen staan erin (3076 onder onze indeling, 62
+      eigenschapgroepen, 45 bewust afgevallen)
 - [x] **Het profielscherm op de eigen indeling gezet** (04-08-2026): 28 afdelingen om
       open te klappen met hun groepen, in plaats van 3962 groepsnamen per winkel. Eén
       keer "Koffiebonen" aanvinken dekt alle winkels. De winkelpagina houdt de indeling
@@ -137,24 +145,26 @@ Bijgewerkt: 04-08-2026 11:30
       "vochtig" maakt dat onderscheid alsnog, in onze eigen woorden en bij alle
       winkels tegelijk. Afgeleid uit de groepsnamen van de winkels zelf, dus er
       wordt nergens een lijstje met de hand bijgehouden
-- [ ] **De kenmerken ophalen bij de winkelgroepen die er al staan.** De code
-      staat klaar, maar de bestaande 2606 vertalingen hebben nog geen kenmerk:
-      dat veld bestond niet toen ze werden gemaakt. Eerst
-      `database/16_kenmerken.sql` in Supabase draaien, dan een proefronde op één
-      lade (`python scripts/indeel.py --opnieuw --woorden toilet`) om te zien dat
-      het knopje "vochtig" verschijnt, en pas daarna alles
-      (`python scripts/indeel.py --opnieuw`). Reken op zo'n 45 AI-vragen — dat
-      eet sleutels die de folderlezer die dag niet meer heeft.
-      Valt de ronde stil omdat de dagvoorraad op is, ga dan de volgende dag
-      verder met `python scripts/indeel.py --verder` — níet met `--opnieuw`,
-      want dan begint hij van voren af aan
-- [ ] **De startpagina de eigen indeling laten gebruiken**: de gevonden aanbiedingen
-      groeperen per afdeling/groep in plaats van alleen per product
-- [ ] **Voorvoegsel "lokaal" bij Jumbo-groepen opschonen.** Een deel van Jumbo's
-      groepsnamen begint met "lokaal" ("lokaal Koffiebonen"), waardoor dezelfde
-      groep twee keer in de keuzelijst staat en niet meer op één naam matcht met
-      Albert Heijn. Uitzoeken of het voorvoegsel altijd weg mag, of dat het iets
-      betekent (streekproducten) dat we willen bewaren
+- [x] **De kenmerken opgehaald bij de winkelgroepen die er al stonden** — klaar op
+      06-08-2026: 283 kenmerken verdeeld over 121 laden. Ze staan als knopjes onder
+      de lade op het profielscherm en als verfijning op de standaardprijzen-pagina
+- [x] **De startpagina de eigen indeling laten gebruiken** — gedaan op 04-08-2026:
+      de gevonden aanbiedingen staan gebundeld onder hun afdeling en lade. Tot en met
+      zes afdelingen staat alles meteen open; daarboven zijn de blokken dicht
+- [x] **De eigen indeling is op de hele website de zoekingang** — nagelopen op
+      06-08-2026, nu het vertaalboekje compleet is. Alle 28 afdelingen hebben inhoud
+      en 196 van de 252 laden liggen deze week ook echt in de bonus. Van de 8479
+      aanbiedingen valt 1,7% in de restbak en staat 13,5% alleen op zijn afdeling —
+      daarom staat "Alles uit …" bovenaan elke afdeling: wie alleen laden aanvinkt,
+      mist die. De restbak is wél te kiezen op de standaardprijzen-pagina en
+      bewust niet op het profielscherm: een zoekvraag op "nog niet ingedeeld" zou
+      elke week iets anders opleveren
+- [ ] **Voorvoegsel "lokaal" bij Jumbo-groepen opschonen.** Minder dringend dan het
+      was: sinds onze eigen indeling de zoekingang is, komen "Koffiebonen" en
+      "lokaal Koffiebonen" allebei onder dezelfde lade uit. Wat overblijft is dat
+      het twee regels in het vertaalboekje kost in plaats van één, en dat de
+      winkelpagina ze als twee kopjes naast elkaar toont. Uitzoeken of het
+      voorvoegsel altijd weg mag, of dat het iets betekent (streekproducten)
 - [x] De standaardprijzen-pagina bouwen — gedaan op 02-08-2026, gevuld met Vomar.
       Zoeken op merk of productnaam, of een productgroep kiezen; resultaten van
       goedkoop naar duur per kilo
