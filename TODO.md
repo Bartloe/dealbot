@@ -1,6 +1,6 @@
 # Dealbot — takenlijst
 
-Bijgewerkt: 06-08-2026 14:20
+Bijgewerkt: 06-08-2026 15:16
 
 ## Fase 1 — de minimale basis (nu)
 
@@ -172,7 +172,41 @@ Bijgewerkt: 06-08-2026 14:20
       door Picnic, die 12.754 schapprijzen meelevert uit dezelfde rondgang als zijn
       aanbiedingen. Naast Vomar staat er nu dus echt iets te vergelijken. Let op:
       Picnic geeft geen streepjescode, dus koppelen aan Vomar kan alleen op naam
-- [ ] **Dirk erbij als derde winkel op de standaardprijzen-pagina.** Nu minder
+- [ ] **Albert Heijn erbij op de standaardprijzen-pagina — de prijzen komen al
+      binnen.** Gemeten op 06-08-2026. De ochtendronde loopt bij Albert Heijn al
+      de hele winkelindeling af (29 afdelingen met hun laden), om te weten in
+      welke lade een product ligt en om meerpakken te vinden. Elk product dat
+      daarbij binnenkomt draagt zijn gewone winkelprijs mee; alles wat niet in de
+      bonus is wordt nu weggegooid. Er is dus geen enkel extra verzoek nodig —
+      alleen wegschrijven.
+      - **Omvang: 43.178 producten.** Meer dan het dubbele van Vomar (6174) en
+        Picnic (12.754) samen. Dat is 216 schrijfblokken tegen 64 voor Picnic, dus
+        de ochtendronde wordt langer aan de databasekant. Eerst meten hoeveel.
+      - De gewone prijs staat er óók bij als een product deze week in de bonus
+        ligt. Precies wat nodig is om te zien of een aanbieding echt korting is.
+      - De grens van 3000 per tak speelt geen rol: maar drie afdelingen zitten
+        erboven (Drogisterij 3641, Soepen en sauzen 3436, Bier en wijn 3163) en de
+        bron zakt daar al automatisch af naar de laden eronder.
+      - Geen streepjescode, dus koppelen aan Vomar kan alleen op naam — net als
+        bij Picnic.
+      - **Actueel houden kost niets:** meeliften met de ochtendronde. Het
+        wegschrijven zelf is al gebouwd (bijwerken per 200, daarna opruimen wat
+        niet terugkwam), dus dagelijks verversen is eenvoudiger dan een eigen
+        schema verzinnen.
+- [ ] **Jumbo erbij op de standaardprijzen-pagina — eerst uitzoeken.** Jumbo geeft
+      de gewone prijs gewoon prijs, met inhoud en indeling erbij; dat is op
+      06-08-2026 nagegaan. Maar anders dan bij Albert Heijn halen we zijn
+      assortiment nu niet op, en zijn zoekingang wil een zoekterm in plaats van een
+      productgroep — per afdeling aflopen lukte niet.
+      - Uit te zoeken: is er een ingang per productgroep? Zo niet, dan is de omweg
+        om de 2480 groepsnamen die we al van Jumbo hebben als zoekterm te
+        gebruiken. Dat levert overlap en gaten op, en het zijn 2480 verzoeken.
+      - Een dieptegrens is er niet: een resultatenlijst is tot de laatste door te
+        bladeren.
+      - **Actueel houden kost hier wél verzoeken.** Schapprijzen veranderen zelden,
+        dus één keer per week is genoeg — als aparte ronde, niet aangehangen aan
+        het dagelijkse ophalen.
+- [ ] **Dirk erbij op de standaardprijzen-pagina.** Nu minder
       dringend dan het was, maar hoe meer winkels hoe beter te vergelijken.
       - **Dirk** is de makkelijke: het hele assortiment is op te halen met
         `listWebGroupProducts(webGroupId)` per groep, gevolgd door
