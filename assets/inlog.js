@@ -2,12 +2,11 @@
  * =============================================================================
  *  Dealbot — het inlogscherm
  *
- *  Versie      : 1.4
- *  Reden       : "Pincode vergeten?" erbij: één knop die een mail stuurt met een
- *                link waarmee je zelf een nieuwe kiest. Daarvoor: een sessie die
- *                acht uur stil is eindigt vanzelf, en elke pagina vraagt na het
- *                inloggen wat dit account mag.
- *  Datum       : 05-08-2026 01:20
+ *  Versie      : 1.5
+ *  Reden       : Na een automatische uitlog stond het inlogscherm helemaal leeg.
+ *                Het e-mailadres staat nu al ingevuld en de cursor springt naar
+ *                de pincode: alleen die vier cijfers en je bent weer binnen.
+ *  Datum       : 06-08-2026 16:05
  *
  *  Onderdelen:
  *    beveiligPagina()   - geeft de ingelogde gebruiker, of toont het inlogscherm
@@ -21,7 +20,10 @@ import {
     logIn, meldAan, logUit, haalGebruiker, haalToegang, vraagHerstelmail,
     DealbotFout, PINCODE_LENGTE,
 } from './data.js';
-import { sessieVerlopen, bewaakSessie, meldActiviteit, wisActiviteit, STILTE_UREN } from './sessie.js';
+import {
+    sessieVerlopen, bewaakSessie, meldActiviteit, wisActiviteit,
+    onthoudAdres, laatsteAdres, vergeetAdres, STILTE_UREN,
+} from './sessie.js';
 
 const SCHERM = `
 <div class="inlogkaart">
@@ -150,8 +152,19 @@ function bouwInlogscherm() {
     const schakelaar = document.getElementById('schakelaar');
     const naamveld = document.getElementById('naamveld');
     const melding = document.getElementById('inlogmelding');
+    const emailveld = document.getElementById('email');
+    const pincodeveld = document.getElementById('pincode');
 
     let aanmelden = false;
+
+    // Het adres van de vorige keer staat er al in; alleen de pincode ontbreekt
+    // nog, dus daar begint de cursor ook. Is er geen adres bekend, dan blijft
+    // het bij het gewone lege scherm.
+    const bekend = laatsteAdres();
+    if (bekend) {
+        emailveld.value = bekend;
+        pincodeveld.focus();
+    }
 
     const toon = (tekst, soort = 'fout') => {
         melding.textContent = tekst;
@@ -218,6 +231,7 @@ function bouwInlogscherm() {
             // De klok van de stilte begint hier opnieuw; anders zou een oud
             // moment van de vorige gebruiker meteen weer uitloggen.
             meldActiviteit(true);
+            onthoudAdres(email);
             // Opnieuw laden is de eenvoudigste manier om de pagina met de
             // gegevens van de zojuist ingelogde gebruiker op te bouwen.
             window.location.reload();
@@ -251,6 +265,9 @@ export function koppelUitloggen() {
             console.error('Dealbot — uitloggen mislukt:', fout);
         } finally {
             wisActiviteit();
+            // Zelf uitloggen betekent: laat niets van mij achter, ook het
+            // e-mailadres niet.
+            vergeetAdres();
             window.location.reload();
         }
     });

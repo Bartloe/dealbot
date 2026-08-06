@@ -1,5 +1,33 @@
 # Wijzigingen — Dealbot
 
+## 06-08-2026 — Zes kleine dingen aan het scherm
+
+**De volgorde van de tabbladen** volgt nu hoe je Dealbot gebruikt: eerst je eigen
+aanbiedingen, dan je profiel — waar je bepaalt wát je ziet — en pas daarna het
+bladeren per winkel en de gewone prijzen.
+
+**Op een telefoon rechtop** liep de balk van het scherm af: je kwam niet verder
+dan het derde tabblad, dus Beheer en Uitloggen waren onbereikbaar. De rij breekt
+nu af op een tweede regel. Bewust geen schuifbalk of hamburgermenu: dan moet je
+eerst weten dát er nog iets naast staat.
+
+**De zoekvelden op het profiel** hebben een lichte groene tint. Ze stonden tussen
+veel uitleg in en waren daardoor makkelijk over het hoofd te zien.
+
+**Automatisch uitgelogd?** Dan staat je e-mailadres bij terugkomst al ingevuld en
+staat de cursor in het pincodeveld: vier cijfers en je bent weer binnen. De
+pincode zelf wordt nooit bewaard, want dan zou het uitloggen niets voorstellen.
+Druk je zélf op Uitloggen, dan wordt ook het adres vergeten — dat doe je juist om
+een gedeelde laptop schoon achter te laten.
+
+**Een winkel aanklikken** schuift meteen door naar zijn aanbiedingen. Je bleef op
+de logostrook staan, en op een telefoon vult die bijna het hele scherm; het leek
+dan of er niets gebeurde.
+
+**Bij de standaardprijzen** staat er nu boven dat het voorlopig alleen Vomar en
+Picnic betreft. Anders lijkt het alsof de andere winkels duur zijn, terwijl hun
+gewone prijzen er simpelweg nog niet zijn.
+
 ## 06-08-2026 — De ochtendronde deelt voortaan zelf in
 
 Er zat een gat tussen twee scripts. Het ene haalde elke ochtend de aanbiedingen

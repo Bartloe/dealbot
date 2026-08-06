@@ -2,11 +2,12 @@
  * =============================================================================
  *  Dealbot — de winkelpagina
  *
- *  Versie      : 1.0
- *  Reden       : Nieuwe pagina. Naast je eigen zoekvragen wil je soms gewoon
- *                zien wat er déze week bij één winkel ligt — zoals je door een
- *                folder bladert, maar dan geordend per productgroep.
- *  Datum       : 03-08-2026 21:20
+ *  Versie      : 1.1
+ *  Reden       : Na het aanklikken van een logo bleef het scherm op de
+ *                logostrook staan. Op een telefoon zie je dan niet dat er
+ *                iets gebeurt; de pagina schuift nu meteen door naar de
+ *                aanbiedingen van de gekozen winkel.
+ *  Datum       : 06-08-2026 16:05
  *
  *  De winkel kies je door op zijn logo te klikken; die keuze komt achter het
  *  adres te staan (winkel.html#jumbo), zodat verversen je op dezelfde winkel
@@ -15,6 +16,7 @@
  *  Onderdelen:
  *    bouwPagina()      - regelt de toegang en zet de winkelstrook neer
  *    maakTegel()       - één winkel als logo om op te klikken
+ *    springNaarLijst() - schuift na een klik door naar de aanbiedingen
  *    kiesWinkel()      - haalt de aanbiedingen van die winkel op en toont ze
  *    toonGroepen()     - de aanbiedingen gebundeld per productgroep
  *    maakRegel()       - één aanbieding als regel binnen een groep
@@ -100,6 +102,11 @@ function maakTegel(winkel) {
     tegel.addEventListener('click', () => {
         window.location.hash = winkel.code;
         kiesWinkel(winkel);
+        // Meteen naar de aanbiedingen toe. Op een telefoon vult de logostrook
+        // bijna het hele scherm; zonder deze sprong lijkt er niets te gebeuren
+        // en moet je zelf naar beneden vegen. Wat er nu staat is de regel dat
+        // het ophalen loopt — ook dat is antwoord.
+        springNaarLijst();
     });
 
     // Het aantal komt na de tegel binnen: de strook moet meteen staan, ook als
@@ -116,6 +123,16 @@ function maakTegel(winkel) {
     });
 
     return tegel;
+}
+
+/**
+ * Schuift de pagina naar de aanbiedingen, net onder de logostrook.
+ *
+ * Alleen na een klik op een logo. Kom je binnen met een winkel achter het adres,
+ * dan hoor je bovenaan te beginnen: dan heb je zelf nog niets aangewezen.
+ */
+function springNaarLijst() {
+    lijst.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /** Zet de gekozen winkel in de strook in beeld. */

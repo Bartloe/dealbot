@@ -2,18 +2,19 @@
  * =============================================================================
  *  Dealbot — vormgeving van de website
  *
- *  Versie      : 1.9
- *  Reden       : Onder een lade in de groepkiezer staan nu knopjes met de
- *                kenmerken die erin voorkomen — "vochtig" onder Toiletpapier.
- *                Ze springen verder in dan de lade zelf en gaan uit zodra je de
- *                hele lade al volgt.
- *  Datum       : 05-08-2026 16:10
+ *  Versie      : 2.0
+ *  Reden       : Op een telefoon rechtop liepen de tabbladen van het scherm af:
+ *                Beheer en Uitloggen waren onbereikbaar. De balk breekt nu af op
+ *                een tweede regel. Verder: de zoekvelden op het profiel krijgen
+ *                een lichte tint zodat je ze meteen ziet, en er is een regel voor
+ *                een mededeling die aandacht vraagt zonder alarm te slaan.
+ *  Datum       : 06-08-2026 16:05
  *
  *  Onderdelen:
  *    basis           - kleuren, lettertype en de indeling van de pagina
  *    laatste-run     - de regel met het moment van de laatste ophaalronde
  *    groepkiezer     - onze indeling doorzoeken en aanvinken
- *    bovenbalk       - naam en navigatie
+ *    bovenbalk       - naam en navigatie, ook op een smal scherm
  *    inlogscherm     - het scherm vóór het inloggen
  *    afdelingblok    - de gevonden producten per afdeling en lade
  *    productkaart    - een product met zijn aanbiedingen
@@ -65,6 +66,15 @@ h2 { font-size: 1.15rem; margin: 0 0 8px; }
 .uitleg { color: var(--grijs); margin: 0 0 16px; }
 .bezig { color: var(--grijs); }
 
+/* Een mededeling die je gezien moet hebben, maar waar niets mis mee is —
+   bijvoorbeeld dat er nog maar van twee winkels gewone prijzen zijn. Daarom
+   amber en niet rood, en geen kader: het is een terzijde, geen storing. */
+.let-op {
+    margin: -8px 0 16px;
+    font-size: 0.9rem;
+    color: var(--let-op);
+}
+
 /* -- bovenbalk ------------------------------------------------------------ */
 
 .balk {
@@ -110,6 +120,32 @@ h2 { font-size: 1.15rem; margin: 0 0 8px; }
 }
 
 .balk nav button:hover { background: rgba(255, 255, 255, 0.15); }
+
+/*
+ * Op een telefoon rechtop past de rij tabbladen niet op één regel: Beheer en
+ * Uitloggen vielen buiten beeld en waren dus niet meer te bereiken. De rij mag
+ * daarom afbreken en krijgt de volle breedte onder de naam, zodat elk tabblad
+ * zichtbaar blijft. Bewust geen schuifbalk of uitklapmenu: dan moet je eerst
+ * weten dát er nog iets naast staat.
+ */
+@media (max-width: 640px) {
+    .balk {
+        gap: 8px;
+        padding: 10px 12px;
+    }
+
+    .balk nav {
+        flex-wrap: wrap;
+        gap: 10px 14px;
+        width: 100%;
+        font-size: 0.95rem;
+    }
+
+    .balk nav button {
+        padding: 4px 10px;
+        font-size: 0.9rem;
+    }
+}
 
 /* -- meldingen ------------------------------------------------------------ */
 
@@ -859,6 +895,16 @@ a.regelnaam:hover { text-decoration: underline; }
 }
 
 .verwijder:hover:not(:disabled) { background: #fdecea; }
+
+/* De velden waarin je zelf iets invult of zoekt, op het profiel. Ze staan tussen
+   veel uitleg in; een lichte tint en een groene rand maken duidelijk waar je aan
+   de slag moet, zonder dat het scherm gaat schreeuwen. */
+.zoekveld {
+    background: #f2f8f4;
+    border-color: #b6d4c2;
+}
+
+.zoekveld::placeholder { color: #7c8e83; }
 
 .zoekvraagformulier button[type="submit"] { width: auto; padding: 12px 22px; }
 

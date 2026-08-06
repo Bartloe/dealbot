@@ -2,18 +2,22 @@
  * =============================================================================
  *  Dealbot — automatisch uitloggen na een lange stilte
  *
- *  Versie      : 1.0
- *  Reden       : Een account bleef ingelogd tot iemand op Uitloggen klikte. Op
- *                een gedeelde of vergeten laptop stond Dealbot daarmee voor
- *                iedereen open. Acht uur zonder enige handeling is nu genoeg om
- *                de sessie te beëindigen.
- *  Datum       : 05-08-2026 00:30
+ *  Versie      : 1.1
+ *  Reden       : Wie automatisch werd uitgelogd moest zijn e-mailadres opnieuw
+ *                intypen. Dat adres wordt nu onthouden en staat bij terugkomst
+ *                al ingevuld; alleen de pincode is nog nodig. Op de uitlogknop
+ *                drukken wist het adres wél — dat doe je juist om de laptop
+ *                schoon achter te laten.
+ *  Datum       : 06-08-2026 16:05
  *
  *  Onderdelen:
  *    sessieVerlopen()      - is het te lang stil geweest?
  *    meldActiviteit()      - zet de klok terug op nu
  *    wisActiviteit()       - vergeet het moment (bij uitloggen)
  *    bewaakSessie()        - houdt de klok bij en grijpt in als de tijd om is
+ *    onthoudAdres()        - bewaart het e-mailadres waarmee is ingelogd
+ *    laatsteAdres()        - dat adres, om het inlogscherm mee voor te vullen
+ *    vergeetAdres()        - vergeet het adres (bij handmatig uitloggen)
  *
  *  De klok loopt in de browser, niet in de database. Dat is precies genoeg voor
  *  het doel: iemand die de laptop laat staan, vindt bij terugkomst het
@@ -26,6 +30,7 @@ export const STILTE_UREN = 8;
 
 const STILTE_MS = STILTE_UREN * 60 * 60 * 1000;
 const SLEUTEL = 'dealbot-laatste-activiteit';
+const ADRESSLEUTEL = 'dealbot-laatste-adres';
 
 // Hoe vaak er hooguit naar de opslag geschreven wordt. Zonder deze rem zou elke
 // muisbeweging een schrijfactie zijn, terwijl een minuut ruim nauwkeurig genoeg
@@ -85,6 +90,47 @@ export function wisActiviteit() {
         window.localStorage.removeItem(SLEUTEL);
     } catch (fout) {
         console.warn('Dealbot — het moment van de laatste handeling is niet gewist:', fout);
+    }
+}
+
+/**
+ * Bewaart het e-mailadres waarmee is ingelogd.
+ *
+ * Alleen het adres, nooit de pincode: die hoort na een automatische uitlog
+ * opnieuw ingetypt te worden, anders is het uitloggen zinloos.
+ */
+export function onthoudAdres(email) {
+    const adres = (email || '').trim();
+    if (!adres) {
+        return;
+    }
+    try {
+        window.localStorage.setItem(ADRESSLEUTEL, adres);
+    } catch (fout) {
+        console.warn('Dealbot — het e-mailadres is niet bewaard:', fout);
+    }
+}
+
+/** Het laatst gebruikte e-mailadres, of een lege tekst als er niets bekend is. */
+export function laatsteAdres() {
+    try {
+        return window.localStorage.getItem(ADRESSLEUTEL) || '';
+    } catch (fout) {
+        console.warn('Dealbot — het e-mailadres is niet op te halen:', fout);
+        return '';
+    }
+}
+
+/**
+ * Vergeet het adres. Hoort bij de uitlogknop en niet bij het automatisch
+ * uitloggen: wie zelf uitlogt wil de laptop schoon achterlaten, wie na een
+ * lange stilte terugkomt is gewoon dezelfde persoon.
+ */
+export function vergeetAdres() {
+    try {
+        window.localStorage.removeItem(ADRESSLEUTEL);
+    } catch (fout) {
+        console.warn('Dealbot — het e-mailadres is niet gewist:', fout);
     }
 }
 
