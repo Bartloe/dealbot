@@ -27,29 +27,33 @@
         <p class="melding" id="melding" role="alert" hidden></p>
 
         <section class="blok">
-            <h2>Waar let Dealbot voor jou op?</h2>
-            <ul class="zoekvraaglijst" id="zoekvragen"></ul>
-        </section>
+            <h2>Waar wil je op letten?</h2>
 
-        <section class="blok">
-            <h2>Kies waar je op wilt letten</h2>
-            <p class="uitleg">
-                Dealbot heeft een eigen indeling die bij élke winkel hetzelfde is:
-                afdelingen met daaronder groepen. Vink je <em>Koffiebonen</em> aan, dan
-                zie je de koffiebonen van alle winkels tegelijk — je hoeft dus niet meer
-                te weten hoe elke winkel zijn eigen groepen noemt. Wil je breder kijken,
-                kies dan de hele afdeling. Zit er nu niets in, dan kun je hem toch kiezen:
-                zodra er iets van in de bonus komt, staat het vanzelf bij je aanbiedingen.
-            </p>
-            <p class="uitleg">
-                Staan er knopjes onder een groep, zoals <em>vochtig</em> onder
-                Toiletpapier? Dan kun je het nog preciezer maken en alléén dat volgen.
-                Vink je de groep zelf aan, dan krijg je gewoon alles wat erin ligt.
-            </p>
+            <!-- De twee manieren van zoeken staan naast elkaar bovenaan, zodat je
+                 ze allebei ziet zonder te scrollen. Eronder komt alleen de manier
+                 die je kiest: zo blijft de pagina kort genoeg voor een telefoon. -->
+            <div class="manieren" role="tablist" aria-label="Manier van zoeken">
+                <button type="button" class="manier actief" id="manier-groep" role="tab"
+                        aria-selected="true" aria-controls="paneel-groep">
+                    Afdeling of groep
+                </button>
+                <button type="button" class="manier" id="manier-woord" role="tab"
+                        aria-selected="false" aria-controls="paneel-woord" tabindex="-1">
+                    Merk of woord
+                </button>
+            </div>
 
-            <div class="groepkiezer">
+            <div class="groepkiezer" id="paneel-groep" role="tabpanel"
+                 aria-labelledby="manier-groep">
                 <input type="search" id="groepzoek" class="zoekveld" autocomplete="off"
                        placeholder="Zoek een afdeling of groep, bijvoorbeeld koffie">
+
+                <p class="uitleg onderveld">
+                    Onze indeling is bij élke winkel hetzelfde. Vink je <em>Koffiebonen</em>
+                    aan, dan zie je die van alle winkels tegelijk; wil je breder kijken,
+                    kies dan de hele afdeling. Staan er knopjes onder een groep, zoals
+                    <em>vochtig</em> onder Toiletpapier, dan kun je alléén dat volgen.
+                </p>
 
                 <ul class="gekozen" id="gekozen" hidden></ul>
                 <p class="zoekhulp" id="zoekhulp"></p>
@@ -59,32 +63,37 @@
                     Kies eerst een groep
                 </button>
             </div>
+
+            <div id="paneel-woord" role="tabpanel" aria-labelledby="manier-woord" hidden>
+                <form id="zoekvraagformulier" class="zoekvraagformulier" novalidate>
+                    <label>
+                        Merk
+                        <input type="text" id="merk" class="zoekveld" placeholder="bijvoorbeeld Lavazza">
+                        <small>Zoekt in het merk en in de productnaam.</small>
+                    </label>
+
+                    <label>
+                        Vrije tekst
+                        <input type="text" id="vrije_tekst" class="zoekveld" placeholder="bijvoorbeeld koffiebonen">
+                        <small>Zoekt alleen in het merk en de productnaam, niet in de groep.</small>
+                    </label>
+
+                    <p class="uitleg onderveld">
+                        Voor wat niet in een groep te vangen is. Vul je ze allebei in, dan
+                        moeten ze allebei kloppen — zo maak je een zoekvraag scherper.
+                        Hoofdletters maken niet uit: <em>oro</em> vindt ook <em>Oro</em>.
+                    </p>
+
+                    <button type="submit" id="opslaan">Zoekvraag opslaan</button>
+                </form>
+            </div>
         </section>
 
+        <!-- Wat je al volgt staat ónder de zoekmanieren: die lijst groeit met de
+             tijd, en zou het toevoegen anders steeds verder van het scherm duwen. -->
         <section class="blok">
-            <h2>Of zoek op een woord</h2>
-            <p class="uitleg">
-                Voor wat niet in een groep te vangen is: een merk dat je volgt, of een
-                woord dat in de productnaam staat. Vul je ze allebei in, dan moeten ze
-                allebei kloppen — zo maak je een zoekvraag scherper. Hoofdletters maken
-                niet uit: <em>oro</em> vindt ook <em>Oro</em>.
-            </p>
-
-            <form id="zoekvraagformulier" class="zoekvraagformulier" novalidate>
-                <label>
-                    Merk
-                    <input type="text" id="merk" class="zoekveld" placeholder="bijvoorbeeld Lavazza">
-                    <small>Zoekt in het merk en in de productnaam.</small>
-                </label>
-
-                <label>
-                    Vrije tekst
-                    <input type="text" id="vrije_tekst" class="zoekveld" placeholder="bijvoorbeeld koffiebonen">
-                    <small>Zoekt alleen in het merk en de productnaam, niet in de groep.</small>
-                </label>
-
-                <button type="submit" id="opslaan">Zoekvraag opslaan</button>
-            </form>
+            <h2>Waar Dealbot nu voor je op let <span class="telling" id="aantalvragen"></span></h2>
+            <ul class="zoekvraaglijst" id="zoekvragen"></ul>
         </section>
     </main>
 

@@ -2,13 +2,12 @@
  * =============================================================================
  *  Dealbot — vormgeving van de website
  *
- *  Versie      : 2.0
- *  Reden       : Op een telefoon rechtop liepen de tabbladen van het scherm af:
- *                Beheer en Uitloggen waren onbereikbaar. De balk breekt nu af op
- *                een tweede regel. Verder: de zoekvelden op het profiel krijgen
- *                een lichte tint zodat je ze meteen ziet, en er is een regel voor
- *                een mededeling die aandacht vraagt zonder alarm te slaan.
- *  Datum       : 06-08-2026 16:05
+ *  Versie      : 2.1
+ *  Reden       : Op het profiel staan de twee manieren van zoeken nu als twee
+ *                knoppen naast elkaar bovenaan, met eronder alleen de gekozen
+ *                manier. De toelichting staat onder het invoerveld in plaats van
+ *                erboven.
+ *  Datum       : 07-08-2026 10:10
  *
  *  Onderdelen:
  *    basis           - kleuren, lettertype en de indeling van de pagina
@@ -21,7 +20,7 @@
  *    standaardprijzen- de zoekbalk en de prijsregel op die pagina
  *    winkelpagina    - de logostrook en de blokken per productgroep
  *    beheerpagina    - het ophaalblok en de overzichtstabellen
- *    profiel         - zoekvragen en het formulier om er één toe te voegen
+ *    profiel         - de twee manieren van zoeken en de zoekvragen die je volgt
  * =============================================================================
  */
 
@@ -863,6 +862,56 @@ a.regelnaam:hover { text-decoration: underline; }
     border-radius: 10px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
 }
+
+/* De twee manieren van zoeken, naast elkaar bovenaan het profiel. Ze zijn even
+   breed: geen van beide is de "gewone" manier, het hangt ervan af wat je zoekt.
+   Ze staan er als knoppen bij en niet als kale tekst, zodat meteen duidelijk is
+   dat je er iets mee kunt. */
+.manieren {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.manier {
+    flex: 1 1 0;
+    padding: 10px 12px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--groen-donker);
+    background: var(--wit);
+    border: 1px solid var(--groen);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.manier:hover:not(.actief) { background: #e8f4ec; }
+
+/* De gekozen manier is niet alleen aan de kleur te zien: hij staat ook vol,
+   zodat het onderscheid blijft als kleuren wegvallen. */
+.manier.actief {
+    color: var(--wit);
+    background: var(--groen);
+    border-color: var(--groen-donker);
+}
+
+.manier:focus-visible {
+    outline: 2px solid var(--groen);
+    outline-offset: 2px;
+}
+
+/* De toelichting hoort ónder het veld waar hij over gaat: eerst zie je wat je
+   kunt doen, daarna pas de uitleg erbij. */
+.uitleg.onderveld {
+    margin: 8px 0 14px;
+    font-size: 0.9rem;
+}
+
+.zoekvraagformulier .onderveld { grid-column: 1 / -1; }
+
+/* Hoeveel zoekvragen er nu staan, achter het kopje. */
+.telling { font-size: 0.9rem; font-weight: 400; color: var(--grijs); }
 
 .zoekvraaglijst {
     list-style: none;

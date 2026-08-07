@@ -2,22 +2,23 @@
  * =============================================================================
  *  Dealbot — de profielpagina met mijn zoekvragen
  *
- *  Versie      : 4.0
- *  Reden       : Onze lade Toiletpapier bevat het droge en het vochtige door
- *                elkaar, dus wie alleen het vochtige wilde volgen kon dat
- *                nergens kiezen. Datzelfde speelde bij koffie (bonen, pads,
- *                capsules) en bij melk (vol, halfvol, lactosevrij).
+ *  Versie      : 5.0
+ *  Reden       : De tweede manier van zoeken — op merk of woord — stond zo ver
+ *                naar beneden dat je hem alleen vond door langs de hele indeling
+ *                te scrollen. Op een telefoon bestond hij daarmee praktisch
+ *                niet.
  *
- *                Onder elke lade staan nu knopjes met de kenmerken die erin
- *                voorkomen. Ze zijn niet met de hand bedacht maar afgeleid uit
- *                de groepsnamen van de winkels zelf, en ze staan in onze eigen
- *                woorden — dus één knopje "vochtig" dekt alle ketens. Wie geen
- *                knopje kiest, volgt de hele lade zoals voorheen.
- *  Datum       : 05-08-2026 15:45
+ *                De twee manieren staan nu als twee knoppen naast elkaar
+ *                bovenaan; eronder staat alleen de manier die je kiest. De
+ *                toelichting is ingekort en verhuisd naar ónder het invoerveld:
+ *                eerst zie je wat je kunt doen, daarna pas de uitleg. Wat je al
+ *                volgt staat onderaan, want die lijst groeit met de tijd.
+ *  Datum       : 07-08-2026 10:10
  *
  *  Onderdelen:
  *    bouwPagina()       - regelt de toegang en haalt de gegevens op
  *    toonZoekvragen()   - zet de zoekvragen op het scherm
+ *    koppelManieren()   - wisselt tussen de twee manieren van zoeken
  *    koppelFormulier()  - slaat een zoekvraag op merk of vrije tekst op
  *    koppelGroepkiezer()- zoeken, aanvinken en opslaan binnen onze indeling
  *    bouwAfdelingen()   - maakt van de losse regels afdelingen met hun groepen
@@ -48,6 +49,16 @@ const indelingsvak = document.getElementById('indeling');
 const gekozenlijst = document.getElementById('gekozen');
 const zoekhulp = document.getElementById('zoekhulp');
 const groepenknop = document.getElementById('groepenopslaan');
+const telling = document.getElementById('aantalvragen');
+
+// De twee manieren om een zoekvraag te maken: elke knop bovenaan hoort bij één
+// vak eronder. Ze staan naast elkaar in beeld, maar er is er altijd maar één
+// open — anders staat de tweede manier weer buiten beeld, en dat was juist het
+// probleem.
+const MANIEREN = [
+    { knop: 'manier-groep', paneel: 'paneel-groep' },
+    { knop: 'manier-woord', paneel: 'paneel-woord' },
+];
 
 // Onze indeling: afdelingen met hun groepen, zoals de database ze levert.
 let afdelingen = [];
@@ -323,7 +334,7 @@ function toonIndeling() {
     if (treffers.length === 0) {
         indelingsvak.replaceChildren();
         zoekhulp.textContent = `Geen afdeling of groep gevonden met "${woord.trim()}". `
-            + 'Probeer een korter woord, of gebruik hieronder het veld Vrije tekst.';
+            + 'Probeer een korter woord, of kies hierboven "Merk of woord".';
         return;
     }
 
@@ -450,9 +461,11 @@ function toonZoekvragen(zoekvragen, herlaad) {
         .map((zoekvraag) => sleutelVan(zoekvraag.hoofdgroep, zoekvraag.subgroep,
             zoekvraag.kenmerk)));
 
+    telling.textContent = zoekvragen.length === 0 ? '' : `(${zoekvragen.length})`;
+
     if (zoekvragen.length === 0) {
         lijst.replaceChildren(maak('li', 'leeg-regel',
-            'Je hebt nog geen zoekvragen. Kies er hieronder één.'));
+            'Je hebt nog geen zoekvragen. Maak er hierboven één.'));
         return;
     }
     lijst.replaceChildren(...zoekvragen.map((z) => maakZoekvraag(z, herlaad)));
@@ -476,6 +489,44 @@ async function ververs() {
     // De indeling moet mee: een groep die je net bent gaan volgen of hebt
     // weggehaald, hoort meteen als zodanig op het scherm te staan.
     toonIndeling();
+}
+
+/**
+ * Laat de knoppen bovenaan wisselen tussen de twee manieren van zoeken.
+ *
+ * De pijltjestoetsen doen hier hetzelfde als een klik: wie met het toetsenbord
+ * werkt, hoort niet eerst door de hele indeling te moeten om bij de tweede
+ * manier te komen. De knop houdt de aandacht — het veld eronder krijgt hem
+ * niet, want op een telefoon zou dan ongevraagd het toetsenbord opengaan.
+ */
+function koppelManieren() {
+    const knoppen = MANIEREN.map((manier) => document.getElementById(manier.knop));
+
+    const kies = (nummer) => {
+        MANIEREN.forEach((manier, plek) => {
+            const actief = plek === nummer;
+            knoppen[plek].classList.toggle('actief', actief);
+            knoppen[plek].setAttribute('aria-selected', String(actief));
+            knoppen[plek].tabIndex = actief ? 0 : -1;
+            document.getElementById(manier.paneel).hidden = !actief;
+        });
+    };
+
+    knoppen.forEach((knop, plek) => {
+        knop.addEventListener('click', () => kies(plek));
+
+        knop.addEventListener('keydown', (gebeurtenis) => {
+            const stappen = { ArrowLeft: -1, ArrowRight: 1 };
+            const stap = stappen[gebeurtenis.key];
+            if (!stap) {
+                return;
+            }
+            gebeurtenis.preventDefault();
+            const volgende = (plek + stap + knoppen.length) % knoppen.length;
+            kies(volgende);
+            knoppen[volgende].focus();
+        });
+    });
 }
 
 function koppelFormulier() {
@@ -568,6 +619,7 @@ async function bouwPagina() {
     koppelUitloggen();
 
     adres.textContent = gebruiker.email || '';
+    koppelManieren();
     koppelFormulier();
     koppelGroepkiezer();
     toonGekozen();

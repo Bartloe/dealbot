@@ -1,5 +1,25 @@
 # Wijzigingen — Dealbot
 
+## 07-08-2026 — Beide manieren van zoeken meteen in beeld
+
+Het profiel had twee manieren om een zoekvraag te maken: kiezen uit onze
+indeling, of zelf een merk of woord intypen. Die tweede stond onder de complete
+indeling van achtentwintig afdelingen. Op een telefoon kwam je daar alleen door
+lang naar beneden te vegen — en dus bestond hij praktisch niet.
+
+De twee manieren staan nu als twee knoppen naast elkaar bovenaan de pagina, en
+eronder verschijnt alleen de manier die je kiest. Beide zijn dus meteen zichtbaar
+zonder dat de pagina langer wordt. Bewust geen twee blokken onder elkaar: dan
+staat de tweede altijd weer buiten beeld, en dat was juist het probleem.
+
+De toelichting is ingekort en staat nu **onder** het invoerveld in plaats van
+erboven. Eerst zie je wat je kunt doen, daarna pas de uitleg erbij — wie het al
+weet, hoeft er niet langs.
+
+Wat Dealbot nu voor je in de gaten houdt, is verhuisd naar onderaan de pagina,
+met het aantal achter het kopje. Die lijst groeit met de tijd, en zou het
+toevoegen van een nieuwe zoekvraag anders steeds verder wegduwen.
+
 ## 06-08-2026 — Zes kleine dingen aan het scherm
 
 **De volgorde van de tabbladen** volgt nu hoe je Dealbot gebruikt: eerst je eigen
